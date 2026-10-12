@@ -5,6 +5,7 @@ import { useNetwork, useWindowEvent } from '@mantine/hooks';
 import { useAuth } from './AuthContext';
 import { offlineLibrary } from '../lib/offlineLibrary';
 import { downloadOfflineLibrary } from '../lib/offlineDownload';
+import { usePersistentStorage } from '../hooks/usePersistentStorage';
 import { getStoredUser } from '../lib/storage';
 import { ApiError } from '../lib/api';
 import type { OfflineState } from '../types/offline';
@@ -13,6 +14,7 @@ const noop = () => {};
 const OfflineContext = createContext({
   state: undefined as OfflineState | undefined, busy: false, error: '', shellError: '', shellReady: false,
   activity: false, enabled: false, readOnly: false, usingDownload: false, online: true,
+  persisted: null as boolean | null, requestPersistence: async () => null as boolean | null,
   refresh: async (_force = false) => {}, enable: async () => {}, disable: async () => {},
   reportSource: (_downloaded: boolean) => {}, setShellReady: (_ready: boolean) => {},
   setShellError: (_message: string) => {}, holdRefresh: (_hold: boolean) => noop,
@@ -39,6 +41,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   }, []);
   const reportSource = useCallback((downloaded: boolean) => setUsingDownload(downloaded), []);
   const enabled = !!user && state?.accountId === user.id && state.enabled;
+  const { persisted, request: requestPersistence } = usePersistentStorage(enabled);
   const refresh = useCallback(async (force = false) => {
     if (!mounted.current || !user || navigator.onLine === false || controller.current || (!force && holds.current)) return;
     if (getStoredUser()?.id !== user.id) return;
@@ -82,10 +85,10 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
       }
       await offlineLibrary.enable(user.id);
       await readState();
-      void navigator.storage?.persist?.().catch(() => false);
+      void requestPersistence();
       await refresh(true);
     } catch (err) { setError((err as Error).message); }
-  }, [user, readState, refresh]);
+  }, [user, readState, refresh, requestPersistence]);
   const disable = useCallback(async () => {
     controller.current?.abort();
     controller.current = null;
@@ -125,10 +128,10 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     if (event.key === 'cv_user') { controller.current?.abort(); void readState().catch(() => {}); }
   });
   const value = useMemo(() => ({ state: state?.accountId === user?.id ? state : undefined,
-    activity, busy, error, shellError, shellReady, enabled, usingDownload, online: network.online,
+    activity, busy, error, shellError, shellReady, enabled, persisted, requestPersistence, usingDownload, online: network.online,
     readOnly: !network.online || usingDownload, refresh, enable, disable, reportSource,
     setShellReady, setShellError, holdRefresh,
-  }), [activity, state, user?.id, busy, error, shellError, shellReady, enabled, usingDownload, network.online, refresh, enable, disable, reportSource, holdRefresh]);
+  }), [activity, state, user?.id, busy, error, shellError, shellReady, enabled, persisted, requestPersistence, usingDownload, network.online, refresh, enable, disable, reportSource, holdRefresh]);
   return <OfflineContext.Provider value={value}>{children}</OfflineContext.Provider>;
 }
 

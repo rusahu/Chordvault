@@ -7,6 +7,8 @@ import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
 import { useSwipe } from '../hooks/useSwipe';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { useLocalStorage } from '@mantine/hooks';
+import { useWakeLock } from '../hooks/useWakeLock';
 import { useSetlistPlayer } from '../hooks/useSetlistPlayer';
 import { useFontScale } from '../hooks/useFontScale';
 import { useTwoCol } from '../hooks/useTwoCol';
@@ -65,6 +67,8 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
 
   const { user } = useAuth();
   const isOwner = setlist?.user_id && user && setlist.user_id === user.id;
+  const [keepScreenOn, setKeepScreenOn] = useLocalStorage({ key: 'cv_keep_screen_on', defaultValue: true, getInitialValueInEffect: false });
+  const wakeLock = useWakeLock(keepScreenOn && !!setlist);
 
   // Effective values for current entry
   const globalPrefs = useMemo(() => ({
@@ -251,6 +255,8 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
         fontSize={fontScale.fontSize}
         onFontChange={fontScale.changeFontSize}
         onFontReset={resetFont}
+        keepScreenOn={wakeLock.supported ? keepScreenOn : undefined}
+        onKeepScreenOnChange={wakeLock.supported ? setKeepScreenOn : undefined}
       />
     ),
     isModified,

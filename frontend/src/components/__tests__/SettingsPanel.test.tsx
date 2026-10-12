@@ -19,4 +19,18 @@ describe('SettingsPanel', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Reset default font size' }));
     expect(props.onFontReset).toHaveBeenCalled();
   });
+
+  it('omits Keep screen on unless the device supports it', () => {
+    render(<SettingsPanel {...props} />);
+    expect(screen.queryByRole('switch', { name: 'Keep screen on' })).not.toBeInTheDocument();
+  });
+
+  it('reports Keep screen on changes', () => {
+    const onKeepScreenOnChange = vi.fn();
+    render(<SettingsPanel {...props} keepScreenOn onKeepScreenOnChange={onKeepScreenOnChange} />);
+    const toggle = screen.getByRole('switch', { name: 'Keep screen on' });
+    expect(toggle).toBeChecked();
+    fireEvent.click(toggle);
+    expect(onKeepScreenOnChange).toHaveBeenCalledWith(false);
+  });
 });

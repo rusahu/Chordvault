@@ -152,6 +152,8 @@
 
   "offline.title": "Offline library",
   "offline.enable": "Keep my library offline",
+  "offline.notPersisted": "Your browser may clear offline songs when storage is low. Adding ChordVault to your home screen helps keep them.",
+  "offline.retryPersist": "Try again",
   "offline.description": "Download public songs, your private songs and your saved setlists for viewing. Stored on this device. Removed when you sign out.",
   "offline.downloading": "Downloading library...",
   "offline.songs": "songs",

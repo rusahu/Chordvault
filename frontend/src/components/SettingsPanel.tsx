@@ -11,6 +11,8 @@ interface SettingsPanelProps {
   fontSize: number;
   onFontChange: (delta: number) => void;
   onFontReset: () => void;
+  keepScreenOn?: boolean;
+  onKeepScreenOnChange?: (val: boolean) => void;
 }
 
 export function SettingsPanel({
@@ -23,11 +25,16 @@ export function SettingsPanel({
   fontSize,
   onFontChange,
   onFontReset,
+  keepScreenOn,
+  onKeepScreenOnChange,
 }: SettingsPanelProps) {
   return (
     <>
       <Text size="sm" fw={600} c="dimmed" mb="md">Setlist defaults for all songs</Text>
       <Stack gap="md">
+        {keepScreenOn !== undefined && onKeepScreenOnChange && (
+          <Switch labelPosition="left" label="Keep screen on" checked={keepScreenOn} onChange={(e) => onKeepScreenOnChange(e.target.checked)} styles={{ body: { justifyContent: 'space-between' } }} />
+        )}
         <Switch labelPosition="left" label="Number notation" checked={nashville} onChange={(e) => onNashvilleChange(e.target.checked)} styles={{ body: { justifyContent: 'space-between' } }} />
         <Switch labelPosition="left" label="Hide YouTube" checked={hideYt} onChange={(e) => onHideYtChange(e.target.checked)} styles={{ body: { justifyContent: 'space-between' } }} />
         <Switch labelPosition="left" label="Multi-column layout" checked={twoCol} onChange={(e) => onTwoColChange(e.target.checked)} styles={{ body: { justifyContent: 'space-between' } }} />
