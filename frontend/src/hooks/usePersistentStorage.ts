@@ -4,15 +4,22 @@ import { checkPersistentStorage, requestPersistentStorage } from '../lib/persist
 export function usePersistentStorage(enabled: boolean) {
   const [persisted, setPersisted] = useState<boolean | null>(null);
   const latest = useRef(0);
-  const track = useCallback(async (run: () => Promise<boolean | null>) => {
+  const asking = useRef(false);
+  // Requests outrank silent checks: a check never overwrites a newer request, and is skipped while one awaits the user.
+  useEffect(() => {
+    if (!enabled || asking.current) return;
+    const call = latest.current;
+    void checkPersistentStorage().then(result => { if (call === latest.current) setPersisted(result); });
+  }, [enabled]);
+  const request = useCallback(async () => {
     const call = ++latest.current;
-    const result = await run();
-    if (call === latest.current) setPersisted(result);
+    asking.current = true;
+    const result = await requestPersistentStorage();
+    if (call === latest.current) {
+      asking.current = false;
+      setPersisted(result);
+    }
     return result;
   }, []);
-  useEffect(() => {
-    if (enabled) void track(checkPersistentStorage);
-  }, [enabled, track]);
-  const request = useCallback(() => track(requestPersistentStorage), [track]);
   return { persisted: enabled ? persisted : null, request };
 }

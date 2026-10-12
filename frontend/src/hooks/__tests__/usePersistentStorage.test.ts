@@ -49,4 +49,16 @@ describe('usePersistentStorage', () => {
     await act(async () => { finishCheck(false); });
     expect(result.current.persisted).toBe(true);
   });
+  it('keeps a granted request that started before the launch check', async () => {
+    let finishRequest!: (value: boolean) => void;
+    request.mockReturnValue(new Promise(resolve => { finishRequest = resolve; }));
+    check.mockResolvedValue(false);
+    const { result, rerender } = renderHook(({ on }) => usePersistentStorage(on), { initialProps: { on: false } });
+    let pending!: Promise<boolean | null>;
+    act(() => { pending = result.current.request(); });
+    rerender({ on: true });
+    await act(async () => {});
+    await act(async () => { finishRequest(true); await pending; });
+    expect(result.current.persisted).toBe(true);
+  });
 });
