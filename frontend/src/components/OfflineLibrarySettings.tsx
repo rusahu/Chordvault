@@ -5,7 +5,7 @@ import { useI18n } from '../context/I18nContext';
 export function OfflineLibrarySettings() {
   const offline = useOffline();
   const { t } = useI18n();
-  const { state, busy, enabled, error, shellError, shellReady } = offline;
+  const { state, busy, enabled, error, shellError, shellReady, persisted } = offline;
   return <Paper component="section" withBorder radius="lg" p="lg" bg="var(--cv-raise)" className="settings-section">
     <Stack gap="sm">
       <Title order={3} fz={16}>{t('offline.title', 'Offline library')}</Title>
@@ -20,6 +20,10 @@ export function OfflineLibrarySettings() {
       {shellError && <Alert color="red" role="alert">{shellError}</Alert>}
       {enabled && !state?.revision && shellReady && !busy && <Text size="sm">{t('offline.noDownload', 'No completed download on this device. Connect and refresh your library.')}</Text>}
       {error && <Alert color="red" role="alert">{error}{state?.revision ? ` ${t('offline.previous', 'Your previous download is still available.')}` : ''}</Alert>}
+      {enabled && persisted === false && <Alert color="yellow">
+        {t('offline.notPersisted', 'Your browser may clear offline songs when storage is low. Adding ChordVault to your home screen helps keep them.')}
+        <Button size="xs" variant="default" mt="xs" display="block" onClick={() => { void offline.requestPersistence(); }}>{t('offline.retryPersist', 'Try again')}</Button>
+      </Alert>}
       {enabled && <Button variant="default" disabled={busy || !offline.online} onClick={() => { void offline.refresh(true); }}>{t('offline.refresh', 'Refresh now')}</Button>}
     </Stack>
   </Paper>;
