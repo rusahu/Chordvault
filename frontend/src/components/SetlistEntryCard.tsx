@@ -1,5 +1,5 @@
 import { Badge, Box, Button, VisuallyHidden, CloseButton, Flex, Group } from '@mantine/core';
-import { IconGripVertical, IconLock } from '@tabler/icons-react';
+import { IconGripVertical, IconLock, IconPencil } from '@tabler/icons-react';
 import { getSongKey } from '../lib/chords';
 import { entrySemitones } from '../lib/setlistKeys';
 import type { SetlistEntry } from '../types';
@@ -12,6 +12,7 @@ interface SetlistEntryCardProps {
   onRemove: (entryId: number | string, idx: number) => void;
   onStepKey: (entryId: number | string, idx: number, direction: 1 | -1) => void;
   onClick: (idx: number) => void;
+  onEdit?: (idx: number) => void;
   t: (key: string) => string;
   dragProps?: React.HTMLAttributes<HTMLDivElement>;
   handleProps?: React.HTMLAttributes<HTMLDivElement>;
@@ -26,6 +27,7 @@ export function SetlistEntryCard({
   onRemove,
   onStepKey,
   onClick,
+  onEdit,
   t,
   dragProps,
   handleProps,
@@ -76,14 +78,23 @@ export function SetlistEntryCard({
           {keyDisplay}
         </div>
       </Box>
-      {isEditable && (
+      {(isEditable || onEdit) && (
         <Group className="setlist-entry-controls" gap={4} wrap="nowrap" justify="flex-end" w={{ base: '100%', xs: 'auto' }} onClick={(e) => e.stopPropagation()}>
-          <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={!canStep} onClick={() => onStepKey(entry.entry_id, idx, -1)}>
-            &#9837;
-          </Button>
-          <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={!canStep} onClick={() => onStepKey(entry.entry_id, idx, 1)}>
-            &#9839;
-          </Button>
+          {onEdit && (
+            <Button variant="default" size="xs" className="btn btn-ghost btn-sm" leftSection={<IconPencil size={14} aria-hidden />} onClick={() => onEdit(idx)}>
+              {t('songView.edit')}
+            </Button>
+          )}
+          {isEditable && (
+            <>
+              <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={!canStep} onClick={() => onStepKey(entry.entry_id, idx, -1)}>
+                &#9837;
+              </Button>
+              <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={!canStep} onClick={() => onStepKey(entry.entry_id, idx, 1)}>
+                &#9839;
+              </Button>
+            </>
+          )}
         </Group>
       )}
       {isEditable && (

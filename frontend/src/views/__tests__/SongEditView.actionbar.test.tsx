@@ -122,6 +122,29 @@ describe('SongEditView action bar', () => {
   });
 });
 
+describe('SongEditView opened from a setlist', () => {
+  const returnTo = { view: 'setlist-play', params: { id: '7', index: '2' } };
+  const navigate = vi.fn();
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    serve({ ...SONG, content: SONG.content + '\n{x_language: en}' });
+    await act(async () => { render(<SongEditView songId={5} returnTo={returnTo} navigate={navigate} />); });
+    await waitFor(() => expect((screen.getByTestId('editor') as HTMLTextAreaElement).value).toContain('It Is Well'));
+  });
+
+  it('save goes back to the setlist instead of the song page', async () => {
+    fireEvent.click(screen.getByRole('button', { name: 'songEdit.save' }));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('setlist-play', { id: '7', index: '2' }));
+    expect(navigate).not.toHaveBeenCalledWith('song-view', expect.anything());
+  });
+
+  it('leaving goes back to the setlist', () => {
+    fireEvent.click(screen.getByRole('button', { name: 'songEdit.back' }));
+    expect(navigate).toHaveBeenCalledWith('setlist-play', { id: '7', index: '2' });
+  });
+});
+
 it('connects tabs to persistent panels and preserves editor content when switching', async () => {
   await renderEditor();
   const edit = screen.getByRole('tab', { name: 'Edit' });

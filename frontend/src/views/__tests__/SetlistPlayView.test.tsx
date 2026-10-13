@@ -74,3 +74,23 @@ describe('SetlistPlayView Auto-Fit', () => {
     expect(mockUpdateEntry).toHaveBeenCalledWith(expect.objectContaining({ _font: -1 }));
   });
 });
+
+describe('SetlistPlayView edit song', () => {
+  it('opens the song editor from the More menu and comes back to the same song', async () => {
+    const navigate = vi.fn();
+    (useSetlistPlayer as Mock).mockReturnValue({
+      setlist: { id: 4, entries: [] },
+      entry: { entry_id: 1, song_id: 42, title: 'Song 3', content: 'C G' },
+      index: 2,
+      total: 5,
+      prev: vi.fn(), next: vi.fn(), exit: vi.fn(), updateEntry: vi.fn(),
+      isModified: false, saveOnline: vi.fn(), saveLocal: vi.fn(),
+    });
+    render(<SetlistPlayView setlistId={4} navigate={navigate} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'More display options' }));
+    fireEvent.click(await screen.findByRole('menuitem', { name: 'Edit song' }));
+
+    expect(navigate).toHaveBeenCalledWith('song-edit', { id: '42', back: 'setlist-play', setlist: '4', index: '2' });
+  });
+});

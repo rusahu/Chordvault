@@ -23,6 +23,7 @@ import { AdminView } from './views/AdminView';
 import { SettingsView } from './views/SettingsView';
 import { AboutView } from './views/AboutView';
 import { api } from './lib/api';
+import { songEditReturn } from './lib/songEditRoute';
 import type { AuthConfig } from './types';
 
 interface Route {
@@ -132,7 +133,7 @@ export function App() {
       case 'song-view':
         return params.id ? <SongView songId={parseInt(params.id)} navigate={navigate} /> : <BrowseView key={listIdentity} navigate={navigate} />;
       case 'song-edit':
-        return <SongEditView songId={params.id ? parseInt(params.id) : undefined} navigate={navigate} />;
+        return <SongEditView songId={params.id ? parseInt(params.id) : undefined} returnTo={songEditReturn(params)} navigate={navigate} />;
       case 'correction':
         return params.id ? <CorrectionView songId={parseInt(params.id)} navigate={navigate} /> : <BrowseView key={listIdentity} navigate={navigate} />;
       case 'auth':
