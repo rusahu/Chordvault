@@ -25,6 +25,7 @@ import { renderChordPro, getSongKey, clampFontSize, songHasKey, resolveEffective
 import { useSetlistPreferences } from '../hooks/useSetlistPreferences';
 import { stepKey } from '../lib/keys';
 import { entrySemitones } from '../lib/setlistKeys';
+import { songEditFromSetlist } from '../lib/songEditRoute';
 import type { Setlist } from '../types';
 
 interface SetlistPlayViewProps {
@@ -264,18 +265,21 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
     overrides: { num: entry._num != null, twoCol: entry._twoCol != null, font: entry._font != null },
     canReset,
   };
+  const editSong = user && !readOnly && !entry.is_private_placeholder
+    ? () => navigate('song-edit', songEditFromSetlist(entry.song_id, 'setlist-play', setlistId, index))
+    : undefined;
   const nav: PlaybackNav = { onPrev: prev, onNext: next, hasPrev: index > 0, hasNext: index < total - 1 };
   const more = (
     <PlaybackMoreMenu nashville={!!effNum} nashvilleDisabled={toolbar.nashvilleDisabled} onNashvilleChange={toggleEntryNum}
       onExportPdf={handleExportAllPdf} onReset={resetEntryLayout} canReset={canReset}
-      bpm={entry.bpm} youtubeUrl={hideYt ? null : entry.youtube_url} />
+      bpm={entry.bpm} youtubeUrl={hideYt ? null : entry.youtube_url} onEdit={editSong} />
   );
 
   return (
     <div ref={containerRef} className={`setlist-play-container${layout === 'desktop' ? '' : ' has-dock'}`}>
       <PlaybackTopBar layout={layout} title={entry.title} position={`${index + 1} of ${total}, ${setlist.name}`}
         nav={nav} onExit={exit} toolbar={toolbar} more={more}
-        bpm={entry.bpm} youtubeUrl={hideYt ? null : entry.youtube_url} />
+        bpm={entry.bpm} youtubeUrl={hideYt ? null : entry.youtube_url} onEdit={editSong} />
 
 
       {editing ? (

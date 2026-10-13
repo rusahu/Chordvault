@@ -1,5 +1,5 @@
 import { ActionIcon, Menu, VisuallyHidden } from '@mantine/core';
-import { IconBrandYoutube, IconCheck, IconDots, IconDownload, IconRestore } from '@tabler/icons-react';
+import { IconBrandYoutube, IconCheck, IconDots, IconDownload, IconPencil, IconRestore } from '@tabler/icons-react';
 
 interface PlaybackMoreMenuProps {
   nashville: boolean;
@@ -10,9 +10,10 @@ interface PlaybackMoreMenuProps {
   canReset: boolean;
   bpm?: number | null;
   youtubeUrl?: string | null;
+  onEdit?: () => void;
 }
 
-export function PlaybackMoreMenu({ nashville, nashvilleDisabled, onNashvilleChange, onExportPdf, onReset, canReset, bpm, youtubeUrl }: PlaybackMoreMenuProps) {
+export function PlaybackMoreMenu({ nashville, nashvilleDisabled, onNashvilleChange, onExportPdf, onReset, canReset, bpm, youtubeUrl, onEdit }: PlaybackMoreMenuProps) {
   return (
     <Menu position="bottom-end" shadow="md" width={240}>
       <Menu.Target>
@@ -25,6 +26,7 @@ export function PlaybackMoreMenu({ nashville, nashvilleDisabled, onNashvilleChan
         </Menu.Item>
         {onExportPdf && <Menu.Item leftSection={<IconDownload size={16} aria-hidden />} onClick={onExportPdf}>Export PDF</Menu.Item>}
         <Menu.Item leftSection={<IconRestore size={16} aria-hidden />} disabled={!canReset} onClick={onReset}>Reset text size and columns</Menu.Item>
+        {onEdit && <Menu.Item leftSection={<IconPencil size={16} aria-hidden />} onClick={onEdit}>Edit song</Menu.Item>}
         {youtubeUrl && <Menu.Item component="a" href={youtubeUrl} target="_blank" rel="noopener" leftSection={<IconBrandYoutube size={16} aria-hidden />}>Watch on YouTube</Menu.Item>}
       </Menu.Dropdown>
     </Menu>

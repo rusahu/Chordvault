@@ -1,5 +1,5 @@
 import { ActionIcon, Button, Divider, Group, Stack, Text, Title } from '@mantine/core';
-import { IconArrowLeft, IconBrandYoutube, IconChevronLeft, IconChevronRight, IconX } from '@tabler/icons-react';
+import { IconArrowLeft, IconBrandYoutube, IconChevronLeft, IconChevronRight, IconPencil, IconX } from '@tabler/icons-react';
 import { useMediaQuery } from '@mantine/hooks';
 import type { ReactNode } from 'react';
 import type { PlaybackLayout } from '../hooks/usePlaybackLayout';
@@ -17,6 +17,7 @@ interface PlaybackTopBarProps {
   more: ReactNode;
   bpm?: number | null;
   youtubeUrl?: string | null;
+  onEdit?: () => void;
 }
 
 function TitleBlock({ title, position, layout, bpm }: { title: string; position: string; layout: PlaybackLayout; bpm?: number | null }) {
@@ -29,7 +30,7 @@ function TitleBlock({ title, position, layout, bpm }: { title: string; position:
   );
 }
 
-export function PlaybackTopBar({ layout, title, position, nav, onExit, toolbar, more, bpm, youtubeUrl }: PlaybackTopBarProps) {
+export function PlaybackTopBar({ layout, title, position, nav, onExit, toolbar, more, bpm, youtubeUrl, onEdit }: PlaybackTopBarProps) {
   const roomy = useMediaQuery('(min-width: 1200px)', true, { getInitialValueInEffect: false });
   if (layout === 'desktop') {
     return (
@@ -42,6 +43,11 @@ export function PlaybackTopBar({ layout, title, position, nav, onExit, toolbar, 
         {youtubeUrl && (
           <ActionIcon component="a" href={youtubeUrl} target="_blank" rel="noopener" size="input-md" aria-label="Watch on YouTube" title="Watch on YouTube">
             <IconBrandYoutube size={22} aria-hidden />
+          </ActionIcon>
+        )}
+        {onEdit && (
+          <ActionIcon size="input-md" aria-label="Edit song" title="Edit song" onClick={onEdit}>
+            <IconPencil size={22} aria-hidden />
           </ActionIcon>
         )}
         <Group flex={1} justify="flex-end" wrap="nowrap">

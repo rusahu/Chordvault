@@ -16,13 +16,15 @@ import { EditorPreview } from '../components/EditorPreview';
 import { detectFormat, toChordPro, ensureKeyDirective, extractDirective, updateDirective } from '../lib/chords';
 import type { Song } from '../types';
 import { EditorActionBar } from '../components/EditorActionBar';
+import type { Destination } from '../lib/songEditRoute';
 
 interface SongEditViewProps {
   songId?: number;
+  returnTo?: Destination;
   navigate: (view: string, params?: Record<string, string>) => void;
 }
 
-export function SongEditView({ songId, navigate }: SongEditViewProps) {
+export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) {
   const apiCall = useApi();
   const { readOnly } = useOffline();
   const { user } = useAuth();
@@ -75,6 +77,11 @@ export function SongEditView({ songId, navigate }: SongEditViewProps) {
     }
   }, [apiCall, user]);
 
+  const leave = (view: string, params?: Record<string, string>) => {
+    if (returnTo) navigate(returnTo.view, returnTo.params);
+    else navigate(view, params);
+  };
+
   const save = async () => {
     const { content } = state;
     if (!extractDirective(content, 'title')?.trim()) { toast(t('songEdit.titleRequired'), 'error'); return; }
@@ -97,7 +104,7 @@ export function SongEditView({ songId, navigate }: SongEditViewProps) {
           content: finalContent, format_detected: fmt, visibility
         });
         toast(t('songEdit.saved'), 'success');
-        navigate('song-view', { id: String(song.id) });
+        leave('song-view', { id: String(song.id) });
       } else {
         const result = await apiCall<{ id: number }>('POST', '/api/songs', {
           content: finalContent, format_detected: fmt, visibility
@@ -114,15 +121,15 @@ modals.openConfirmModal({ children: t('songEdit.confirmDelete'), labels: { confi
     try {
       await apiCall('DELETE', `/api/songs/${song.id}`);
       toast(t('songEdit.deleted'));
-      navigate('my-songs');
+      leave('my-songs');
     } catch (e) { toast((e as Error).message, 'error'); }
 
 } });
 };
 
   const cancel = () => {
-    if (song) navigate('song-view', { id: String(song.id) });
-    else navigate('my-songs');
+    if (song) leave('song-view', { id: String(song.id) });
+    else leave('my-songs');
   };
 
   const isOwner = !song || (user && song && user.id === song.user_id);
@@ -145,7 +152,7 @@ modals.openConfirmModal({ children: t('songEdit.confirmDelete'), labels: { confi
         content: finalContent
       });
       toast('Version created successfully', 'success');
-      navigate('song-view', { id: String(result.id) });
+      leave('song-view', { id: String(result.id) });
     } catch (e) { toast((e as Error).message, 'error'); }
   };
 

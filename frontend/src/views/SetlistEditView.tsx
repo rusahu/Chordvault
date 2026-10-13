@@ -21,6 +21,7 @@ import { EmptyState } from '../components/EmptyState';
 import { SetlistEntryCard } from '../components/SetlistEntryCard';
 import type { Setlist, SongListItem } from '../types';
 import { useDragReorder } from '../hooks/useDragReorder';
+import { songEditFromSetlist } from '../lib/songEditRoute';
 
 interface SetlistEditViewProps {
   setlistId: number | string;
@@ -260,12 +261,18 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
     }
   };
 
+  const editSong = (idx: number) => {
+    navigate('song-edit', songEditFromSetlist(reorderedEntries[idx].song_id, 'setlist-edit', setlistId));
+  };
+
   const copyShareLink = () => {
     const url = window.location.origin + window.location.pathname + `#setlist/${setlistId}`;
     copyWithFeedback(url);
   };
 
   const isEditable = !readOnly && (isLocal || (setlist?.user_id != null && user != null && setlist.user_id === user.id));
+
+  const canEditSongs = !!user && !readOnly;
 
   if (!setlist) return <Loading />;
 
@@ -329,6 +336,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
               onRemove={removeEntry}
               onStepKey={handleStepEntryKey}
               onClick={handleItemClick}
+              onEdit={canEditSongs && !entry.is_private_placeholder ? editSong : undefined}
               dragProps={isEditable ? dragProps(idx) : undefined}
               handleProps={isEditable ? handleProps(idx) : undefined}
               isDragging={draggedIdx === idx}

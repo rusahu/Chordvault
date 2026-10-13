@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { SetlistEntryCard } from '../SetlistEntryCard';
 import type { SetlistEntry } from '../../types';
 
@@ -57,5 +57,28 @@ describe('SetlistEntryCard private badge', () => {
         onRemove={vi.fn()} onStepKey={vi.fn()} onClick={vi.fn()} t={(k) => k} />
     );
     expect(getByText('Private')).toBeInTheDocument();
+  });
+});
+
+describe('SetlistEntryCard edit song', () => {
+  it('opens the editor without starting playback, even on a read-only setlist', () => {
+    const onEdit = vi.fn();
+    const onClick = vi.fn();
+    const { getByRole, queryByText } = render(
+      <SetlistEntryCard entry={ENTRY} idx={3} isEditable={false} isLocal={false}
+        onRemove={vi.fn()} onStepKey={vi.fn()} onClick={onClick} onEdit={onEdit} t={(k) => k} />
+    );
+    expect(queryByText('♭')).toBeNull();
+    fireEvent.click(getByRole('button', { name: 'songView.edit' }));
+    expect(onEdit).toHaveBeenCalledWith(3);
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
+  it('has no Edit button without onEdit', () => {
+    const { queryByRole } = render(
+      <SetlistEntryCard entry={ENTRY} idx={0} isEditable isLocal={false}
+        onRemove={vi.fn()} onStepKey={vi.fn()} onClick={vi.fn()} t={(k) => k} />
+    );
+    expect(queryByRole('button', { name: 'songView.edit' })).toBeNull();
   });
 });
