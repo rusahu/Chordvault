@@ -151,6 +151,8 @@
   "nav.mySetlists": "My Sets",
 
   "offline.title": "Offline library",
+  "offline.updateReady": "A new version of ChordVault is ready.",
+  "offline.reload": "Reload",
   "offline.enable": "Keep my library offline",
   "offline.notPersisted": "Your browser may clear offline songs when storage is low. Adding ChordVault to your home screen helps keep them.",
   "offline.retryPersist": "Try again",
@@ -168,6 +170,5 @@
   "offline.viewing": "Viewing only.",
   "offline.onlyDownloaded": "Only downloaded songs are available.",
   "offline.connectToEdit": "Connect to make changes.",
-  "offline.updateReady": "Update ready. Close all ChordVault windows and reopen to apply after your session.",
   "offline.noDownload": "No completed download on this device. Connect and refresh your library."
 }

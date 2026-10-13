@@ -21,7 +21,8 @@ export default defineConfig({
       ],
     },
     workbox: {
-      skipWaiting: false, clientsClaim: false,
+      // Waits for Reload in the update banner; then claims uncontrolled tabs too, so every tab reloads.
+      skipWaiting: false, clientsClaim: true,
       navigateFallback: 'index.html', navigateFallbackDenylist: [/^\/api\//],
       maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
       globPatterns: ['**/*.{js,css,html,woff,woff2,ttf,json,svg,png}'],
