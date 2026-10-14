@@ -116,3 +116,13 @@ test('a stored Gemini key that no longer decrypts is a 500 on both OCR routes', 
     await expectError(request, path, { ...account, method: 'POST', body: { image: 'data:image/png;base64,YQ==', history: [], message: 'x' } }, 500, 'Failed to decrypt API key. Try re-saving it in Settings.');
   }
 });
+
+test('versions and corrections require a title and a known language', async t => {
+  const request = await serve(t, mount);
+  const noTitle = '[C]Grace';
+  const badLanguage = '{title: Grace}\n{x_language: zz}\n[C]Grace';
+  for (const path of [`/api/songs/${songId}/version`, `/api/songs/${songId}/correction`]) {
+    await expectError(request, path, { ...other, method: 'POST', body: { content: noTitle } }, 400, 'Title is required. Add {title: Song Name} to your content.');
+    await expectError(request, path, { ...other, method: 'POST', body: { content: badLanguage } }, 400, 'Invalid language code');
+  }
+});
