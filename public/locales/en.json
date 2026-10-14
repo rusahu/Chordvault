@@ -67,6 +67,17 @@
   "songEdit.deleted": "Song deleted",
   "songEdit.confirmDelete": "Delete this song? This cannot be undone.",
 
+  "tag.worship": "worship",
+  "tag.praise": "praise",
+  "tag.hymn": "hymn",
+  "tag.opener": "opener",
+  "tag.closer": "closer",
+  "tag.communion": "communion",
+  "tag.christmas": "christmas",
+  "tag.easter": "easter",
+  "tag.kids": "kids",
+  "tag.instrumental": "instrumental",
+
   "admin.title": "Admin",
   "admin.users": "Users",
   "admin.songs": "Songs",
