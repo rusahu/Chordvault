@@ -64,3 +64,16 @@ test('password change keeps its messages', async t => {
     assert.deepEqual(await response.json(), { error });
   }
 });
+
+test('an invite used between the check and the redemption returns 400', async t => {
+  const Invite = require('../lib/models/invite');
+  const request = await serve(t, mount);
+  const { code } = await (await request('/api/admin/invites', { ...admin, method: 'POST' })).json();
+  const unused = Invite.findByCode(code);
+  assert.equal((await request('/api/auth/redeem-invite', { method: 'POST', body: { code, username: 'race-first', password: 'secret1' } })).status, 200);
+  t.mock.method(Invite, 'findByCode', () => unused);
+  const response = await request('/api/auth/redeem-invite', { method: 'POST', body: { code, username: 'race-second', password: 'secret1' } });
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { error: 'Invalid or already used invite code' });
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM users WHERE username = 'race-second'").get().n, 0);
+});
