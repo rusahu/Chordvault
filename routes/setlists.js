@@ -1,18 +1,16 @@
 const express = require('express');
 const { requireAuth, optionalAuth } = require('../lib/auth');
 const { STATUS, VISIBILITY, LIMITS } = require('../lib/constants');
-const { validateListQuery, validateObjectBody, parseId, validateSetlistInput, validateTargetKey, canonicalTargetKey, parsePaginationParams } = require('../lib/validation');
+const { validateListQuery, validateObjectBody, parseId, requireId, assertValid, validateSetlistInput, validateTargetKey, canonicalTargetKey, parsePaginationParams } = require('../lib/validation');
+const { AppError, requireFound } = require('../lib/errors');
 const Setlist = require('../lib/models/setlist');
 const Song = require('../lib/models/song');
 const { maskSetlistEntry } = require('../lib/songAccess');
 
-function resolveSetlist(res, setlistId, userId) {
-  const setlist = Setlist.findById(setlistId, userId);
-  if (!setlist) {
-    res.status(404).json({ error: 'Setlist not found' });
-    return null;
-  }
-  return setlist;
+const requireSetlistId = raw => requireId(raw, 'Invalid setlist ID');
+
+function resolveSetlist(setlistId, userId) {
+  return requireFound(Setlist.findById(setlistId, userId), 'Setlist not found');
 }
 
 function createSetlistsRouter() {
@@ -27,8 +25,7 @@ function createSetlistsRouter() {
 
   router.post('/setlists', requireAuth, (req, res) => {
     const { name, visibility, event_date } = req.body;
-    const validationError = validateSetlistInput(name, event_date);
-    if (validationError) return res.status(400).json({ error: validationError });
+    assertValid(validateSetlistInput(name, event_date));
     const vis = visibility === VISIBILITY.PRIVATE ? VISIBILITY.PRIVATE : VISIBILITY.PUBLIC;
     const result = Setlist.create(req.user.id, name.trim(), vis, event_date || null);
     res.json({ id: result.lastInsertRowid, name: name.trim() });
@@ -41,85 +38,70 @@ function createSetlistsRouter() {
   });
 
   router.get('/setlists/public/:id', optionalAuth, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid setlist ID' });
-    const setlist = Setlist.findPublicById(id);
-    if (!setlist) return res.status(404).json({ error: 'Setlist not found' });
+    const id = requireSetlistId(req.params.id);
+    const setlist = requireFound(Setlist.findPublicById(id), 'Setlist not found');
     const entries = Setlist.getEntries(id);
     const safeEntries = entries.map(entry => maskSetlistEntry(entry, req.user));
     res.json({ ...setlist, entries: safeEntries });
   });
 
   router.get('/setlists/:id', requireAuth, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid setlist ID' });
-    const setlist = resolveSetlist(res, id, req.user.id);
-    if (!setlist) return;
+    const id = requireSetlistId(req.params.id);
+    const setlist = resolveSetlist(id, req.user.id);
     const entries = Setlist.getEntries(id);
     const safeEntries = entries.map(entry => maskSetlistEntry(entry, req.user));
     res.json({ ...setlist, entries: safeEntries });
   });
 
   router.put('/setlists/:id', requireAuth, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid setlist ID' });
+    const id = requireSetlistId(req.params.id);
     const { name, visibility, event_date } = req.body;
-    const validationError = validateSetlistInput(name, event_date);
-    if (validationError) return res.status(400).json({ error: validationError });
+    assertValid(validateSetlistInput(name, event_date));
     const vis = visibility === VISIBILITY.PRIVATE ? VISIBILITY.PRIVATE : VISIBILITY.PUBLIC;
     const result = Setlist.update(id, req.user.id, name.trim(), vis, event_date !== undefined ? (event_date || null) : null);
-    if (!result.changes) return res.status(404).json({ error: 'Setlist not found' });
+    if (!result.changes) throw new AppError('Setlist not found', 404);
     res.json({ success: true });
   });
 
   router.delete('/setlists/:id', requireAuth, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid setlist ID' });
+    const id = requireSetlistId(req.params.id);
     const result = Setlist.delete(id, req.user.id);
-    if (!result.changes) return res.status(404).json({ error: 'Setlist not found' });
+    if (!result.changes) throw new AppError('Setlist not found', 404);
     res.json({ success: true });
   });
 
   router.post('/setlists/:id/songs', requireAuth, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid setlist ID' });
-    if (!resolveSetlist(res, id, req.user.id)) return;
+    const id = requireSetlistId(req.params.id);
+    resolveSetlist(id, req.user.id);
     const { song_id, target_key, nashville } = req.body;
-    if (!song_id) return res.status(400).json({ error: 'song_id is required' });
-    const songIdParsed = parseId(song_id);
-    if (!songIdParsed) return res.status(400).json({ error: 'Invalid song_id' });
-    const keyErr = validateTargetKey(target_key);
-    if (keyErr) return res.status(400).json({ error: keyErr });
+    if (!song_id) throw new AppError('song_id is required', 400);
+    const songIdParsed = requireId(song_id, 'Invalid song_id');
+    assertValid(validateTargetKey(target_key));
     if (nashville !== undefined && typeof nashville !== 'boolean' && nashville !== 0 && nashville !== 1) {
-      return res.status(400).json({ error: 'Nashville must be a boolean' });
+      throw new AppError('Nashville must be a boolean', 400);
     }
-    const song = Song.findById(songIdParsed);
-    if (!song) return res.status(404).json({ error: 'Song not found' });
-    if (song.status === STATUS.PENDING) return res.status(400).json({ error: 'Cannot add a pending correction to a setlist' });
+    const song = requireFound(Song.findById(songIdParsed), 'Song not found');
+    if (song.status === STATUS.PENDING) throw new AppError('Cannot add a pending correction to a setlist', 400);
     if (song.user_id !== req.user.id && song.visibility !== VISIBILITY.PUBLIC) {
-      return res.status(403).json({ error: 'Cannot add a private song you don\'t own' });
+      throw new AppError('Cannot add a private song you don\'t own', 403);
     }
     const result = Setlist.addSongEntry(id, songIdParsed, { targetKey: target_key == null ? null : canonicalTargetKey(target_key), nashville });
     res.json({ entry_id: result.entry_id, position: result.position });
   });
 
   router.put('/setlists/:setlistId/entries/:entryId', requireAuth, (req, res) => {
-    const setlistId = parseId(req.params.setlistId);
-    const entryId = parseId(req.params.entryId);
-    if (!setlistId) return res.status(400).json({ error: 'Invalid setlist ID' });
-    if (!entryId) return res.status(400).json({ error: 'Invalid entry ID' });
-    if (!resolveSetlist(res, setlistId, req.user.id)) return;
-    const entry = Setlist.getEntryById(entryId, setlistId);
-    if (!entry) return res.status(404).json({ error: 'Entry not found' });
+    const setlistId = requireSetlistId(req.params.setlistId);
+    const entryId = requireId(req.params.entryId, 'Invalid entry ID');
+    resolveSetlist(setlistId, req.user.id);
+    const entry = requireFound(Setlist.getEntryById(entryId, setlistId), 'Entry not found');
     const { target_key, nashville, font, two_col, content_override } = req.body;
-    const keyErr = validateTargetKey(target_key);
-    if (keyErr) return res.status(400).json({ error: keyErr });
+    assertValid(validateTargetKey(target_key));
     if (nashville !== undefined && typeof nashville !== 'boolean' && nashville !== 0 && nashville !== 1) {
-      return res.status(400).json({ error: 'Nashville must be a boolean' });
+      throw new AppError('Nashville must be a boolean', 400);
     }
-    if (content_override != null && typeof content_override !== 'string') return res.status(400).json({ error: 'Content override must be a string or null' });
+    if (content_override != null && typeof content_override !== 'string') throw new AppError('Content override must be a string or null', 400);
     if (content_override !== undefined && content_override !== null && content_override.length > LIMITS.MAX_CONTENT) {
-      return res.status(400).json({ error: 'Content override too large (max 100KB)' });
+      throw new AppError('Content override too large (max 100KB)', 400);
     }
     Setlist.updateSongEntry(entryId, setlistId, entry, {
       targetKey: target_key == null ? null : canonicalTargetKey(target_key),
@@ -133,28 +115,25 @@ function createSetlistsRouter() {
   });
 
   router.delete('/setlists/:setlistId/entries/:entryId', requireAuth, (req, res) => {
-    const setlistId = parseId(req.params.setlistId);
-    const entryId = parseId(req.params.entryId);
-    if (!setlistId) return res.status(400).json({ error: 'Invalid setlist ID' });
-    if (!entryId) return res.status(400).json({ error: 'Invalid entry ID' });
-    if (!resolveSetlist(res, setlistId, req.user.id)) return;
+    const setlistId = requireSetlistId(req.params.setlistId);
+    const entryId = requireId(req.params.entryId, 'Invalid entry ID');
+    resolveSetlist(setlistId, req.user.id);
     const result = Setlist.deleteSongEntry(entryId, setlistId);
-    if (!result.changes) return res.status(404).json({ error: 'Entry not found' });
+    if (!result.changes) throw new AppError('Entry not found', 404);
     res.json({ success: true });
   });
 
   router.put('/setlists/:id/reorder', requireAuth, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid setlist ID' });
-    if (!resolveSetlist(res, id, req.user.id)) return;
+    const id = requireSetlistId(req.params.id);
+    resolveSetlist(id, req.user.id);
     const { entry_ids } = req.body;
-    if (!Array.isArray(entry_ids)) return res.status(400).json({ error: 'entry_ids array is required' });
-    if (entry_ids.length > LIMITS.MAX_REORDER) return res.status(400).json({ error: 'Too many entries' });
+    if (!Array.isArray(entry_ids)) throw new AppError('entry_ids array is required', 400);
+    if (entry_ids.length > LIMITS.MAX_REORDER) throw new AppError('Too many entries', 400);
     const parsedIds = entry_ids.map(e => parseId(e));
-    if (parsedIds.some(e => e === null)) return res.status(400).json({ error: 'All entry_ids must be valid integers' });
-    if (new Set(parsedIds).size !== parsedIds.length) return res.status(400).json({ error: 'Duplicate entry_ids are not allowed' });
+    if (parsedIds.some(e => e === null)) throw new AppError('All entry_ids must be valid integers', 400);
+    if (new Set(parsedIds).size !== parsedIds.length) throw new AppError('Duplicate entry_ids are not allowed', 400);
     const entries = Setlist.getEntries(id);
-    if (parsedIds.length !== entries.length) return res.status(400).json({ error: 'entry_ids count must match the number of entries in the setlist' });
+    if (parsedIds.length !== entries.length) throw new AppError('entry_ids count must match the number of entries in the setlist', 400);
     Setlist.reorderEntries(id, parsedIds);
     res.json({ success: true });
   });
