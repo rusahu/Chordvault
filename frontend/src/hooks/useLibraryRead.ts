@@ -6,20 +6,8 @@ import { useOffline } from '../context/OfflineContext';
 import { offlineLibrary } from '../lib/offlineLibrary';
 import { readLibraryResource } from '../lib/libraryReader';
 import type { Song, SongVersion, Setlist, SongListItem, SetlistListItem } from '../types';
-import type { LibraryQuery } from '../types/offline';
-
-type Page<T, K extends string> = { total: number; page: number; limit: number; totalPages: number } & Record<K, T[]>;
-
-function queryString(query: LibraryQuery) {
-  const params = new URLSearchParams();
-  if (query.q) params.set('q', query.q);
-  if (query.language) params.set('language', query.language);
-  if (query.dateFrom) params.set('date_from', query.dateFrom);
-  if (query.dateTo) params.set('date_to', query.dateTo);
-  params.set('page', String(query.page || 1));
-  params.set('limit', String(query.limit || 20));
-  return `?${params.toString().replace(/\+/g, '%20')}`;
-}
+import type { LibraryPage, LibraryQuery } from '../types/offline';
+import { libraryQueryString } from '../lib/libraryQuery';
 
 export function useLibraryRead() {
   const call = useApi();
@@ -44,8 +32,8 @@ export function useLibraryRead() {
       getSong: (id: number) => read<Song>(`/api/songs/${id}`, account => offlineLibrary.getSong(account, id), account => offlineLibrary.getSong(account, id)),
       getVersions: (id: number) => read<SongVersion[]>(`/api/songs/${id}/versions`, account => offlineLibrary.getVersions(account, id), account => offlineLibrary.getSong(account, id)),
       getSetlist: (id: number, publicOnly = false) => read<Setlist>(`/api/setlists/${publicOnly ? 'public/' : ''}${id}`, account => offlineLibrary.getSetlist(account, id), account => offlineLibrary.getSetlist(account, id)),
-      querySongs: (query: LibraryQuery) => read<Page<SongListItem, 'songs'>>(`/api/songs${query.own ? '' : '/public'}${queryString(query)}`, account => offlineLibrary.querySongs(account, query)),
-      querySetlists: (query: LibraryQuery) => read<Page<SetlistListItem, 'setlists'>>(`/api/setlists${queryString(query)}`, account => offlineLibrary.querySetlists(account, query)),
+      querySongs: (query: LibraryQuery) => read<LibraryPage<SongListItem, 'songs'>>(`/api/songs${query.own ? '' : '/public'}${libraryQueryString(query)}`, account => offlineLibrary.querySongs(account, query)),
+      querySetlists: (query: LibraryQuery) => read<LibraryPage<SetlistListItem, 'setlists'>>(`/api/setlists${libraryQueryString(query)}`, account => offlineLibrary.querySetlists(account, query)),
     };
   }, [call, accountId, reportSource]);
 }

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { AdminView } from '../AdminView';
+import { showStatusNotification } from '../../lib/notifications';
 
 const { api } = vi.hoisted(() => ({ api: vi.fn() }));
 vi.mock('../../hooks/useApi', () => ({ useApi: () => api }));
@@ -10,6 +11,7 @@ vi.mock('../../context/I18nContext', () => ({ useI18n: () => ({ t: (key: string)
 vi.mock('../../lib/notifications', () => ({ showStatusNotification: vi.fn() }));
 
 beforeEach(() => {
+  vi.mocked(showStatusNotification).mockClear();
   api.mockReset();
   api.mockImplementation((method: string, path: string) => {
     if (method !== 'GET') return new Promise(() => {});
@@ -59,4 +61,16 @@ it.each(['{Enter}', ' '])('navigates cards with %s and keeps nested Delete activ
   expect(await screen.findByRole('button', { name: 'Confirm' })).toBeInTheDocument();
   expect(navigate).not.toHaveBeenCalled();
   expect(api.mock.calls.filter(([method]) => method !== 'GET')).toHaveLength(0);
+});
+
+it('reports a failed write once and frees the action for a retry', async () => {
+  const read = api.getMockImplementation()!;
+  api.mockImplementation((method: string, path: string) => method === 'GET' ? read(method, path) : Promise.reject(new Error('Write failed')));
+  render(<AdminView navigate={vi.fn()} />);
+  const promote = await screen.findByRole('button', { name: 'admin.promote' });
+  fireEvent.click(promote);
+  fireEvent.click(await screen.findByRole('button', { name: 'Confirm' }));
+  await waitFor(() => expect(showStatusNotification).toHaveBeenCalledWith('Write failed', 'error'));
+  expect(showStatusNotification).toHaveBeenCalledOnce();
+  await waitFor(() => expect(promote).toBeEnabled());
 });

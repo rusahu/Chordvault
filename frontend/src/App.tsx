@@ -2,7 +2,8 @@ import { useI18n } from './context/I18nContext';
 import { usePlaybackLayout } from './hooks/usePlaybackLayout';
 import { Alert, Badge } from '@mantine/core';
 import { useOffline } from './context/OfflineContext';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useWriteLock } from './hooks/useWriteLock';
+import { useState, useEffect, useCallback } from 'react';
 import { useWindowEvent } from '@mantine/hooks';
 import { useAuth } from './context/AuthContext';
 import { useDemo } from './context/DemoContext';
@@ -70,8 +71,7 @@ export function App() {
   const { user } = useAuth();
   const { readOnly } = useOffline();
   const { setDemoMode } = useDemo();
-  const locked = useRef(readOnly);
-  useEffect(() => { locked.current = readOnly; }, [readOnly]);
+  const isWriteLocked = useWriteLock();
   const listIdentity = user?.id ?? 'guest';
   const [route, setRoute] = useState<Route>(() => parseHash());
   const [animClass, setAnimClass] = useState('');
@@ -96,7 +96,7 @@ export function App() {
   });
 
   const navigate = useCallback((view: string, params: Record<string, string> = {}) => {
-    if ((navigator.onLine === false || locked.current) && ['song-edit', 'correction', 'admin', 'auth'].includes(view)) return;
+    if (isWriteLocked() && ['song-edit', 'correction', 'admin', 'auth'].includes(view)) return;
     // Trigger animation
     setAnimClass('');
     requestAnimationFrame(() => {
@@ -118,7 +118,7 @@ export function App() {
       // Use replaceState to clear hash without triggering hashchange (which would race with the rAF setRoute above)
       history.replaceState(null, '', location.pathname + location.search);
     }
-  }, []);
+  }, [isWriteLocked]);
 
 
 

@@ -3,14 +3,17 @@ import { useOffline } from '../context/OfflineContext';
 import { SearchField } from '../components/SearchField';
 import { SearchRow } from '../components/SearchRow';
 import { IconCalendar, IconSearch } from '@tabler/icons-react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useI18n } from '../context/I18nContext';
 import { SetlistCard } from '../components/SetlistCard';
 import { EmptyState } from '../components/EmptyState';
 import { Pagination } from '../components/Pagination';
 import type { SetlistListItem } from '../types';
-import { useSearchSessionValue, searchPage } from '../hooks/useSearchSessionValue';
+import { useSearchSessionValue } from '../hooks/useSearchSessionValue';
+import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
+import { libraryQueryString } from '../lib/libraryQuery';
+import type { LibraryPage, LibraryQuery } from '../types/offline';
 import { PageTitle } from '../components/PageTitle';
 
 interface PublicSetlistsViewProps {
@@ -21,9 +24,6 @@ export function PublicSetlistsView({ navigate }: PublicSetlistsViewProps) {
   const { readOnly } = useOffline();
   const apiCall = useApi();
   const { t } = useI18n();
-  const [setlists, setSetlists] = useState<SetlistListItem[]>([]);
-  const [loadError, setLoadError] = useState('');
-  const [loaded, setLoaded] = useState(false);
   const [savedQuery, saveQuery] = useSearchSessionValue('cv_publicsetlists_query');
   const [query, setQuery] = useState(savedQuery);
   const [savedDateFrom, saveDateFrom] = useSearchSessionValue('cv_publicsetlists_date_from');
@@ -32,61 +32,23 @@ export function PublicSetlistsView({ navigate }: PublicSetlistsViewProps) {
   const [dateTo, setDateTo] = useState(savedDateTo);
   const [savedShowDates, saveShowDates] = useSearchSessionValue('cv_publicsetlists_show_dates', 'false');
   const showDates = savedShowDates === 'true';
-  const [savedPage, savePage] = useSearchSessionValue('cv_publicsetlists_page', '1');
-  const [page, setPage] = useState(() => searchPage(savedPage));
-  const [totalPages, setTotalPages] = useState(1);
-
-  const active = useRef(false);
-  useEffect(() => {
-    active.current = true;
-    return () => { active.current = false; };
-  }, []);
-
-  const load = useCallback(async (q = '', from = '', to = '', targetPage = 1) => {
-    setLoadError('');
-    const params: string[] = [];
-    if (q) params.push(`q=${encodeURIComponent(q)}`);
-    if (from) params.push(`date_from=${encodeURIComponent(from)}`);
-    if (to) params.push(`date_to=${encodeURIComponent(to)}`);
-    params.push(`page=${targetPage}`);
-    params.push(`limit=20`);
-    const qs = params.length > 0 ? `?${params.join('&')}` : '';
-    try {
-      interface PaginatedSetlistsResponse {
-        setlists: SetlistListItem[];
-        total: number;
-        page: number;
-        limit: number;
-        totalPages: number;
-      }
-      const data = await apiCall<PaginatedSetlistsResponse>('GET', `/api/setlists/public${qs}`);
-      if (!active.current) return;
-      setSetlists(data.setlists);
-      setPage(data.page);
-      setTotalPages(data.totalPages);
-      setLoaded(true);
-
-      saveQuery(q);
-      saveDateFrom(from);
-      saveDateTo(to);
-      savePage(String(data.page));
-    } catch (e) { if (active.current) { setLoadError((e as Error).message); setSetlists([]); } }
-  }, [apiCall, saveQuery, saveDateFrom, saveDateTo, savePage]);
-
-  useEffect(() => {
-    load(query, dateFrom, dateTo, page);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load]);
+  const fetchPublicSetlists = useCallback((filters: LibraryQuery) =>
+    apiCall<LibraryPage<SetlistListItem, 'setlists'>>('GET', `/api/setlists/public${libraryQueryString(filters)}`), [apiCall]);
+  const { items: setlists, page, totalPages, loaded, loadError, load } = usePaginatedSearch({
+    pageKey: 'cv_publicsetlists_page', listKey: 'setlists', fetchPage: fetchPublicSetlists,
+    filters: { q: query, dateFrom, dateTo },
+    persist: ({ q = '', dateFrom = '', dateTo = '' }) => { saveQuery(q); saveDateFrom(dateFrom); saveDateTo(dateTo); },
+  });
 
   const handleClear = () => {
     setQuery('');
-    load('', dateFrom, dateTo, 1);
+    load({ q: '', dateFrom, dateTo });
   };
 
-  const handleSearch = () => load(query, dateFrom, dateTo, 1);
+  const handleSearch = () => load({ q: query, dateFrom, dateTo });
 
   const handlePageChange = (newPage: number) => {
-    load(query, dateFrom, dateTo, newPage);
+    load({ q: query, dateFrom, dateTo }, newPage);
     window.scrollTo(0, 0);
   };
 
@@ -124,8 +86,8 @@ export function PublicSetlistsView({ navigate }: PublicSetlistsViewProps) {
           </SearchRow>
           {showDates && (
             <SearchRow mt={-10}>
-              <TextInput label={<>From</>} type="date" flex={1} miw={0} value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); load(query, e.target.value, dateTo, 1); }} />
-              <TextInput label={<>To</>} type="date" flex={1} miw={0} value={dateTo} onChange={(e) => { setDateTo(e.target.value); load(query, dateFrom, e.target.value, 1); }} />
+              <TextInput label={<>From</>} type="date" flex={1} miw={0} value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); load({ q: query, dateFrom: e.target.value, dateTo }); }} />
+              <TextInput label={<>To</>} type="date" flex={1} miw={0} value={dateTo} onChange={(e) => { setDateTo(e.target.value); load({ q: query, dateFrom, dateTo: e.target.value }); }} />
             </SearchRow>
           )}
         </>

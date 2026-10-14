@@ -6,6 +6,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { db } = require('../lib/db');
 const { createSetlistsRouter } = require('../routes/setlists');
+const { errorHandler } = require('../lib/errors');
 
 // Drives the real routes over a real HTTP listener against a throwaway
 // in-memory database. The unit tests cover validateTargetKey/canonicalTargetKey
@@ -22,6 +23,7 @@ const token = jwt.sign({ id: userId }, process.env.JWT_SECRET);
 const app = express();
 app.use(express.json());
 app.use('/api', createSetlistsRouter());
+app.use(errorHandler);
 const server = app.listen(0);
 server.unref();
 test.after(() => server.close());

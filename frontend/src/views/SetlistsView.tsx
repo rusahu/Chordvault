@@ -4,7 +4,7 @@ import { useOffline } from '../context/OfflineContext';
 import { SearchField } from '../components/SearchField';
 import { SearchRow } from '../components/SearchRow';
 import { IconCalendar, IconPlus, IconMusic } from '@tabler/icons-react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
@@ -13,8 +13,8 @@ import { useLocalSetlists } from '../hooks/useLocalSetlists';
 import { SetlistCard } from '../components/SetlistCard';
 import { EmptyState } from '../components/EmptyState';
 import { Pagination } from '../components/Pagination';
-import type { SetlistListItem } from '../types';
-import { useSearchSessionValue, searchPage } from '../hooks/useSearchSessionValue';
+import { useSearchSessionValue } from '../hooks/useSearchSessionValue';
+import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
 import { PageTitle } from '../components/PageTitle';
 
 interface SetlistsViewProps {
@@ -32,9 +32,6 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
 
   const activeTab = user ? 'cloud' : 'local';
 
-  const [setlists, setSetlists] = useState<SetlistListItem[]>([]);
-  const [loadError, setLoadError] = useState('');
-  const [loaded, setLoaded] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
   const [savedQuery, saveQuery] = useSearchSessionValue('cv_setlists_query');
@@ -45,43 +42,13 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
   const [dateTo, setDateTo] = useState(savedDateTo);
   const [savedShowDates, saveShowDates] = useSearchSessionValue('cv_setlists_show_dates', 'false');
   const showDates = savedShowDates === 'true';
-  const [savedPage, savePage] = useSearchSessionValue('cv_setlists_page', '1');
-  const [page, setPage] = useState(() => searchPage(savedPage));
-  const [totalPages, setTotalPages] = useState(1);
   const nameRef = useRef<HTMLInputElement>(null);
-
-  const active = useRef(false);
-  useEffect(() => {
-    active.current = true;
-    return () => { active.current = false; };
-  }, []);
-
-  const load = useCallback(async (q = '', from = '', to = '', targetPage = 1) => {
-    setLoadError('');
-    if (!user) return;
-    try {
-      const data = await querySetlists({ q, dateFrom: from, dateTo: to, page: targetPage });
-      if (!active.current) return;
-      setSetlists(data.setlists);
-      setPage(data.page);
-      setTotalPages(data.totalPages);
-      setLoaded(true);
-
-      saveQuery(q);
-      saveDateFrom(from);
-      saveDateTo(to);
-      savePage(String(data.page));
-    } catch (e) { if (active.current) { setLoadError((e as Error).message); setSetlists([]); } }
-  }, [querySetlists, user, saveQuery, saveDateFrom, saveDateTo, savePage]);
-
-  useEffect(() => {
-    if (activeTab === 'cloud') {
-      load(query, dateFrom, dateTo, page);
-    } else {
-      setLoaded(true);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load, activeTab]);
+  const { items: setlists, page, totalPages, loaded, loadError, load } = usePaginatedSearch({
+    pageKey: 'cv_setlists_page', listKey: 'setlists', fetchPage: querySetlists,
+    filters: { q: query, dateFrom, dateTo },
+    persist: ({ q = '', dateFrom = '', dateTo = '' }) => { saveQuery(q); saveDateFrom(dateFrom); saveDateTo(dateTo); },
+    enabled: activeTab === 'cloud',
+  });
 
   useEffect(() => { if (showNew && nameRef.current) nameRef.current.focus(); }, [showNew]);
 
@@ -109,19 +76,19 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
     if (activeTab === 'local') {
       saveQuery('');
     } else {
-      load('', dateFrom, dateTo, 1);
+      load({ q: '', dateFrom, dateTo });
     }
   };
 
   const handleSearch = () => {
     if (activeTab === 'cloud') {
-      load(query, dateFrom, dateTo, 1);
+      load({ q: query, dateFrom, dateTo });
     }
   };
 
   const handlePageChange = (newPage: number) => {
     if (activeTab === 'cloud') {
-      load(query, dateFrom, dateTo, newPage);
+      load({ q: query, dateFrom, dateTo }, newPage);
       window.scrollTo(0, 0);
     }
   };

@@ -106,6 +106,8 @@
   "admin.importDescription": "Bulk-import ChordPro files. Duplicates already in your library are skipped.",
 
   "common.loading": "Loading...",
+  "common.confirm": "Confirm",
+  "common.cancel": "Cancel",
 
   "nav.setlists": "Setlists",
 

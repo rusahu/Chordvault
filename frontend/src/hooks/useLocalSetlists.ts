@@ -1,13 +1,11 @@
-import { useOffline } from '../context/OfflineContext';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import type { LocalSetlist, LocalSetlistEntry } from '../types';
 import { getLocalSetlists, saveLocalSetlists } from '../lib/storage';
 import { MAX_LOCAL_SETLISTS, MAX_LOCAL_ENTRIES } from '../lib/constants';
+import { useWriteLock } from './useWriteLock';
 
 export function useLocalSetlists() {
-  const { readOnly } = useOffline();
-  const locked = useRef(readOnly);
-  useEffect(() => { locked.current = readOnly; }, [readOnly]);
+  const isWriteLocked = useWriteLock();
   const [setlists, setSetlists] = useState<LocalSetlist[]>(() => getLocalSetlists());
 
   const refresh = useCallback(() => {
@@ -15,7 +13,7 @@ export function useLocalSetlists() {
   }, []);
 
   const create = useCallback((name: string): LocalSetlist | null => {
-    if (locked.current || navigator.onLine === false) return null;
+    if (isWriteLocked()) return null;
     const all = getLocalSetlists();
     if (all.length >= MAX_LOCAL_SETLISTS) return null;
     const sl: LocalSetlist = { id: 'local_' + Date.now(), name, entries: [] };
@@ -23,28 +21,28 @@ export function useLocalSetlists() {
     saveLocalSetlists(all);
     setSetlists(all);
     return sl;
-  }, []);
+  }, [isWriteLocked]);
 
   const remove = useCallback((id: string) => {
-    if (locked.current || navigator.onLine === false) return ;
+    if (isWriteLocked()) return ;
     const all = getLocalSetlists().filter((s) => s.id !== id);
     saveLocalSetlists(all);
     setSetlists(all);
-  }, []);
+  }, [isWriteLocked]);
 
   const rename = useCallback((id: string, name: string) => {
-    if (locked.current || navigator.onLine === false) return ;
+    if (isWriteLocked()) return ;
     const all = getLocalSetlists();
     const sl = all.find((s) => s.id === id);
     if (sl) { sl.name = name; saveLocalSetlists(all); setSetlists([...all]); }
-  }, []);
+  }, [isWriteLocked]);
 
   const getOne = useCallback((id: string): LocalSetlist | undefined => {
     return getLocalSetlists().find((s) => s.id === id);
   }, []);
 
   const addEntry = useCallback((id: string, entry: LocalSetlistEntry): boolean => {
-    if (locked.current || navigator.onLine === false) return false;
+    if (isWriteLocked()) return false;
     const all = getLocalSetlists();
     const sl = all.find((s) => s.id === id);
     if (!sl || sl.entries.length >= MAX_LOCAL_ENTRIES) return false;
@@ -52,17 +50,17 @@ export function useLocalSetlists() {
     saveLocalSetlists(all);
     setSetlists([...all]);
     return true;
-  }, []);
+  }, [isWriteLocked]);
 
   const removeEntry = useCallback((id: string, idx: number) => {
-    if (locked.current || navigator.onLine === false) return ;
+    if (isWriteLocked()) return ;
     const all = getLocalSetlists();
     const sl = all.find((s) => s.id === id);
     if (sl) { sl.entries.splice(idx, 1); saveLocalSetlists(all); setSetlists([...all]); }
-  }, []);
+  }, [isWriteLocked]);
 
   const moveEntry = useCallback((id: string, idx: number, dir: number) => {
-    if (locked.current || navigator.onLine === false) return ;
+    if (isWriteLocked()) return ;
     const all = getLocalSetlists();
     const sl = all.find((s) => s.id === id);
     if (!sl) return;
@@ -73,10 +71,10 @@ export function useLocalSetlists() {
     sl.entries[newIdx] = tmp;
     saveLocalSetlists(all);
     setSetlists([...all]);
-  }, []);
+  }, [isWriteLocked]);
 
   const updateEntry = useCallback((id: string, idx: number, updates: Partial<LocalSetlistEntry>) => {
-    if (locked.current || navigator.onLine === false) return ;
+    if (isWriteLocked()) return ;
     const all = getLocalSetlists();
     const sl = all.find((s) => s.id === id);
     if (sl && sl.entries[idx]) {
@@ -84,7 +82,7 @@ export function useLocalSetlists() {
       saveLocalSetlists(all);
       setSetlists([...all]);
     }
-  }, []);
+  }, [isWriteLocked]);
 
   /**
    * Reorders a local setlist by permuting the STORED records.
@@ -99,7 +97,7 @@ export function useLocalSetlists() {
    * resync instead of leaving the view showing an order storage never took.
    */
   const reorderEntries = useCallback((id: string, order: number[]): boolean => {
-    if (locked.current || navigator.onLine === false) return false;
+    if (isWriteLocked()) return false;
     const all = getLocalSetlists();
     const sl = all.find((s) => s.id === id);
     if (!sl) return false;
@@ -112,7 +110,7 @@ export function useLocalSetlists() {
     saveLocalSetlists(all);
     setSetlists([...all]);
     return true;
-  }, []);
+  }, [isWriteLocked]);
 
   return { setlists, refresh, create, remove, rename, getOne, addEntry, removeEntry, moveEntry, updateEntry, reorderEntries };
 }

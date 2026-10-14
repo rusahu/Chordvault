@@ -1,5 +1,6 @@
 import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
+import { useWriteLock } from '../hooks/useWriteLock';
 import { IconMusic } from '@tabler/icons-react';
 import { Switch, Button, TextInput, Group, Box } from '@mantine/core';
 import { useCopyNotification } from '../hooks/useCopyNotification';
@@ -32,6 +33,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
   const apiCall = useApi();
   const { getSetlist } = useLibraryRead();
   const { readOnly } = useOffline();
+  const isWriteLocked = useWriteLock();
   const { user } = useAuth();
   const { t } = useI18n();
   const copyWithFeedback = useCopyNotification(t('setlist.linkCopied') || 'Link copied to clipboard');
@@ -104,7 +106,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
   } = useDragReorder(
     setlist?.entries || [],
     async (newEntries) => {
-      if (readOnly || navigator.onLine === false || !setlist) return;
+      if (isWriteLocked() || !setlist) return;
 
       // Update React state first
       setSetlist((prev) => prev ? { ...prev, entries: newEntries } : null);
@@ -133,7 +135,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
   );
 
   const saveMeta = async (values = metadata.values) => {
-    if (readOnly || navigator.onLine === false || !setlist) return;
+    if (isWriteLocked() || !setlist) return;
     const nameInput = values.name.trim();
     if (!nameInput) return;
 
@@ -152,8 +154,8 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
   };
 
   const deleteSetlist = async () => {
-    if (readOnly || navigator.onLine === false) return;
-    modals.openConfirmModal({ children: t('setlist.confirmDelete'), labels: { confirm: 'Confirm', cancel: 'Cancel' }, onConfirm: async () => {
+    if (isWriteLocked()) return;
+    modals.openConfirmModal({ children: t('setlist.confirmDelete'), onConfirm: async () => {
 
     if (isLocal) {
       remove(String(setlistId));
@@ -175,7 +177,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
   // Reordering is handled by useDragReorder hook
 
   const removeEntry = async (entryId: number | string, idx: number) => {
-    if (readOnly || navigator.onLine === false) return;
+    if (isWriteLocked()) return;
     if (isLocal) {
       lsRemoveEntry(String(setlistId), idx);
       setSetlist((prev) => prev ? { ...prev, entries: prev.entries.filter((_, i) => i !== idx) } : prev);
@@ -190,7 +192,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
   };
 
   const addSong = async (song: SongListItem) => {
-    if (readOnly || navigator.onLine === false) return;
+    if (isWriteLocked()) return;
     if (isLocal) {
       const added = lsAddEntry(String(setlistId), {
         song_id: song.id,
@@ -217,7 +219,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
   };
 
   const handleStepEntryKey = async (entryId: number | string, idx: number, direction: 1 | -1) => {
-    if (readOnly || navigator.onLine === false || !setlist) return;
+    if (isWriteLocked() || !setlist) return;
     const entry = reorderedEntries[idx];
     const content = entry.content_override || entry.content;
     const current = entry.target_key || getSongKey(content, 0);

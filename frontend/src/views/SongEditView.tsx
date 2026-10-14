@@ -117,7 +117,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
 
   const deleteSong = async () => {
     if (!song) return;
-modals.openConfirmModal({ children: t('songEdit.confirmDelete'), labels: { confirm: 'Confirm', cancel: 'Cancel' }, onConfirm: async () => {
+modals.openConfirmModal({ children: t('songEdit.confirmDelete'), onConfirm: async () => {
     try {
       await apiCall('DELETE', `/api/songs/${song.id}`);
       toast(t('songEdit.deleted'));
