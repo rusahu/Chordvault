@@ -8,6 +8,7 @@ const { DEMO_MODE } = require('../lib/demo');
 const { makeUniqueNamer } = require('../lib/exportFilename');
 const Song = require('../lib/models/song');
 const User = require('../lib/models/user');
+const Tags = require('../lib/models/tags');
 const { canViewSongVisibility } = require('../lib/songAccess');
 
 function extractDirective(content, name) {
@@ -99,6 +100,8 @@ function createSongsRouter() {
     const songs = Song.listByUser(user.id, { page: pageNum, limit: limitNum });
     res.json(songs);
   });
+
+  router.get('/tags', (_req, res) => res.json({ tags: Tags.getTags() }));
 
   router.get('/songs/:id', optionalAuth, (req, res) => {
     const song = findSong(req.params.id);

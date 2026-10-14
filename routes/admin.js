@@ -5,9 +5,10 @@ const User = require('../lib/models/user');
 const Song = require('../lib/models/song');
 const Invite = require('../lib/models/invite');
 const { requireAuth, requireAdmin, hashPassword } = require('../lib/auth');
-const { validateObjectBody, requireId, assertValid, validateUserCredentials, validatePassword, validateBoolean } = require('../lib/validation');
+const { validateObjectBody, requireId, assertValid, validateUserCredentials, validatePassword, validateBoolean, validateTagList } = require('../lib/validation');
 const { AppError, handleDbError, requireFound } = require('../lib/errors');
 const { ROLES } = require('../lib/constants');
+const Tags = require('../lib/models/tags');
 const { blockInDemo } = require('../lib/demo');
 
 function resolveAdminTarget(req) {
@@ -116,6 +117,20 @@ function createAdminRouter() {
 
   router.get('/admin/config', requireAuth, requireAdmin, (req, res) => {
     res.json({ allowRegistration: isRegistrationAllowed() });
+  });
+
+  router.get('/admin/tags', requireAuth, requireAdmin, (_req, res) => res.json(Tags.withUsage()));
+
+  router.put('/admin/tags', requireAuth, requireAdmin, blockInDemo, (req, res) => {
+    const { tags, error } = validateTagList(req.body.tags);
+    assertValid(error);
+    Tags.saveTags(tags);
+    res.json(Tags.withUsage());
+  });
+
+  router.delete('/admin/tags', requireAuth, requireAdmin, blockInDemo, (_req, res) => {
+    Tags.resetTags();
+    res.json(Tags.withUsage());
   });
 
   router.put('/admin/config', requireAuth, requireAdmin, blockInDemo, (req, res) => {
