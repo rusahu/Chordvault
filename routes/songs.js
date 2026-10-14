@@ -2,7 +2,8 @@ const express = require('express');
 const yazl = require('yazl');
 const { requireAuth, requireAdmin, optionalAuth, isAdminRole, canManageSong } = require('../lib/auth');
 const { STATUS, VISIBILITY, LIMITS } = require('../lib/constants');
-const { validateListQuery, validateObjectBody, parseId, validateSongInput, validateVisibility, validateLanguage, parsePaginationParams } = require('../lib/validation');
+const { validateListQuery, validateObjectBody, requireId, assertValid, validateSongInput, validateVisibility, validateLanguage, parsePaginationParams } = require('../lib/validation');
+const { AppError, requireFound } = require('../lib/errors');
 const { LANGUAGE_CODES } = require('../lib/languages');
 const { DEMO_MODE } = require('../lib/demo');
 const { makeUniqueNamer } = require('../lib/exportFilename');
@@ -32,19 +33,18 @@ function extractMetadata(content) {
   };
 }
 
-function resolveCorrectionWithAuth(req, res) {
-  const id = parseId(req.params.id);
-  if (!id) { res.status(400).json({ error: 'Invalid correction ID' }); return null; }
-  const correction = Song.findById(id);
-  if (!correction || correction.status !== STATUS.PENDING) { res.status(404).json({ error: 'Pending correction not found' }); return null; }
+function findSong(rawId) {
+  return requireFound(Song.findById(requireId(rawId, 'Invalid song ID')), 'Song not found');
+}
+
+function resolveCorrectionWithAuth(req) {
+  const correction = Song.findById(requireId(req.params.id, 'Invalid correction ID'));
+  if (correction?.status !== STATUS.PENDING) throw new AppError('Pending correction not found', 404);
   const originalId = correction.parent_id;
-  if (!originalId) { res.status(400).json({ error: 'Correction has no parent song' }); return null; }
-  const original = Song.findById(originalId);
-  if (!original) { res.status(404).json({ error: 'Original song not found' }); return null; }
-  const isOwner = original.user_id === req.user.id;
-  if (!isOwner && !isAdminRole(req.user.role)) {
-    res.status(403).json({ error: 'Only the song owner or admins can manage corrections' });
-    return null;
+  if (!originalId) throw new AppError('Correction has no parent song', 400);
+  const original = requireFound(Song.findById(originalId), 'Original song not found');
+  if (original.user_id !== req.user.id && !isAdminRole(req.user.role)) {
+    throw new AppError('Only the song owner or admins can manage corrections', 403);
   }
   return { correction, original, originalId };
 }
@@ -88,8 +88,7 @@ function createSongsRouter() {
   });
 
   router.get('/users/:username/songs', validateListQuery, (req, res) => {
-    const user = User.findByUsername(req.params.username);
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    const user = requireFound(User.findByUsername(req.params.username), 'User not found');
     const { page, limit } = req.query;
     const { page: pageNum, limit: limitNum } = parsePaginationParams(page, limit);
     const songs = Song.listByUser(user.id, { page: pageNum, limit: limitNum });
@@ -97,19 +96,14 @@ function createSongsRouter() {
   });
 
   router.get('/songs/:id', optionalAuth, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid song ID' });
-    const song = Song.findById(id);
-    if (!song) return res.status(404).json({ error: 'Song not found' });
+    const song = findSong(req.params.id);
     if (song.status === STATUS.PENDING) {
       const isSubmitter = req.user && req.user.id === song.user_id;
       const isOriginalOwner = req.user && song.parent_id && Song.findById(song.parent_id)?.user_id === req.user.id;
       const isAdmin = req.user && isAdminRole(req.user.role);
-      if (!isSubmitter && !isOriginalOwner && !isAdmin) {
-        return res.status(404).json({ error: 'Song not found' });
-      }
+      if (!isSubmitter && !isOriginalOwner && !isAdmin) throw new AppError('Song not found', 404);
     }
-    if (!canViewSongVisibility(req.user, song)) return res.status(404).json({ error: 'Song not found' });
+    if (!canViewSongVisibility(req.user, song)) throw new AppError('Song not found', 404);
     // Include version_count for single song view
     const userId = req.user ? req.user.id : 0;
     const versionCount = Song.getVersionCount(song.parent_id, song.id, userId);
@@ -118,16 +112,11 @@ function createSongsRouter() {
 
   router.post('/songs', requireAuth, (req, res) => {
     const { content, format_detected, visibility } = req.body;
-    const chordError = validateSongInput({ content, format_detected, requireContent: true, requireChord: true });
-    if (chordError) return res.status(400).json({ error: chordError });
+    assertValid(validateSongInput({ content, format_detected, requireContent: true, requireChord: true }));
     const meta = extractMetadata(content);
-    if (!meta.title) return res.status(400).json({ error: 'Title is required. Add {title: Song Name} to your content.' });
-    if (meta.language) {
-      const langError = validateLanguage(meta.language);
-      if (langError) return res.status(400).json({ error: langError });
-    }
-    const visError = validateVisibility(visibility);
-    if (visError) return res.status(400).json({ error: visError });
+    if (!meta.title) throw new AppError('Title is required. Add {title: Song Name} to your content.', 400);
+    if (meta.language) assertValid(validateLanguage(meta.language));
+    assertValid(validateVisibility(visibility));
 
     const fmt = format_detected?.trim() || null;
     const finalVisibility = visibility === VISIBILITY.PRIVATE ? VISIBILITY.PRIVATE : VISIBILITY.PUBLIC;
@@ -137,11 +126,9 @@ function createSongsRouter() {
 
   router.post('/songs/import', requireAuth, requireAdmin, (req, res) => {
     const { songs } = req.body;
-    if (!Array.isArray(songs)) return res.status(400).json({ error: 'Request body must contain a "songs" array' });
-    if (DEMO_MODE && songs.length > LIMITS.DEMO_MAX_IMPORT) {
-      return res.status(400).json({ error: `Demo mode: import limited to ${LIMITS.DEMO_MAX_IMPORT} songs` });
-    }
-    if (songs.length > LIMITS.MAX_IMPORT) return res.status(400).json({ error: `Maximum ${LIMITS.MAX_IMPORT} songs per import` });
+    if (!Array.isArray(songs)) throw new AppError('Request body must contain a "songs" array', 400);
+    if (DEMO_MODE && songs.length > LIMITS.DEMO_MAX_IMPORT) throw new AppError(`Demo mode: import limited to ${LIMITS.DEMO_MAX_IMPORT} songs`, 400);
+    if (songs.length > LIMITS.MAX_IMPORT) throw new AppError(`Maximum ${LIMITS.MAX_IMPORT} songs per import`, 400);
 
     const errors = [];
     const valid = [];
@@ -173,22 +160,16 @@ function createSongsRouter() {
   });
 
   router.put('/songs/:id', requireAuth, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid song ID' });
+    const id = requireId(req.params.id, 'Invalid song ID');
     const existing = Song.findById(id);
-    if (!existing || !canManageSong(req.user, existing.user_id)) return res.status(404).json({ error: 'Song not found or not yours' });
+    if (!existing || !canManageSong(req.user, existing.user_id)) throw new AppError('Song not found or not yours', 404);
     const { content, format_detected, visibility } = req.body;
-    const chordError = validateSongInput({ content, format_detected, requireChord: true });
-    if (chordError) return res.status(400).json({ error: chordError });
+    assertValid(validateSongInput({ content, format_detected, requireChord: true }));
     const finalContent = content?.trim() || existing.content;
     const meta = extractMetadata(finalContent);
-    if (!meta.title) return res.status(400).json({ error: 'Title is required. Add {title: Song Name} to your content.' });
-    if (meta.language) {
-      const langError = validateLanguage(meta.language);
-      if (langError) return res.status(400).json({ error: langError });
-    }
-    const visError = validateVisibility(visibility);
-    if (visError) return res.status(400).json({ error: visError });
+    if (!meta.title) throw new AppError('Title is required. Add {title: Song Name} to your content.', 400);
+    if (meta.language) assertValid(validateLanguage(meta.language));
+    assertValid(validateVisibility(visibility));
 
     const fmt = format_detected !== undefined ? (format_detected?.trim() || null) : existing.format_detected;
     const finalVisibility = visibility !== undefined ? (visibility === VISIBILITY.PRIVATE ? VISIBILITY.PRIVATE : VISIBILITY.PUBLIC) : existing.visibility;
@@ -197,28 +178,24 @@ function createSongsRouter() {
   });
 
   router.delete('/songs/:id', requireAuth, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid song ID' });
+    const id = requireId(req.params.id, 'Invalid song ID');
     const isAdmin = isAdminRole(req.user.role);
     const result = Song.delete(id, isAdmin ? null : req.user.id);
-    if (!result.changes) return res.status(404).json({ error: 'Song not found or not yours' });
+    if (!result.changes) throw new AppError('Song not found or not yours', 404);
     res.json({ success: true });
   });
 
   router.post('/songs/:id/version', requireAuth, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid song ID' });
-    const original = Song.findById(id);
-    if (!original || original.status !== STATUS.ACTIVE) return res.status(404).json({ error: 'Song not found' });
-    
+    const original = findSong(req.params.id);
+    if (original.status !== STATUS.ACTIVE) throw new AppError('Song not found', 404);
+
     const isOwner = original.user_id === req.user.id;
     const isAdmin = isAdminRole(req.user.role);
     const isPublic = original.visibility === VISIBILITY.PUBLIC;
-    if (!isOwner && !isAdmin && !isPublic) return res.status(403).json({ error: 'Not authorized' });
+    if (!isOwner && !isAdmin && !isPublic) throw new AppError('Not authorized', 403);
 
     const { content, youtube_url } = req.body;
-    const validationError = validateSongInput({ content, youtube_url, requireContent: true, requireChord: true });
-    if (validationError) return res.status(400).json({ error: validationError });
+    assertValid(validateSongInput({ content, youtube_url, requireContent: true, requireChord: true }));
 
     const parentId = original.parent_id || original.id;
     const meta = extractMetadata(content);
@@ -227,11 +204,8 @@ function createSongsRouter() {
   });
 
   router.get('/songs/:id/versions', optionalAuth, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid song ID' });
-    const song = Song.findById(id);
-    if (!song || song.status !== STATUS.ACTIVE) return res.status(404).json({ error: 'Song not found' });
-    if (!canViewSongVisibility(req.user, song)) return res.status(404).json({ error: 'Song not found' });
+    const song = findSong(req.params.id);
+    if (song.status !== STATUS.ACTIVE || !canViewSongVisibility(req.user, song)) throw new AppError('Song not found', 404);
     const rootId = song.parent_id || song.id;
     const userId = req.user ? req.user.id : 0;
     const versions = Song.getVersions(rootId, userId);
@@ -239,17 +213,12 @@ function createSongsRouter() {
   });
 
   router.post('/songs/:id/correction', requireAuth, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid song ID' });
-    const original = Song.findById(id);
-    if (!original) return res.status(404).json({ error: 'Song not found' });
-    if (original.status === STATUS.PENDING) return res.status(400).json({ error: 'Cannot correct a pending correction' });
-    if (original.visibility === VISIBILITY.PRIVATE && req.user.id !== original.user_id) {
-      return res.status(403).json({ error: 'Cannot submit corrections on private songs' });
-    }
+    const original = findSong(req.params.id);
+    if (original.status === STATUS.PENDING) throw new AppError('Cannot correct a pending correction', 400);
+    if (original.visibility === VISIBILITY.PRIVATE && req.user.id !== original.user_id) throw new AppError('Cannot submit corrections on private songs', 403);
     const { content, youtube_url } = req.body;
     const validationError = validateSongInput({ content, youtube_url, requireContent: true, requireChord: true });
-    if (validationError) return res.status(400).json({ error: validationError.replace('before saving', 'before submitting') });
+    if (validationError) throw new AppError(validationError.replace('before saving', 'before submitting'), 400);
 
     const parentId = original.parent_id || original.id;
     const meta = extractMetadata(content);
@@ -258,31 +227,22 @@ function createSongsRouter() {
   });
 
   router.get('/songs/:id/corrections', requireAuth, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid song ID' });
-    const song = Song.findById(id);
-    if (!song) return res.status(404).json({ error: 'Song not found' });
+    const song = findSong(req.params.id);
     const isOwner = song.user_id === req.user.id;
-    if (!isOwner && !isAdminRole(req.user.role)) {
-      return res.status(403).json({ error: 'Only the song owner or admins can view corrections' });
-    }
+    if (!isOwner && !isAdminRole(req.user.role)) throw new AppError('Only the song owner or admins can view corrections', 403);
     const rootId = song.parent_id || song.id;
     const corrections = Song.getCorrections(rootId);
     res.json(corrections);
   });
 
   router.put('/corrections/:id/approve', requireAuth, (req, res) => {
-    const resolved = resolveCorrectionWithAuth(req, res);
-    if (!resolved) return;
-    const { correction, originalId } = resolved;
+    const { correction, originalId } = resolveCorrectionWithAuth(req);
     Song.approveCorrection(correction.id, originalId, correction.content);
     res.json({ success: true });
   });
 
   router.delete('/corrections/:id', requireAuth, (req, res) => {
-    const resolved = resolveCorrectionWithAuth(req, res);
-    if (!resolved) return;
-    Song.deleteCorrection(resolved.correction.id);
+    Song.deleteCorrection(resolveCorrectionWithAuth(req).correction.id);
     res.json({ success: true });
   });
 
