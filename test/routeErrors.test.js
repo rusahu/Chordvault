@@ -105,8 +105,7 @@ test('settings routes keep their prompt and OCR input errors', async t => {
     ['/api/ocr/gemini/refine', { ...owner, method: 'POST', body: { image: 'x', history: Array(21).fill({ role: 'user', text: 'x' }), message: 'x' } }, 400, 'Conversation too long. Start a new extraction.'],
     ['/api/ocr/gemini/refine', { ...owner, method: 'POST', body: { image: 'x', history: [], message: 'x'.repeat(2001) } }, 400, 'Message too long (max 2000 chars)'],
   ]) await expectError(request, path, options, status, error);
-  const refine = await request('/api/ocr/gemini/refine', { ...owner, method: 'POST', body: { image: 'x', history: [], message: 'x' } });
-  assert.equal(refine.status, 400);
+  await expectError(request, '/api/ocr/gemini/refine', { ...owner, method: 'POST', body: { image: 'x', history: [], message: 'x' } }, 400, 'No Gemini API key configured. Add one in Settings.');
 });
 
 test('a stored Gemini key that no longer decrypts is a 500 on both OCR routes', async t => {
@@ -114,7 +113,6 @@ test('a stored Gemini key that no longer decrypts is a 500 on both OCR routes', 
   const account = user('errors-bad-key');
   db.prepare('UPDATE users SET gemini_api_key = ? WHERE id = ?').run('00:00:00', account.id);
   for (const path of ['/api/ocr/gemini', '/api/ocr/gemini/refine']) {
-    const response = await request(path, { ...account, method: 'POST', body: { image: 'data:image/png;base64,YQ==', history: [], message: 'x' } });
-    assert.equal(response.status, 500, path);
+    await expectError(request, path, { ...account, method: 'POST', body: { image: 'data:image/png;base64,YQ==', history: [], message: 'x' } }, 500, 'Failed to decrypt API key. Try re-saving it in Settings.');
   }
 });

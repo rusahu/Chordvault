@@ -1,5 +1,4 @@
 const express = require('express');
-const crypto = require('crypto');
 const User = require('../lib/models/user');
 const { requireAuth } = require('../lib/auth');
 const { LIMITS, GEMINI_MODELS, isValidGeminiModel, resolveGeminiModel } = require('../lib/constants');
@@ -8,8 +7,7 @@ const { LANGUAGE_CODES } = require('../lib/languages');
 const { AppError } = require('../lib/errors');
 const { parseDataUrl, stripFences, callGemini } = require('../lib/gemini');
 const { jsonToChordPro } = require('../lib/ocr-convert');
-
-const JWT_SECRET = process.env.JWT_SECRET;
+const { encryptApiKey, loadGeminiCredentials } = require('../lib/geminiKey');
 
 // JSON-based prompt for structured OCR output (default mode)
 const DEFAULT_OCR_PROMPT = `You are a chord sheet OCR tool. Extract chord/lyric data from this image into structured JSON.
@@ -93,41 +91,6 @@ RULES:
 - Preserve repeat markers as plain text.
 
 Return ONLY the ChordPro text, no explanations or markdown code fences.`;
-
-/** Derives a 256-bit encryption key from JWT_SECRET using PBKDF2. */
-function deriveEncKey() {
-  return crypto.pbkdf2Sync(JWT_SECRET, 'chordvault-gemini-enc', 100_000, 32, 'sha256');
-}
-
-/**
- * Encrypts a Gemini API key using AES-256-GCM with a random IV.
- * Returns a colon-separated string: `iv:authTag:ciphertext` (all hex-encoded).
- *
- * @param {string} plaintext - The API key to encrypt
- * @returns {string} Encrypted string in format "ivHex:tagHex:encHex"
- */
-function encryptApiKey(plaintext) {
-  const iv = crypto.randomBytes(12);
-  const cipher = crypto.createCipheriv('aes-256-gcm', deriveEncKey(), iv);
-  const enc = Buffer.concat([cipher.update(plaintext, 'utf8'), cipher.final()]);
-  const tag = cipher.getAuthTag();
-  return iv.toString('hex') + ':' + tag.toString('hex') + ':' + enc.toString('hex');
-}
-
-/**
- * Decrypts a stored Gemini API key encrypted by encryptApiKey.
- * Parses the "ivHex:tagHex:encHex" format and verifies the auth tag.
- * Throws if the stored value is tampered with or JWT_SECRET has changed.
- *
- * @param {string} stored - Encrypted string from encryptApiKey
- * @returns {string} The original plaintext API key
- */
-function decryptApiKey(stored) {
-  const [ivHex, tagHex, encHex] = stored.split(':');
-  const decipher = crypto.createDecipheriv('aes-256-gcm', deriveEncKey(), Buffer.from(ivHex, 'hex'));
-  decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
-  return decipher.update(Buffer.from(encHex, 'hex')) + decipher.final('utf8');
-}
 
 function createSettingsRouter() {
   const router = express.Router();
@@ -213,15 +176,7 @@ function createSettingsRouter() {
     const sizeEstimate = (image.length * 3) / 4;
     if (sizeEstimate > LIMITS.MAX_OCR_IMAGE) return res.status(400).json({ error: 'File too large (max 18MB)' });
 
-    const user = User.getFullById(req.user.id);
-    if (!user?.gemini_api_key) return res.status(400).json({ error: 'No Gemini API key configured. Add one in Settings.' });
-
-    let apiKey;
-    try {
-      apiKey = decryptApiKey(user.gemini_api_key);
-    } catch {
-      return res.status(500).json({ error: 'Failed to decrypt API key. Try re-saving it in Settings.' });
-    }
+    const { user, apiKey } = loadGeminiCredentials(req.user.id);
 
     const { mimeType, base64 } = parseDataUrl(image);
     const isJsonMode = !user.gemini_prompt;
@@ -278,12 +233,7 @@ function createSettingsRouter() {
     if (message.length > 2000) return res.status(400).json({ error: 'Message too long (max 2000 chars)' });
     if (history.length > 20) return res.status(400).json({ error: 'Conversation too long. Start a new extraction.' });
 
-    const user = User.getFullById(req.user.id);
-    if (!user?.gemini_api_key) return res.status(400).json({ error: 'No Gemini API key configured.' });
-
-    let apiKey;
-    try { apiKey = decryptApiKey(user.gemini_api_key); }
-    catch { return res.status(500).json({ error: 'Failed to decrypt API key.' }); }
+    const { user, apiKey } = loadGeminiCredentials(req.user.id);
 
     const { mimeType, base64 } = parseDataUrl(image);
 
