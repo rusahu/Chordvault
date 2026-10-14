@@ -4,13 +4,14 @@ import { useOffline } from '../context/OfflineContext';
 import { SearchField } from '../components/SearchField';
 import { SearchRow } from '../components/SearchRow';
 import { IconPlus, IconGuitarPick } from '@tabler/icons-react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useI18n } from '../context/I18nContext';
 import { SongCard } from '../components/SongCard';
 import { EmptyState } from '../components/EmptyState';
 import { Pagination } from '../components/Pagination';
-import type { SongListItem } from '../types';
-import { useSearchSessionValue, searchPage } from '../hooks/useSearchSessionValue';
+import { useSearchSessionValue } from '../hooks/useSearchSessionValue';
+import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
+import type { LibraryQuery } from '../types/offline';
 import { PageTitle } from '../components/PageTitle';
 
 interface MySongsViewProps {
@@ -21,50 +22,24 @@ export function MySongsView({ navigate }: MySongsViewProps) {
   const { t } = useI18n();
   const { readOnly } = useOffline();
   const { querySongs } = useLibraryRead();
-  const [songs, setSongs] = useState<SongListItem[]>([]);
   const [savedQuery, saveQuery] = useSearchSessionValue('cv_mysongs_query');
   const [query, setQuery] = useState(savedQuery);
-  const [loadError, setLoadError] = useState('');
-  const [loaded, setLoaded] = useState(false);
-  const [savedPage, savePage] = useSearchSessionValue('cv_mysongs_page', '1');
-  const [page, setPage] = useState(() => searchPage(savedPage));
-  const [totalPages, setTotalPages] = useState(1);
-
-  const active = useRef(false);
-  useEffect(() => {
-    active.current = true;
-    return () => { active.current = false; };
-  }, []);
-
-  const load = useCallback((q = '', targetPage = 1) => {
-    setLoadError('');
-    querySongs({ q: q.trim(), own: true, page: targetPage })
-      .then((data) => {
-        if (!active.current) return;
-        setSongs(data.songs);
-        setPage(data.page);
-        setTotalPages(data.totalPages);
-        setLoaded(true);
-        saveQuery(q);
-        savePage(String(data.page));
-      })
-      .catch((e) => { if (active.current) { setLoadError(e.message); setSongs([]); } });
-  }, [querySongs, saveQuery, savePage]);
-
-  useEffect(() => {
-    load(query, page);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load]);
+  const fetchOwnSongs = useCallback((filters: LibraryQuery) => querySongs({ ...filters, q: filters.q?.trim(), own: true }), [querySongs]);
+  const { items: songs, page, totalPages, loaded, loadError, load } = usePaginatedSearch({
+    pageKey: 'cv_mysongs_page', listKey: 'songs', fetchPage: fetchOwnSongs,
+    filters: { q: query },
+    persist: ({ q = '' }) => saveQuery(q),
+  });
 
   const handleClear = () => {
     setQuery('');
-    load('', 1);
+    load({ q: '' });
   };
 
-  const doSearch = () => load(query, 1);
+  const doSearch = () => load({ q: query });
 
   const handlePageChange = (newPage: number) => {
-    load(query, newPage);
+    load({ q: query }, newPage);
     window.scrollTo(0, 0);
   };
 

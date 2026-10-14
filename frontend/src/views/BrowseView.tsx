@@ -4,15 +4,15 @@ import { useOffline } from '../context/OfflineContext';
 import { SearchField } from '../components/SearchField';
 import { SearchRow } from '../components/SearchRow';
 import { IconAdjustmentsHorizontal, IconPlus, IconSearch } from '@tabler/icons-react';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { SongCard } from '../components/SongCard';
 import { EmptyState } from '../components/EmptyState';
 import { Pagination } from '../components/Pagination';
-import type { SongListItem } from '../types';
 import { LANGUAGES } from '../lib/languages';
-import { useSearchSessionValue, searchPage } from '../hooks/useSearchSessionValue';
+import { useSearchSessionValue } from '../hooks/useSearchSessionValue';
+import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
 
 interface BrowseViewProps {
   navigate: (view: string, params?: Record<string, string>) => void;
@@ -23,55 +23,27 @@ export function BrowseView({ navigate }: BrowseViewProps) {
   const { readOnly } = useOffline();
   const { user } = useAuth();
   const { t } = useI18n();
-  const [songs, setSongs] = useState<SongListItem[]>([]);
   const [savedQuery, saveQuery] = useSearchSessionValue('cv_browse_query');
   const [query, setQuery] = useState(savedQuery);
   const [savedLangFilter, saveLangFilter] = useSearchSessionValue('cv_browse_lang');
   const [langFilter, setLangFilter] = useState(savedLangFilter);
   const [savedShowFilters, saveShowFilters] = useSearchSessionValue('cv_browse_show_filters', 'false');
   const showFilters = savedShowFilters === 'true';
-  const [loadError, setLoadError] = useState('');
-  const [loaded, setLoaded] = useState(false);
-  const [savedPage, savePage] = useSearchSessionValue('cv_browse_page', '1');
-  const [page, setPage] = useState(() => searchPage(savedPage));
-  const [totalPages, setTotalPages] = useState(1);
-
-  const active = useRef(false);
-  useEffect(() => {
-    active.current = true;
-    return () => { active.current = false; };
-  }, []);
-
-  const load = useCallback(async (q = '', lang = '', targetPage = 1) => {
-    setLoadError('');
-    try {
-      const data = await querySongs({ q, language: lang, page: targetPage });
-      if (!active.current) return;
-      setSongs(data.songs);
-      setPage(data.page);
-      setTotalPages(data.totalPages);
-      setLoaded(true);
-
-      saveQuery(q);
-      saveLangFilter(lang);
-      savePage(String(data.page));
-    } catch (e) { if (active.current) { setLoadError((e as Error).message); setSongs([]); } }
-  }, [querySongs, saveQuery, saveLangFilter, savePage]);
-
-  useEffect(() => {
-    load(query, langFilter, page);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [load]);
+  const { items: songs, page, totalPages, loaded, loadError, load } = usePaginatedSearch({
+    pageKey: 'cv_browse_page', listKey: 'songs', fetchPage: querySongs,
+    filters: { q: query, language: langFilter },
+    persist: ({ q = '', language = '' }) => { saveQuery(q); saveLangFilter(language); },
+  });
 
   const handleClear = () => {
     setQuery('');
-    load('', langFilter, 1);
+    load({ q: '', language: langFilter });
   };
 
-  const doSearch = () => load(query, langFilter, 1);
+  const doSearch = () => load({ q: query, language: langFilter });
 
   const handlePageChange = (newPage: number) => {
-    load(query, langFilter, newPage);
+    load({ q: query, language: langFilter }, newPage);
     window.scrollTo(0, 0);
   };
 
@@ -117,7 +89,7 @@ export function BrowseView({ navigate }: BrowseViewProps) {
               <NativeSelect
                 className="language-filter"
                 value={langFilter}
-                onChange={(e) => { setLangFilter(e.target.value); load(query, e.target.value, 1); }}
+                onChange={(e) => { setLangFilter(e.target.value); load({ q: query, language: e.target.value }); }}
               >
                 <option value="">All languages</option>
                 {LANGUAGES.map(l => (
