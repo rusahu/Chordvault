@@ -7,7 +7,21 @@
     "MAX_IMPORT": 500,
     "DEMO_MAX_IMPORT": 20,
     "MAX_PREFERRED_LANGUAGES": 10,
-    "MAX_OCR_PROMPT": 5000
+    "MAX_OCR_PROMPT": 5000,
+    "MAX_TAGS": 50,
+    "MAX_TAG_LENGTH": 30
   },
-  "DEFAULT_GEMINI_MODEL": "gemini-3.8-flash"
+  "DEFAULT_GEMINI_MODEL": "gemini-3.8-flash",
+  "DEFAULT_TAGS": [
+    "worship",
+    "praise",
+    "hymn",
+    "opener",
+    "closer",
+    "communion",
+    "christmas",
+    "easter",
+    "kids",
+    "instrumental"
+  ]
 }

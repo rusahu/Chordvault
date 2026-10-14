@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseId, isValidDate, validateUserCredentials, validateSongInput, validateSetlistInput, parsePaginationParams, validatePassword, validateSongMetadata, validateBoolean } = require('../lib/validation');
+const { parseId, isValidDate, validateUserCredentials, validateSongInput, validateSetlistInput, parsePaginationParams, validatePassword, validateSongMetadata, validateBoolean, validateTagList } = require('../lib/validation');
 
 test('IDs are positive safe integers with no coercion of other types', () => {
   for (const value of ['12junk','1.5','1e3','',0,-1,1.5,true,[],{},Number.MAX_SAFE_INTEGER+1]) assert.equal(parseId(value),null,JSON.stringify(value));
@@ -43,4 +43,18 @@ test('boolean fields reject strings and numbers', () => {
 test('passwords are capped so bcrypt never reads a huge string', () => {
   assert.equal(validatePassword('x'.repeat(256)), null);
   assert.equal(validatePassword('x'.repeat(257), 'New password'), 'New password must be at most 256 characters');
+});
+test('tag lists are cleaned and validated', () => {
+  assert.deepEqual(validateTagList([' Worship ', 'KIDS']), { tags: ['worship', 'kids'], error: null });
+  assert.deepEqual(validateTagList([]), { tags: [], error: null });
+  for (const [value, error] of [
+    ['worship', 'Tags must be a list of names'],
+    [[1], 'Tags must be a list of names'],
+    [['  '], 'Tag names must be 1 to 30 characters'],
+    [['x'.repeat(31)], 'Tag names must be 1 to 30 characters'],
+    [['a,b'], 'Tag names cannot contain commas or braces'],
+    [['a}'], 'Tag names cannot contain commas or braces'],
+    [['hymn', 'Hymn'], 'Duplicate tag: hymn'],
+    [Array.from({ length: 51 }, (_, i) => `t${i}`), 'Maximum 50 tags'],
+  ]) assert.equal(validateTagList(value).error, error, JSON.stringify(value).slice(0, 40));
 });

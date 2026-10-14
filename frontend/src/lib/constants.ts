@@ -1,9 +1,8 @@
 import shared from '../../../shared/public-constants.json';
 
-export const PRESET_TAGS = [
-  'worship', 'praise', 'hymn', 'opener', 'closer', 'communion',
-  'christmas', 'easter', 'kids', 'instrumental',
-];
+export const DEFAULT_TAGS: string[] = shared.DEFAULT_TAGS;
+export const MAX_TAGS = shared.limits.MAX_TAGS;
+export const MAX_TAG_LENGTH = shared.limits.MAX_TAG_LENGTH;
 
 export const MAX_LOCAL_SETLISTS = 50;
 export const MAX_LOCAL_ENTRIES = 100;
