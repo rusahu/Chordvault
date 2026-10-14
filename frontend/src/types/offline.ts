@@ -34,3 +34,4 @@ export interface LibraryQuery {
   dateFrom?: string;
   dateTo?: string;
 }
+export type LibraryPage<T, K extends string> = { total: number; page: number; limit: number; totalPages: number } & Record<K, T[]>;
