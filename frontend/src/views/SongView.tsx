@@ -20,6 +20,7 @@ import { AddToSetlistModal } from '../components/AddToSetlistModal';
 import { renderChordPro, songHasKey, autoFit } from '../lib/chords';
 import { languageName } from '../lib/languages';
 import type { Song, SongVersion, Correction } from '../types';
+import { tagLabel } from '../lib/tagName';
 import { PageTitle } from '../components/PageTitle';
 
 interface SongViewProps {
@@ -233,7 +234,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
 
       {(song.tags || song.youtube_url) && (
         <Group gap="xs" mt="xs">
-          {song.tags && song.tags.split(',').map((tag) => <Badge key={tag}>{tag}</Badge>)}
+          {song.tags && song.tags.split(',').map((tag) => <Badge key={tag}>{tagLabel(t, tag)}</Badge>)}
           {song.youtube_url && <a href={song.youtube_url} target="_blank" rel="noopener" className="yt-link">&#9654; YouTube</a>}
         </Group>
       )}

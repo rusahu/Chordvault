@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useEffect, useCallback, useMemo, type ReactNode } from 'react';
-import { escHtml } from '../lib/util';
 
 type Locale = Record<string, string>;
 
@@ -45,7 +44,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const tReplace = useCallback((key: string, replacements: Record<string, string | number>): string => {
     let str = locale[key] || key;
     for (const k in replacements) {
-      str = str.replace(`{${k}}`, escHtml(String(replacements[k])));
+      str = str.replace(`{${k}}`, () => String(replacements[k]));
     }
     return str;
   }, [locale]);

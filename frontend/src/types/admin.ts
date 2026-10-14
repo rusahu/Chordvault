@@ -32,3 +32,13 @@ export interface InviteCode {
 export interface AdminConfig {
   allowRegistration: boolean;
 }
+
+export interface AdminTag {
+  name: string;
+  count: number;
+}
+
+export interface AdminTagList {
+  tags: AdminTag[];
+  isDefault: boolean;
+}
