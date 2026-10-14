@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseId, isValidDate, validateUserCredentials, validateSongInput, validateSetlistInput, parsePaginationParams } = require('../lib/validation');
+const { parseId, isValidDate, validateUserCredentials, validateSongInput, validateSetlistInput, parsePaginationParams, validateSongMetadata, validateBoolean } = require('../lib/validation');
 
 test('IDs are positive safe integers with no coercion of other types', () => {
   for (const value of ['12junk','1.5','1e3','',0,-1,1.5,true,[],{},Number.MAX_SAFE_INTEGER+1]) assert.equal(parseId(value),null,JSON.stringify(value));
@@ -27,4 +27,16 @@ test('pagination retains omission defaults and rejects explicit invalid values',
   assert.deepEqual(parsePaginationParams(undefined,'5'),{page:1,limit:5});
   for (const value of ['0','-1','12junk','',null,[],{}]) assert.throws(()=>parsePaginationParams(value,'10'),err=>err.status===400);
   assert.throws(()=>parsePaginationParams(Number.MAX_SAFE_INTEGER,10),err=>err.status===400);
+});
+
+test('song metadata needs a title and accepts only known languages', () => {
+  assert.equal(validateSongMetadata({ title: '', language: 'en' }), 'Title is required. Add {title: Song Name} to your content.');
+  assert.equal(validateSongMetadata({ title: 'Grace', language: 'zz' }), 'Invalid language code');
+  assert.equal(validateSongMetadata({ title: 'Grace', language: '' }), null);
+  assert.equal(validateSongMetadata({ title: 'Grace', language: 'en' }), null);
+});
+test('boolean fields reject strings and numbers', () => {
+  for (const value of ['false', 'true', 0, 1, null, undefined]) assert.equal(validateBoolean(value, 'disabled'), 'disabled must be a boolean');
+  assert.equal(validateBoolean(false, 'disabled'), null);
+  assert.equal(validateBoolean(true, 'allowRegistration'), null);
 });

@@ -5,7 +5,7 @@ const User = require('../lib/models/user');
 const Song = require('../lib/models/song');
 const Invite = require('../lib/models/invite');
 const { requireAuth, requireAdmin, hashPassword } = require('../lib/auth');
-const { validateObjectBody, requireId, assertValid, validateUserCredentials, validatePassword } = require('../lib/validation');
+const { validateObjectBody, requireId, assertValid, validateUserCredentials, validatePassword, validateBoolean } = require('../lib/validation');
 const { AppError, handleDbError, requireFound } = require('../lib/errors');
 const { ROLES } = require('../lib/constants');
 const { blockInDemo } = require('../lib/demo');
@@ -54,7 +54,7 @@ function createAdminRouter() {
 
   router.put('/admin/users/:id/disabled', requireAuth, requireAdmin, blockInDemo, (req, res) => {
     const { disabled } = req.body;
-    if (typeof disabled !== 'boolean') throw new AppError('disabled must be a boolean', 400);
+    assertValid(validateBoolean(disabled, 'disabled'));
     User.updateDisabled(resolveAdminTarget(req).targetId, disabled);
     res.json({ success: true });
   });
@@ -120,7 +120,7 @@ function createAdminRouter() {
 
   router.put('/admin/config', requireAuth, requireAdmin, blockInDemo, (req, res) => {
     const { allowRegistration } = req.body;
-    if (typeof allowRegistration !== 'boolean') throw new AppError('allowRegistration must be a boolean', 400);
+    assertValid(validateBoolean(allowRegistration, 'allowRegistration'));
     setSetting('allow_registration', allowRegistration ? '1' : '0');
     res.json({ success: true, allowRegistration });
   });

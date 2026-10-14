@@ -2,9 +2,8 @@ const express = require('express');
 const yazl = require('yazl');
 const { requireAuth, requireAdmin, optionalAuth, isAdminRole, canManageSong } = require('../lib/auth');
 const { STATUS, VISIBILITY, LIMITS } = require('../lib/constants');
-const { validateListQuery, validateObjectBody, requireId, assertValid, validateSongInput, validateVisibility, validateLanguage, parsePaginationParams } = require('../lib/validation');
+const { validateListQuery, validateObjectBody, requireId, assertValid, validateSongInput, validateVisibility, validateSongMetadata, parsePaginationParams } = require('../lib/validation');
 const { AppError, requireFound } = require('../lib/errors');
-const { LANGUAGE_CODES } = require('../lib/languages');
 const { DEMO_MODE } = require('../lib/demo');
 const { makeUniqueNamer } = require('../lib/exportFilename');
 const Song = require('../lib/models/song');
@@ -35,8 +34,7 @@ function extractMetadata(content) {
 
 function requireSongMetadata(content) {
   const meta = extractMetadata(content);
-  if (!meta.title) throw new AppError('Title is required. Add {title: Song Name} to your content.', 400);
-  if (meta.language) assertValid(validateLanguage(meta.language));
+  assertValid(validateSongMetadata(meta));
   return meta;
 }
 
@@ -143,8 +141,8 @@ function createSongsRouter() {
         : validateSongInput({ content: s.content, requireContent: true });
       if (inputError) { errors.push({ index: i, error: inputError }); return; }
       const meta = extractMetadata(s.content);
-      if (!meta.title) { errors.push({ index: i, error: 'Title is required. Add {title: Song Name} to content.' }); return; }
-      if (meta.language && !LANGUAGE_CODES.has(meta.language)) { errors.push({ index: i, error: `Invalid language code: ${meta.language}` }); return; }
+      const metaError = validateSongMetadata(meta);
+      if (metaError) { errors.push({ index: i, error: metaError }); return; }
       const visError = validateVisibility(s.visibility);
       if (visError) { errors.push({ index: i, error: visError }); return; }
       valid.push({
