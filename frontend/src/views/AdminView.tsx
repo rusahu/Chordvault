@@ -69,71 +69,59 @@ export function AdminView({ navigate }: AdminViewProps) {
   }, [isAdmin, navigate, load]);
 
   const toggleReg = (val: boolean) => runAction(async () => {
-    try {
-      await apiCall('PUT', '/api/admin/config', { allowRegistration: val });
-      setConfig({ ...config, allowRegistration: val });
-      toast(val ? 'Registration enabled' : 'Registration disabled', 'success');
-    } catch (e) { toast((e as Error).message, 'error'); }
+    await apiCall('PUT', '/api/admin/config', { allowRegistration: val });
+    setConfig({ ...config, allowRegistration: val });
+    toast(val ? 'Registration enabled' : 'Registration disabled', 'success');
   });
 
   const generateInvite = () => runAction(async () => {
-    try {
-      const data = await apiCall<{ code: string }>('POST', '/api/admin/invites');
-      setInviteCode(data.code);
-      await loadInvites();
-    } catch (e) { toast((e as Error).message, 'error'); }
+    const data = await apiCall<{ code: string }>('POST', '/api/admin/invites');
+    setInviteCode(data.code);
+    await loadInvites();
   });
 
   const deleteInvite = (id: number) => runAction(async () => {
-    try { await apiCall('DELETE', `/api/admin/invites/${id}`); await loadInvites(); }
-    catch (e) { toast((e as Error).message, 'error'); }
+    await apiCall('DELETE', `/api/admin/invites/${id}`);
+    await loadInvites();
   });
 
-  const setRole = async (userId: number, role: string) => {
+  const setRole = (userId: number, role: string) => {
     const action = role === 'admin' ? t('admin.confirmPromote') : t('admin.confirmDemote');
     modals.openConfirmModal({ children: action, onConfirm: () => runAction(async () => {
-    try {
       await apiCall('PUT', `/api/admin/users/${userId}/role`, { role });
       toast(role === 'admin' ? t('admin.userPromoted') : t('admin.userDemoted'), 'success');
       await load();
-    } catch (e) { toast((e as Error).message, 'error'); }
+    }) });
+  };
 
-}) });
-};
-
-  const setDisabled = async (userId: number, disabled: boolean) => {
+  const setDisabled = (userId: number, disabled: boolean) => {
     modals.openConfirmModal({ children: disabled ? t('admin.confirmDisable') : t('admin.confirmEnable'), onConfirm: () => runAction(async () => {
-    try {
       await apiCall('PUT', `/api/admin/users/${userId}/disabled`, { disabled });
       toast(disabled ? t('admin.userDisabled') : t('admin.userEnabled'), 'success');
       await load();
-    } catch (e) { toast((e as Error).message, 'error'); }
+    }) });
+  };
 
-}) });
-};
-
-  const deleteUser = async (userId: number, username: string) => {
+  const deleteUser = (userId: number, username: string) => {
     modals.openConfirmModal({ children: tReplace('admin.confirmDeleteUser', { username }), onConfirm: () => runAction(async () => {
-    try { await apiCall('DELETE', `/api/admin/users/${userId}`); toast(t('admin.userDeleted'), 'success'); await load(); }
-    catch (e) { toast((e as Error).message, 'error'); }
-
-}) });
-};
+      await apiCall('DELETE', `/api/admin/users/${userId}`);
+      toast(t('admin.userDeleted'), 'success');
+      await load();
+    }) });
+  };
 
   const resetPassword = (userId: number, username: string) => modals.openContextModal({ modal: 'resetPassword', title: tReplace('admin.resetPasswordPrompt', { username }), innerProps: { onSubmit: (newPassword: string) => runAction(async () => {
-    try {
-      await apiCall('PUT', `/api/admin/users/${userId}/password`, { password: newPassword });
-      toast(t('admin.passwordReset'), 'success');
-    } catch (e) { toast((e as Error).message, 'error'); }
+    await apiCall('PUT', `/api/admin/users/${userId}/password`, { password: newPassword });
+    toast(t('admin.passwordReset'), 'success');
   }) } });
 
-  const deleteSong = async (songId: number, title: string) => {
+  const deleteSong = (songId: number, title: string) => {
     modals.openConfirmModal({ children: tReplace('admin.confirmDeleteSong', { title }), onConfirm: () => runAction(async () => {
-    try { await apiCall('DELETE', `/api/admin/songs/${songId}`); toast(t('admin.songDeleted'), 'success'); await load(); }
-    catch (e) { toast((e as Error).message, 'error'); }
-
-}) });
-};
+      await apiCall('DELETE', `/api/admin/songs/${songId}`);
+      toast(t('admin.songDeleted'), 'success');
+      await load();
+    }) });
+  };
 
   if (!stats) return <Loading />;
 
