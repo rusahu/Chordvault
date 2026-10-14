@@ -30,3 +30,22 @@ test('refinement rejects malformed fields before Gemini and accepts full-sheet h
   assert.equal(response.status, 200);
   assert.equal(transport.mock.callCount(), 1);
 });
+
+test('OCR images up to 18MB reach Gemini and larger ones get a clear error', async t => {
+  t.mock.method(gemini, 'callGemini', async () => '[C]Fixture');
+  const { createSettingsRouter } = require('../routes/settings');
+  const request = await serve(t, app => app.use('/api', createSettingsRouter()));
+  await request('/api/settings/gemini-key', { ...account, method: 'PUT', body: { api_key: 'test-key-for-validation-no-external-calls' } });
+  const image = length => `data:image/png;base64,${'A'.repeat(length)}`;
+
+  const fits = await request('/api/ocr/gemini/refine', { ...account, method: 'POST', body: { image: image(25_000_000), message: 'Fix chord', history: [] } });
+  assert.equal(fits.status, 200);
+
+  const justOver = await request('/api/ocr/gemini', { ...account, method: 'POST', body: { image: image(25_165_828) } });
+  assert.equal(justOver.status, 400);
+  assert.deepEqual(await justOver.json(), { error: 'File too large (max 18MB)' });
+
+  const wayOver = await request('/api/ocr/gemini', { ...account, method: 'POST', body: { image: image(28_000_000) } });
+  assert.equal(wayOver.status, 413);
+  assert.deepEqual(await wayOver.json(), { error: 'Request too large' });
+});
