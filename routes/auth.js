@@ -5,7 +5,7 @@ const User = require('../lib/models/user');
 const Invite = require('../lib/models/invite');
 const { requireAuth, hashPassword, issueToken } = require('../lib/auth');
 const { validateObjectBody, assertValid, validateUserCredentials, validatePassword } = require('../lib/validation');
-const { ROLES } = require('../lib/constants');
+const { ROLES, LIMITS } = require('../lib/constants');
 const { AppError, handleDbError } = require('../lib/errors');
 const { DEMO_MODE, blockInDemo } = require('../lib/demo');
 
@@ -56,6 +56,7 @@ function createAuthRouter() {
   router.post('/login', async (req, res) => {
     const { username, password } = req.body;
     if (typeof username !== 'string' || typeof password !== 'string') throw new AppError('Username and password required', 400);
+    if (password.length > LIMITS.PASSWORD_MAX) throw new AppError('Invalid username or password', 401);
     const user = User.findByUsername(username.trim());
     if (!user || !(await bcrypt.compare(password, user.password_hash))) throw new AppError('Invalid username or password', 401);
     if (user.disabled) throw new AppError('Account is disabled. Contact an administrator.', 403);

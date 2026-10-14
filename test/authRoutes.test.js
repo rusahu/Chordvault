@@ -77,3 +77,13 @@ test('an invite used between the check and the redemption returns 400', async t 
   assert.deepEqual(await response.json(), { error: 'Invalid or already used invite code' });
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM users WHERE username = 'race-second'").get().n, 0);
 });
+
+test('login rejects an over-long password before hashing it', async t => {
+  const bcrypt = require('bcryptjs');
+  const request = await serve(t, mount);
+  const compare = t.mock.method(bcrypt, 'compare');
+  const response = await request('/api/auth/login', { method: 'POST', body: { username: 'auth-routes-admin', password: 'x'.repeat(257) } });
+  assert.equal(response.status, 401);
+  assert.deepEqual(await response.json(), { error: 'Invalid username or password' });
+  assert.equal(compare.mock.callCount(), 0);
+});

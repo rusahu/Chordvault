@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { parseId, isValidDate, validateUserCredentials, validateSongInput, validateSetlistInput, parsePaginationParams, validateSongMetadata, validateBoolean } = require('../lib/validation');
+const { parseId, isValidDate, validateUserCredentials, validateSongInput, validateSetlistInput, parsePaginationParams, validatePassword, validateSongMetadata, validateBoolean } = require('../lib/validation');
 
 test('IDs are positive safe integers with no coercion of other types', () => {
   for (const value of ['12junk','1.5','1e3','',0,-1,1.5,true,[],{},Number.MAX_SAFE_INTEGER+1]) assert.equal(parseId(value),null,JSON.stringify(value));
@@ -39,4 +39,8 @@ test('boolean fields reject strings and numbers', () => {
   for (const value of ['false', 'true', 0, 1, null, undefined]) assert.equal(validateBoolean(value, 'disabled'), 'disabled must be a boolean');
   assert.equal(validateBoolean(false, 'disabled'), null);
   assert.equal(validateBoolean(true, 'allowRegistration'), null);
+});
+test('passwords are capped so bcrypt never reads a huge string', () => {
+  assert.equal(validatePassword('x'.repeat(256)), null);
+  assert.equal(validatePassword('x'.repeat(257), 'New password'), 'New password must be at most 256 characters');
 });
