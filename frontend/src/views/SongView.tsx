@@ -126,7 +126,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
 
 
   const approveCorrection = async (id: number) => {
-    modals.openConfirmModal({ children: 'Apply this correction? The original song content will be updated.', labels: { confirm: 'Confirm', cancel: 'Cancel' }, onConfirm: async () => {
+    modals.openConfirmModal({ children: 'Apply this correction? The original song content will be updated.', onConfirm: async () => {
     try {
       await apiCall('PUT', `/api/corrections/${id}/approve`);
       toast('Correction approved', 'success');
@@ -139,7 +139,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
 };
 
   const rejectCorrection = async (id: number) => {
-    modals.openConfirmModal({ children: 'Reject and delete this correction?', labels: { confirm: 'Confirm', cancel: 'Cancel' }, onConfirm: async () => {
+    modals.openConfirmModal({ children: 'Reject and delete this correction?', onConfirm: async () => {
     try {
       await apiCall('DELETE', `/api/corrections/${id}`);
       toast('Correction rejected', 'success');

@@ -153,7 +153,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
 
   const deleteSetlist = async () => {
     if (readOnly || navigator.onLine === false) return;
-    modals.openConfirmModal({ children: t('setlist.confirmDelete'), labels: { confirm: 'Confirm', cancel: 'Cancel' }, onConfirm: async () => {
+    modals.openConfirmModal({ children: t('setlist.confirmDelete'), onConfirm: async () => {
 
     if (isLocal) {
       remove(String(setlistId));

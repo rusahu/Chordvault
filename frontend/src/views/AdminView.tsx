@@ -91,7 +91,7 @@ export function AdminView({ navigate }: AdminViewProps) {
 
   const setRole = async (userId: number, role: string) => {
     const action = role === 'admin' ? t('admin.confirmPromote') : t('admin.confirmDemote');
-    modals.openConfirmModal({ children: action, labels: { confirm: 'Confirm', cancel: 'Cancel' }, onConfirm: () => runAction(async () => {
+    modals.openConfirmModal({ children: action, onConfirm: () => runAction(async () => {
     try {
       await apiCall('PUT', `/api/admin/users/${userId}/role`, { role });
       toast(role === 'admin' ? t('admin.userPromoted') : t('admin.userDemoted'), 'success');
@@ -102,7 +102,7 @@ export function AdminView({ navigate }: AdminViewProps) {
 };
 
   const setDisabled = async (userId: number, disabled: boolean) => {
-    modals.openConfirmModal({ children: disabled ? t('admin.confirmDisable') : t('admin.confirmEnable'), labels: { confirm: 'Confirm', cancel: 'Cancel' }, onConfirm: () => runAction(async () => {
+    modals.openConfirmModal({ children: disabled ? t('admin.confirmDisable') : t('admin.confirmEnable'), onConfirm: () => runAction(async () => {
     try {
       await apiCall('PUT', `/api/admin/users/${userId}/disabled`, { disabled });
       toast(disabled ? t('admin.userDisabled') : t('admin.userEnabled'), 'success');
@@ -113,7 +113,7 @@ export function AdminView({ navigate }: AdminViewProps) {
 };
 
   const deleteUser = async (userId: number, username: string) => {
-    modals.openConfirmModal({ children: tReplace('admin.confirmDeleteUser', { username }), labels: { confirm: 'Confirm', cancel: 'Cancel' }, onConfirm: () => runAction(async () => {
+    modals.openConfirmModal({ children: tReplace('admin.confirmDeleteUser', { username }), onConfirm: () => runAction(async () => {
     try { await apiCall('DELETE', `/api/admin/users/${userId}`); toast(t('admin.userDeleted'), 'success'); await load(); }
     catch (e) { toast((e as Error).message, 'error'); }
 
@@ -128,7 +128,7 @@ export function AdminView({ navigate }: AdminViewProps) {
   }) } });
 
   const deleteSong = async (songId: number, title: string) => {
-    modals.openConfirmModal({ children: tReplace('admin.confirmDeleteSong', { title }), labels: { confirm: 'Confirm', cancel: 'Cancel' }, onConfirm: () => runAction(async () => {
+    modals.openConfirmModal({ children: tReplace('admin.confirmDeleteSong', { title }), onConfirm: () => runAction(async () => {
     try { await apiCall('DELETE', `/api/admin/songs/${songId}`); toast(t('admin.songDeleted'), 'success'); await load(); }
     catch (e) { toast((e as Error).message, 'error'); }
 
