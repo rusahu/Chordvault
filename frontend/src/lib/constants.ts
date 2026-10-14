@@ -1,7 +1,6 @@
 import shared from '../../../shared/public-constants.json';
 
 export const DEFAULT_TAGS: string[] = shared.DEFAULT_TAGS;
-export const MAX_TAGS = shared.limits.MAX_TAGS;
 export const MAX_TAG_LENGTH = shared.limits.MAX_TAG_LENGTH;
 
 export const MAX_LOCAL_SETLISTS = 50;

@@ -26,3 +26,9 @@ it('unticking an off-list tag removes it and ticking a translated one stores its
   await userEvent.click(screen.getByRole('checkbox', { name: '敬拜' }));
   expect(onChange).toHaveBeenLastCalledWith(expect.arrayContaining(['worship']));
 });
+
+it('explains an off-list chip through the language file', async () => {
+  renderPicker(['advent']);
+  await userEvent.hover(screen.getByText('advent'));
+  expect(await screen.findByText('songEdit.tagNotOnList')).toBeInTheDocument();
+});

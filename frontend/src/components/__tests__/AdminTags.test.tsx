@@ -47,7 +47,7 @@ it('reorders by drag and restores the list when a save fails', async () => {
   api.mockImplementation((method: string) => method === 'GET' ? Promise.resolve(list(['worship', 'hymn', 'kids'])) : Promise.reject(new Error('Server error')));
   render(<AdminTags />);
   const rows = await screen.findAllByTestId('admin-tag-row');
-  fireEvent.mouseDown(screen.getAllByTitle('Drag to reorder')[0]);
+  fireEvent.mouseDown(screen.getAllByTitle('admin.dragToReorder')[0]);
   fireEvent.dragStart(rows[0]);
   fireEvent.dragOver(rows[2]);
   fireEvent.dragEnd(screen.getAllByTestId('admin-tag-row')[2]);
@@ -70,4 +70,32 @@ it('disables every control in demo mode', async () => {
   expect(await screen.findByPlaceholderText('admin.newTag')).toBeDisabled();
   for (const button of screen.getAllByRole('button')) expect(button).toBeDisabled();
   expect(screen.getByText('Disabled in demo mode')).toBeInTheDocument();
+});
+
+it('keeps a rename on its tag when another row is removed meanwhile', async () => {
+  render(<AdminTags />);
+  await userEvent.click((await screen.findAllByRole('button', { name: 'admin.renameTag' }))[2]);
+  const field = screen.getByDisplayValue('kids');
+  await userEvent.clear(field);
+  await userEvent.type(field, 'youth');
+  await userEvent.click(screen.getAllByRole('button', { name: 'admin.removeTag' })[0]);
+  await userEvent.click(await screen.findByRole('button', { name: 'Confirm' }));
+  await waitFor(() => expect(puts()).toEqual([['hymn', 'kids']]));
+  await userEvent.type(screen.getByDisplayValue('youth'), '{Enter}');
+  await waitFor(() => expect(puts().slice(-1)[0]).toEqual(['hymn', 'youth']));
+});
+
+it('does not save when nothing changed', async () => {
+  render(<AdminTags />);
+  await userEvent.click((await screen.findAllByRole('button', { name: 'admin.renameTag' }))[1]);
+  const field = screen.getByDisplayValue('hymn');
+  await userEvent.clear(field);
+  await userEvent.type(field, 'Hymn {Enter}');
+  const rows = screen.getAllByTestId('admin-tag-row');
+  fireEvent.mouseDown(screen.getAllByTitle('admin.dragToReorder')[0]);
+  fireEvent.dragStart(rows[0]);
+  fireEvent.dragEnd(rows[0]);
+  await new Promise(resolve => setTimeout(resolve, 50));
+  expect(puts()).toEqual([]);
+  expect(toast).not.toHaveBeenCalled();
 });

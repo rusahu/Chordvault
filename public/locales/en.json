@@ -65,6 +65,7 @@
   "songEdit.saved": "Song saved",
   "songEdit.created": "Song created",
   "songEdit.deleted": "Song deleted",
+  "songEdit.tagNotOnList": "Not on the tag list",
   "songEdit.confirmDelete": "Delete this song? This cannot be undone.",
 
   "tag.worship": "worship",
@@ -117,6 +118,7 @@
   "admin.renameTag": "Rename {name}",
   "admin.removeTag": "Remove {name}",
   "admin.tagsSaved": "Tags saved",
+  "admin.dragToReorder": "Drag to reorder",
   "admin.pendingInvites": "Pending invites",
   "admin.codeCopied": "Code copied",
   "admin.copy": "Copy",

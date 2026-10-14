@@ -11,7 +11,7 @@ import { DEFAULT_TAGS } from '../lib/constants';
 import { tagLabel, tagNameError } from '../lib/tagName';
 import type { AdminTagList } from '../types';
 
-interface Editing { index: number; value: string; error: string | null }
+interface Editing { name: string; value: string; error: string | null }
 
 const cleanName = (name: string) => name.trim().toLowerCase();
 
@@ -53,7 +53,10 @@ export function AdminTags() {
     }
   };
 
-  const save = (list: string[]) => run(() => apiCall<AdminTagList>('PUT', '/api/admin/tags', { tags: list }));
+  const save = async (list: string[]) => {
+    if (list.length === names.length && list.every((name, i) => name === names[i])) return true;
+    return run(() => apiCall<AdminTagList>('PUT', '/api/admin/tags', { tags: list }));
+  };
   const { items, setItems, dragProps, handleProps } = useDragReorder(names, save);
   useEffect(() => { restoreOrder.current = setItems; }, [setItems]);
   const countOf = (name: string) => data?.tags.find(tag => tag.name === name)?.count ?? 0;
@@ -66,9 +69,9 @@ export function AdminTags() {
 
   const commitRename = async () => {
     if (!editing) return;
-    const error = tagNameError(editing.value, names.filter((_, i) => i !== editing.index));
+    const error = tagNameError(editing.value, names.filter(name => name !== editing.name));
     if (error) { setEditing({ ...editing, error }); return; }
-    if (await save(names.map((name, i) => (i === editing.index ? cleanName(editing.value) : name)))) setEditing(null);
+    if (await save(names.map(name => (name === editing.name ? cleanName(editing.value) : name)))) setEditing(null);
   };
 
   const remove = (name: string) => {
@@ -100,10 +103,10 @@ export function AdminTags() {
             <Box key={name}>
               <Divider />
               <Group data-testid="admin-tag-row" data-name={name} wrap="nowrap" gap={8} py={6} {...dragProps(idx)}>
-                <Box className="setlist-drag-handle" title="Drag to reorder" {...(disabled ? {} : handleProps(idx))}>
+                <Box className="setlist-drag-handle" title={t('admin.dragToReorder')} {...(disabled ? {} : handleProps(idx))}>
                   <IconGripVertical size={20} aria-hidden />
                 </Box>
-                {editing?.index === idx ? (
+                {editing?.name === name ? (
                   <>
                     <TextInput
                       flex={1}
@@ -127,7 +130,7 @@ export function AdminTags() {
                       <Text fw={600}>{tagLabel(t, name)}</Text>
                       <Text c="dimmed" fz={13}>{tReplace('admin.tagUsage', { count: countOf(name) })}</Text>
                     </Flex>
-                    <ActionIcon variant="subtle" size={44} aria-label={tReplace('admin.renameTag', { name })} onClick={() => setEditing({ index: idx, value: name, error: null })} disabled={disabled}><IconPencil size={18} /></ActionIcon>
+                    <ActionIcon variant="subtle" size={44} aria-label={tReplace('admin.renameTag', { name })} onClick={() => setEditing({ name, value: name, error: null })} disabled={disabled}><IconPencil size={18} /></ActionIcon>
                     <ActionIcon variant="subtle" size={44} aria-label={tReplace('admin.removeTag', { name })} onClick={() => remove(name)} disabled={disabled}><IconTrash size={18} /></ActionIcon>
                   </>
                 )}

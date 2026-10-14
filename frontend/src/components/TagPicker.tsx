@@ -17,7 +17,7 @@ export function TagPicker({ selected, onChange, label }: TagPickerProps) {
     <Group gap={6} role="group" aria-label={label}>
       {tags.map(tag => <Chip key={tag} value={tag} size="sm">{tagLabel(t, tag)}</Chip>)}
       {offList.map(tag => (
-        <Tooltip key={tag} label="Not on the tag list" events={{ hover: true, focus: true, touch: true }}>
+        <Tooltip key={tag} label={t('songEdit.tagNotOnList')} events={{ hover: true, focus: true, touch: true }}>
           <Box component="span" display="inline-block"><Chip value={tag} size="sm">{tagLabel(t, tag)}</Chip></Box>
         </Tooltip>
       ))}

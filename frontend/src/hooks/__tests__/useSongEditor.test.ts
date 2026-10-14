@@ -28,4 +28,9 @@ describe('useSongEditor pending source edits', () => {
     act(() => vi.advanceTimersByTime(150));
     expect(result.current.state.title).toBe('Loaded');
   });
+  it('reads tags lowercased and without duplicates, as the server stores them', () => {
+    const { result } = renderHook(() => useSongEditor());
+    act(() => result.current.setInitialContent('{x_tags: Worship, worship ,Kids}\n[G]Music'));
+    expect(result.current.state.tags).toEqual(['worship', 'kids']);
+  });
 });
