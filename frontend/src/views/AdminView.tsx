@@ -13,6 +13,7 @@ import type { AdminStats, AdminUser, InviteCode, AdminConfig, Correction } from 
 import { useDemo } from '../context/DemoContext';
 import { languageName } from '../lib/languages';
 import { PageTitle } from '../components/PageTitle';
+import { AdminTags } from '../components/AdminTags';
 
 interface AdminViewProps {
   navigate: (view: string, params?: Record<string, string>) => void;
@@ -187,6 +188,8 @@ export function AdminView({ navigate }: AdminViewProps) {
           )}
         </Stack>
       </Paper>
+
+      <AdminTags />
 
       <h3 className="admin-section-title">{t('admin.users')}</h3>
 

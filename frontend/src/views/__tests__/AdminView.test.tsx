@@ -15,6 +15,7 @@ beforeEach(() => {
   api.mockReset();
   api.mockImplementation((method: string, path: string) => {
     if (method !== 'GET') return new Promise(() => {});
+    if (path.endsWith('/admin/tags')) return Promise.resolve({ tags: [], isDefault: true });
     if (path.endsWith('/stats')) return Promise.resolve({ userCount: 2, songCount: 0, pendingCount: 0, noFormatCount: 0, recentSongs: [] });
     if (path.endsWith('/users')) return Promise.resolve([{ id: 2, username: 'member', role: 'user', song_count: 0, created_at: '2026-01-01', disabled: false }]);
     if (path.endsWith('/config')) return Promise.resolve({ allowRegistration: true });
