@@ -54,6 +54,7 @@ function createAdminRouter() {
 
   router.put('/admin/users/:id/disabled', requireAuth, requireAdmin, blockInDemo, (req, res) => {
     const { disabled } = req.body;
+    if (typeof disabled !== 'boolean') throw new AppError('disabled must be a boolean', 400);
     User.updateDisabled(resolveAdminTarget(req).targetId, disabled);
     res.json({ success: true });
   });

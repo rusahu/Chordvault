@@ -126,3 +126,17 @@ test('versions and corrections require a title and a known language', async t =>
     await expectError(request, path, { ...other, method: 'POST', body: { content: badLanguage } }, 400, 'Invalid language code');
   }
 });
+
+test('admin disable accepts only a boolean', async t => {
+  const request = await serve(t, mount);
+  const target = user('errors-disable-target');
+  const path = `/api/admin/users/${target.id}/disabled`;
+  for (const disabled of ['false', 'true', 0, 1, null, undefined]) {
+    await expectError(request, path, { ...admin, method: 'PUT', body: { disabled } }, 400, 'disabled must be a boolean');
+  }
+  assert.equal(db.prepare('SELECT disabled FROM users WHERE id = ?').get(target.id).disabled, 0);
+  for (const disabled of [true, false]) {
+    assert.equal((await request(path, { ...admin, method: 'PUT', body: { disabled } })).status, 200);
+    assert.equal(db.prepare('SELECT disabled FROM users WHERE id = ?').get(target.id).disabled, disabled ? 1 : 0);
+  }
+});
