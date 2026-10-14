@@ -4,6 +4,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const { db } = require('../../lib/db');
 const { errorHandler } = require('../../lib/errors');
+const { LIMITS } = require('../../lib/constants');
 
 function user(name, role = 'user') {
   const id = Number(db.prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)').run(name, 'unused', role).lastInsertRowid);
@@ -13,7 +14,7 @@ function user(name, role = 'user') {
 async function serve(t, mount) {
   const app = express();
   app.set('trust proxy', 1);
-  app.use(express.json());
+  app.use(express.json({ limit: LIMITS.MAX_BODY_JSON }));
   mount(app);
   app.use(errorHandler);
   const server = await new Promise(resolve => {

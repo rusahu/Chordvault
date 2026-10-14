@@ -116,3 +116,27 @@ test('a stored Gemini key that no longer decrypts is a 500 on both OCR routes', 
     await expectError(request, path, { ...account, method: 'POST', body: { image: 'data:image/png;base64,YQ==', history: [], message: 'x' } }, 500, 'Failed to decrypt API key. Try re-saving it in Settings.');
   }
 });
+
+test('versions and corrections require a title and a known language', async t => {
+  const request = await serve(t, mount);
+  const noTitle = '[C]Grace';
+  const badLanguage = '{title: Grace}\n{x_language: zz}\n[C]Grace';
+  for (const path of [`/api/songs/${songId}/version`, `/api/songs/${songId}/correction`]) {
+    await expectError(request, path, { ...other, method: 'POST', body: { content: noTitle } }, 400, 'Title is required. Add {title: Song Name} to your content.');
+    await expectError(request, path, { ...other, method: 'POST', body: { content: badLanguage } }, 400, 'Invalid language code');
+  }
+});
+
+test('admin disable accepts only a boolean', async t => {
+  const request = await serve(t, mount);
+  const target = user('errors-disable-target');
+  const path = `/api/admin/users/${target.id}/disabled`;
+  for (const disabled of ['false', 'true', 0, 1, null, undefined]) {
+    await expectError(request, path, { ...admin, method: 'PUT', body: { disabled } }, 400, 'disabled must be a boolean');
+  }
+  assert.equal(db.prepare('SELECT disabled FROM users WHERE id = ?').get(target.id).disabled, 0);
+  for (const disabled of [true, false]) {
+    assert.equal((await request(path, { ...admin, method: 'PUT', body: { disabled } })).status, 200);
+    assert.equal(db.prepare('SELECT disabled FROM users WHERE id = ?').get(target.id).disabled, disabled ? 1 : 0);
+  }
+});

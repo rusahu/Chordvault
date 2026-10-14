@@ -37,3 +37,8 @@ test('loadGeminiCredentials throws 400 without a key and 500 when it cannot decr
   User.updateGeminiApiKey(broken.id, '00:00:00');
   assert.throws(() => loadGeminiCredentials(broken.id), err => err instanceof AppError && err.status === 500 && err.message === 'Failed to decrypt API key. Try re-saving it in Settings.');
 });
+
+test('a key stored by v1.29.1 still decrypts', () => {
+  const stored = '247808c269dff6e98386c3c0:16f5c7a3029f45770db6cd962d60d7fa:d0946e256a200ea6570606a91443a26d6bfe92f27c2ae17a73fe9d6d42f39a503c25650e9fd4';
+  assert.equal(decryptApiKey(stored), 'AIzaSyPreChangeVector-0123456789abcdef');
+});

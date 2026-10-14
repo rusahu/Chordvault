@@ -2,9 +2,8 @@ const express = require('express');
 const yazl = require('yazl');
 const { requireAuth, requireAdmin, optionalAuth, isAdminRole, canManageSong } = require('../lib/auth');
 const { STATUS, VISIBILITY, LIMITS } = require('../lib/constants');
-const { validateListQuery, validateObjectBody, requireId, assertValid, validateSongInput, validateVisibility, validateLanguage, parsePaginationParams } = require('../lib/validation');
+const { validateListQuery, validateObjectBody, requireId, assertValid, validateSongInput, validateVisibility, validateSongMetadata, parsePaginationParams } = require('../lib/validation');
 const { AppError, requireFound } = require('../lib/errors');
-const { LANGUAGE_CODES } = require('../lib/languages');
 const { DEMO_MODE } = require('../lib/demo');
 const { makeUniqueNamer } = require('../lib/exportFilename');
 const Song = require('../lib/models/song');
@@ -31,6 +30,12 @@ function extractMetadata(content) {
     tags: cleanedTags,
     language: extractDirective(content, 'x_language') || '',
   };
+}
+
+function requireSongMetadata(content) {
+  const meta = extractMetadata(content);
+  assertValid(validateSongMetadata(meta));
+  return meta;
 }
 
 function findSong(rawId) {
@@ -60,7 +65,7 @@ function createSongsRouter() {
     res.json(Song.listForUser(userId, { q, language, page: pageNum, limit: limitNum }));
   });
 
-  router.get('/songs/public', validateListQuery, (req, res) => {
+  router.get('/songs/public', optionalAuth, validateListQuery, (req, res) => {
     const { q, language, page, limit } = req.query;
     const userId = req.user ? req.user.id : 0;
     const { page: pageNum, limit: limitNum } = parsePaginationParams(page, limit);
@@ -113,9 +118,7 @@ function createSongsRouter() {
   router.post('/songs', requireAuth, (req, res) => {
     const { content, format_detected, visibility } = req.body;
     assertValid(validateSongInput({ content, format_detected, requireContent: true, requireChord: true }));
-    const meta = extractMetadata(content);
-    if (!meta.title) throw new AppError('Title is required. Add {title: Song Name} to your content.', 400);
-    if (meta.language) assertValid(validateLanguage(meta.language));
+    const meta = requireSongMetadata(content);
     assertValid(validateVisibility(visibility));
 
     const fmt = format_detected?.trim() || null;
@@ -138,8 +141,8 @@ function createSongsRouter() {
         : validateSongInput({ content: s.content, requireContent: true });
       if (inputError) { errors.push({ index: i, error: inputError }); return; }
       const meta = extractMetadata(s.content);
-      if (!meta.title) { errors.push({ index: i, error: 'Title is required. Add {title: Song Name} to content.' }); return; }
-      if (meta.language && !LANGUAGE_CODES.has(meta.language)) { errors.push({ index: i, error: `Invalid language code: ${meta.language}` }); return; }
+      const metaError = validateSongMetadata(meta);
+      if (metaError) { errors.push({ index: i, error: metaError }); return; }
       const visError = validateVisibility(s.visibility);
       if (visError) { errors.push({ index: i, error: visError }); return; }
       valid.push({
@@ -166,9 +169,7 @@ function createSongsRouter() {
     const { content, format_detected, visibility } = req.body;
     assertValid(validateSongInput({ content, format_detected, requireChord: true }));
     const finalContent = content?.trim() || existing.content;
-    const meta = extractMetadata(finalContent);
-    if (!meta.title) throw new AppError('Title is required. Add {title: Song Name} to your content.', 400);
-    if (meta.language) assertValid(validateLanguage(meta.language));
+    const meta = requireSongMetadata(finalContent);
     assertValid(validateVisibility(visibility));
 
     const fmt = format_detected !== undefined ? (format_detected?.trim() || null) : existing.format_detected;
@@ -198,7 +199,7 @@ function createSongsRouter() {
     assertValid(validateSongInput({ content, youtube_url, requireContent: true, requireChord: true }));
 
     const parentId = original.parent_id || original.id;
-    const meta = extractMetadata(content);
+    const meta = requireSongMetadata(content);
     const result = Song.createVersion(req.user.id, parentId, meta, content, original.visibility);
     res.json({ id: result.lastInsertRowid });
   });
@@ -221,7 +222,7 @@ function createSongsRouter() {
     if (validationError) throw new AppError(validationError.replace('before saving', 'before submitting'), 400);
 
     const parentId = original.parent_id || original.id;
-    const meta = extractMetadata(content);
+    const meta = requireSongMetadata(content);
     const result = Song.createCorrection(req.user.id, parentId, meta, content);
     res.json({ id: result.lastInsertRowid });
   });
