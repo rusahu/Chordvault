@@ -67,7 +67,7 @@ function createSongsRouter() {
     res.json(Song.listForUser(userId, { q, language, page: pageNum, limit: limitNum }));
   });
 
-  router.get('/songs/public', validateListQuery, (req, res) => {
+  router.get('/songs/public', optionalAuth, validateListQuery, (req, res) => {
     const { q, language, page, limit } = req.query;
     const userId = req.user ? req.user.id : 0;
     const { page: pageNum, limit: limitNum } = parsePaginationParams(page, limit);

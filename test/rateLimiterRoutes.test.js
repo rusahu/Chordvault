@@ -39,7 +39,7 @@ test('quota classification leaves public version counts identical in development
     const request=await serve(t,mount);
     const publicSongs=await (await request('/api/songs/public',account)).json();
     assert.equal(publicSongs.some(song=>song.id===privateId),false);
-    assert.equal(publicSongs.find(song=>song.id===root).version_count,1);
+    assert.equal(publicSongs.find(song=>song.id===root).version_count,2);
     results.push(publicSongs);
     assert.equal((await (await request(`/api/songs/${root}`,account)).json()).version_count,2);
   }
