@@ -5,22 +5,17 @@ const User = require('../lib/models/user');
 const Song = require('../lib/models/song');
 const Invite = require('../lib/models/invite');
 const { requireAuth, requireAdmin, hashPassword } = require('../lib/auth');
-const { validateObjectBody, parseId, validateUserCredentials } = require('../lib/validation');
-const { handleDbError } = require('../lib/errors');
-const { ROLES, LIMITS } = require('../lib/constants');
+const { validateObjectBody, requireId, assertValid, validateUserCredentials, validatePassword } = require('../lib/validation');
+const { AppError, handleDbError, requireFound } = require('../lib/errors');
+const { ROLES } = require('../lib/constants');
 const { blockInDemo } = require('../lib/demo');
 
-function resolveAdminTarget(req, res) {
-  const targetId = parseId(req.params.id);
-  if (!targetId) { res.status(400).json({ error: 'Invalid user ID' }); return null; }
-  const target = User.getFullById(targetId);
-  if (!target) { res.status(404).json({ error: 'User not found' }); return null; }
-  if (target.role === ROLES.OWNER) { res.status(403).json({ error: 'Cannot modify the owner' }); return null; }
-  if (target.role === ROLES.ADMIN && req.user.role !== ROLES.OWNER) {
-    res.status(403).json({ error: 'Only the owner can manage admins' });
-    return null;
-  }
-  if (targetId === req.user.id) { res.status(403).json({ error: 'Cannot modify yourself' }); return null; }
+function resolveAdminTarget(req) {
+  const targetId = requireId(req.params.id, 'Invalid user ID');
+  const target = requireFound(User.getFullById(targetId), 'User not found');
+  if (target.role === ROLES.OWNER) throw new AppError('Cannot modify the owner', 403);
+  if (target.role === ROLES.ADMIN && req.user.role !== ROLES.OWNER) throw new AppError('Only the owner can manage admins', 403);
+  if (targetId === req.user.id) throw new AppError('Cannot modify yourself', 403);
   return { targetId, target };
 }
 
@@ -46,15 +41,12 @@ function createAdminRouter() {
 
   router.put('/admin/users/:id/role', requireAuth, requireAdmin, blockInDemo, (req, res) => {
     const { role } = req.body;
-    const resolved = resolveAdminTarget(req, res);
-    if (!resolved) return;
+    const resolved = resolveAdminTarget(req);
 
     if ((role === ROLES.ADMIN || resolved.target.role === ROLES.ADMIN) && req.user.role !== ROLES.OWNER) {
-      return res.status(403).json({ error: 'Only the owner can promote or demote admins' });
+      throw new AppError('Only the owner can promote or demote admins', 403);
     }
-    if (role !== ROLES.USER && role !== ROLES.ADMIN) {
-      return res.status(400).json({ error: 'Role must be "user" or "admin"' });
-    }
+    if (role !== ROLES.USER && role !== ROLES.ADMIN) throw new AppError('Role must be "user" or "admin"', 400);
 
     User.updateRole(resolved.targetId, role);
     res.json({ success: true });
@@ -62,54 +54,40 @@ function createAdminRouter() {
 
   router.put('/admin/users/:id/disabled', requireAuth, requireAdmin, blockInDemo, (req, res) => {
     const { disabled } = req.body;
-    const resolved = resolveAdminTarget(req, res);
-    if (!resolved) return;
-
-    User.updateDisabled(resolved.targetId, disabled);
+    User.updateDisabled(resolveAdminTarget(req).targetId, disabled);
     res.json({ success: true });
   });
 
   router.put('/admin/users/:id/password', requireAuth, requireAdmin, blockInDemo, async (req, res) => {
-    const resolved = resolveAdminTarget(req, res);
-    if (!resolved) return;
-
+    const { targetId } = resolveAdminTarget(req);
     const { password } = req.body;
-    if (typeof password !== 'string' || password.length < LIMITS.PASSWORD_MIN) {
-      return res.status(400).json({ error: `Password must be at least ${LIMITS.PASSWORD_MIN} characters` });
-    }
+    assertValid(validatePassword(password));
 
     const hash = await hashPassword(password);
-    User.updatePassword(resolved.targetId, hash);
+    User.updatePassword(targetId, hash);
     res.json({ success: true });
   });
 
   router.post('/admin/users', requireAuth, requireAdmin, blockInDemo, async (req, res) => {
     const { username, password } = req.body;
-    const credentialsErr = validateUserCredentials(username, password);
-    if (credentialsErr) return res.status(400).json({ error: credentialsErr });
+    assertValid(validateUserCredentials(username, password));
     const hash = await hashPassword(password);
     try {
       const result = User.create(username.trim(), hash, ROLES.USER);
       res.json({ id: result.lastInsertRowid, username: username.trim() });
     } catch (e) {
-      const appErr = handleDbError(e, { uniqueMessage: 'Username already taken' });
-      return res.status(appErr.status).json({ error: appErr.message });
+      throw handleDbError(e, { uniqueMessage: 'Username already taken' });
     }
   });
 
   router.delete('/admin/users/:id', requireAuth, requireAdmin, blockInDemo, (req, res) => {
-    const resolved = resolveAdminTarget(req, res);
-    if (!resolved) return;
-
-    User.delete(resolved.targetId);
+    User.delete(resolveAdminTarget(req).targetId);
     res.json({ success: true });
   });
 
   router.delete('/admin/songs/:id', requireAuth, requireAdmin, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid song ID' });
-    const result = Song.delete(id);
-    if (!result.changes) return res.status(404).json({ error: 'Song not found' });
+    const result = Song.delete(requireId(req.params.id, 'Invalid song ID'));
+    if (!result.changes) throw new AppError('Song not found', 404);
     res.json({ success: true });
   });
 
@@ -125,10 +103,8 @@ function createAdminRouter() {
   });
 
   router.delete('/admin/invites/:id', requireAuth, requireAdmin, blockInDemo, (req, res) => {
-    const id = parseId(req.params.id);
-    if (!id) return res.status(400).json({ error: 'Invalid invite ID' });
-    const result = Invite.deleteUnused(id);
-    if (!result.changes) return res.status(404).json({ error: 'Invite not found or already used' });
+    const result = Invite.deleteUnused(requireId(req.params.id, 'Invalid invite ID'));
+    if (!result.changes) throw new AppError('Invite not found or already used', 404);
     res.json({ success: true });
   });
 
@@ -143,7 +119,7 @@ function createAdminRouter() {
 
   router.put('/admin/config', requireAuth, requireAdmin, blockInDemo, (req, res) => {
     const { allowRegistration } = req.body;
-    if (typeof allowRegistration !== 'boolean') return res.status(400).json({ error: 'allowRegistration must be a boolean' });
+    if (typeof allowRegistration !== 'boolean') throw new AppError('allowRegistration must be a boolean', 400);
     setSetting('allow_registration', allowRegistration ? '1' : '0');
     res.json({ success: true, allowRegistration });
   });

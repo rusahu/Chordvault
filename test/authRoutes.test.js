@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { db, user, serve } = require('./helpers/app');
 const { createAuthRouter } = require('../routes/auth');
 const { createAdminRouter } = require('../routes/admin');
+const { issueToken } = require('../lib/auth');
 const admin = user('auth-routes-admin', 'admin');
 test.after(() => db.close());
 db.prepare("UPDATE settings SET value = '1' WHERE key = 'allow_registration'").run();
@@ -21,6 +22,10 @@ function assertToken(token, id, username) {
   assert.equal(payload.exp - payload.iat, THIRTY_DAYS);
 }
 
+test('issueToken signs id and username for 30 days', () => {
+  assertToken(issueToken({ id: 7, username: 'singer' }), 7, 'singer');
+});
+
 test('register, login and invite redemption issue the same 30-day token', async t => {
   const request = await serve(t, mount);
   const registered = await (await request('/api/auth/register', { method: 'POST', body: { username: ' singer ', password: 'secret1' } })).json();
@@ -32,7 +37,7 @@ test('register, login and invite redemption issue the same 30-day token', async 
   assertToken(redeemed.token, redeemed.id, 'invited');
 });
 
-test('duplicate usernames keep their message on every create path', async t => {
+test('duplicate usernames keep their message and gain the DUPLICATE code on every create path', async t => {
   const request = await serve(t, mount);
   user('taken');
   const { code } = await (await request('/api/admin/invites', { ...admin, method: 'POST' })).json();
@@ -43,7 +48,7 @@ test('duplicate usernames keep their message on every create path', async t => {
   ]) {
     const response = await request(path, options);
     assert.equal(response.status, 400, path);
-    assert.equal((await response.json()).error, 'Username already taken', path);
+    assert.deepEqual(await response.json(), { error: 'Username already taken', code: 'DUPLICATE' }, path);
   }
 });
 
