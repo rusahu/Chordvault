@@ -29,7 +29,7 @@ function extractMetadata(content) {
 
 /** Every song save: the submitted text, then the metadata stored from the saved text (an edit without text keeps the stored text). */
 function checkSongSave({ content, format_detected }, { fallbackContent = null } = {}) {
-  const error = validateSongInput({ content, format_detected, requireContent: fallbackContent === null, requireChord: true });
+  const error = validateSongInput({ content, format_detected, requireContent: fallbackContent === null });
   if (error) return { error };
   const saved = fallbackContent === null ? content : content?.trim() || fallbackContent;
   const meta = extractMetadata(saved);
