@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseDbTime, formatDbDate } from '../format';
+import { parseDbTime, formatDbDate, formatSongCount, versionLabel } from '../format';
 
 describe('database timestamps', () => {
   it('reads SQLite CURRENT_TIMESTAMP as UTC', () => {
@@ -16,5 +16,18 @@ describe('database timestamps', () => {
 
   it('shows a late UTC time as the next day in UTC+8', () => {
     expect(parseDbTime('2026-10-15 23:30:00').toLocaleDateString('en-CA', { timeZone: 'Asia/Singapore' })).toBe('2026-10-16');
+  });
+});
+
+describe('list labels', () => {
+  const t = (key: string) => ({ 'admin.song': 'song', 'admin.songPlural': 'songs' }[key] ?? key);
+
+  it('counts songs with the singular only for one', () => {
+    expect([0, 1, 2].map(n => formatSongCount(n, t))).toEqual(['0 songs', '1 song', '2 songs']);
+  });
+
+  it('labels a version by position, owner and video, as the selects show it', () => {
+    expect(versionLabel({ username: 'amy', youtube_url: 'https://youtu.be/x' }, 0)).toBe('1 (@amy) ▶');
+    expect(versionLabel({ username: 'bo', youtube_url: null }, 1)).toBe('2 (@bo) ');
   });
 });
