@@ -123,3 +123,17 @@ test('password change checks the current password', async t => {
   assert.deepEqual([wrong.status, await wrong.json()], [401, { error: 'Current password is incorrect' }]);
   assert.equal((await change('secret1')).status, 200);
 });
+
+test('createAccount reports a taken username as 400 even from an async create', async () => {
+  const { createAccount } = require('../lib/auth');
+  const taken = Object.assign(new Error('UNIQUE constraint failed'), { code: 'SQLITE_CONSTRAINT_UNIQUE' });
+  await assert.rejects(createAccount(' singer ', 'secret1', async () => { throw taken; }), { status: 400, code: 'DUPLICATE', message: 'Username already taken' });
+});
+
+test('an admin password reset lets the user sign in with the new password', async t => {
+  const request = await serve(t, mount);
+  const { id } = user('reset-singer');
+  assert.equal((await request(`/api/admin/users/${id}/password`, { ...admin, method: 'PUT', body: { password: 'fresh-pass' } })).status, 200);
+  const login = await request('/api/auth/login', { method: 'POST', body: { username: 'reset-singer', password: 'fresh-pass' } });
+  assert.equal(login.status, 200);
+});

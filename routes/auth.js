@@ -2,9 +2,9 @@ const express = require('express');
 const { isRegistrationAllowed } = require('../lib/db');
 const User = require('../lib/models/user');
 const Invite = require('../lib/models/invite');
-const { requireAuth, hashPassword, checkPassword, sessionResponse, createAccount } = require('../lib/auth');
+const { requireAuth, checkPassword, sessionResponse, createAccount, setPassword } = require('../lib/auth');
 const { validateObjectBody, assertValid, validateUserCredentials, validatePassword } = require('../lib/validation');
-const { ROLES, LIMITS } = require('../lib/constants');
+const { LIMITS } = require('../lib/constants');
 const { AppError } = require('../lib/errors');
 const { DEMO_MODE, blockInDemo } = require('../lib/demo');
 
@@ -43,8 +43,7 @@ function createAuthRouter() {
     const { username, password, turnstile_token } = req.body;
     await assertTurnstile(turnstile_token);
     assertValid(validateUserCredentials(username, password));
-    const { id, role } = await createAccount(username, password, (name, hash) => User.register(name, hash, assertCanRegister));
-    res.json(sessionResponse({ id, username: username.trim(), role }));
+    res.json(sessionResponse(await createAccount(username, password, (name, hash) => User.register(name, hash, assertCanRegister))));
   });
 
   router.post('/login', async (req, res) => {
@@ -66,8 +65,7 @@ function createAuthRouter() {
     assertValid(validateUserCredentials(username, password));
     if (!Invite.findByCode(inviteCode)) throw new AppError('Invalid or already used invite code', 400);
 
-    const result = await createAccount(username, password, (name, hash) => Invite.redeem(inviteCode, name, hash));
-    res.json(sessionResponse({ id: result.lastInsertRowid, username: username.trim(), role: ROLES.USER }));
+    res.json(sessionResponse(await createAccount(username, password, (name, hash) => Invite.redeem(inviteCode, name, hash))));
   });
 
   router.put('/password', blockInDemo, requireAuth, async (req, res) => {
@@ -77,8 +75,7 @@ function createAuthRouter() {
     const user = User.getFullById(req.user.id);
     if (!user) throw new AppError('User not found', 404);
     if (!(await checkPassword(current_password, user.password_hash))) throw new AppError('Current password is incorrect', 401);
-    const hash = await hashPassword(new_password);
-    User.updatePassword(req.user.id, hash);
+    await setPassword(req.user.id, new_password);
     res.json({ success: true });
   });
 
