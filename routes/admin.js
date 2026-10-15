@@ -4,9 +4,9 @@ const { setSetting, isRegistrationAllowed } = require('../lib/db');
 const User = require('../lib/models/user');
 const Song = require('../lib/models/song');
 const Invite = require('../lib/models/invite');
-const { requireAuth, requireAdmin, hashPassword } = require('../lib/auth');
+const { requireAuth, requireAdmin, createAccount, setPassword } = require('../lib/auth');
 const { validateObjectBody, requireId, assertValid, validateUserCredentials, validatePassword, validateBoolean, validateTagList } = require('../lib/validation');
-const { AppError, handleDbError, requireFound } = require('../lib/errors');
+const { AppError, requireFound } = require('../lib/errors');
 const { ROLES } = require('../lib/constants');
 const Tags = require('../lib/models/tags');
 const { blockInDemo } = require('../lib/demo');
@@ -65,21 +65,15 @@ function createAdminRouter() {
     const { password } = req.body;
     assertValid(validatePassword(password));
 
-    const hash = await hashPassword(password);
-    User.updatePassword(targetId, hash);
+    await setPassword(targetId, password);
     res.json({ success: true });
   });
 
   router.post('/admin/users', requireAuth, requireAdmin, blockInDemo, async (req, res) => {
     const { username, password } = req.body;
     assertValid(validateUserCredentials(username, password));
-    const hash = await hashPassword(password);
-    try {
-      const result = User.create(username.trim(), hash, ROLES.USER);
-      res.json({ id: result.lastInsertRowid, username: username.trim() });
-    } catch (e) {
-      throw handleDbError(e, { uniqueMessage: 'Username already taken' });
-    }
+    const { id, username: name } = await createAccount(username, password, (trimmed, hash) => User.create(trimmed, hash, ROLES.USER));
+    res.json({ id, username: name });
   });
 
   router.delete('/admin/users/:id', requireAuth, requireAdmin, blockInDemo, (req, res) => {

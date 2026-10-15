@@ -87,3 +87,53 @@ test('login rejects an over-long password before hashing it', async t => {
   assert.deepEqual(await response.json(), { error: 'Invalid username or password' });
   assert.equal(compare.mock.callCount(), 0);
 });
+
+test('login runs a password check even when the username does not exist', async t => {
+  const bcrypt = require('bcryptjs');
+  const request = await serve(t, mount);
+  const compare = t.mock.method(bcrypt, 'compare');
+  const unknown = await request('/api/auth/login', { method: 'POST', body: { username: 'nobody-here', password: 'secret1' } });
+  const wrong = await request('/api/auth/login', { method: 'POST', body: { username: 'auth-routes-admin', password: 'wrong-pass' } });
+  assert.deepEqual([unknown.status, await unknown.json()], [401, { error: 'Invalid username or password' }]);
+  assert.deepEqual([wrong.status, await wrong.json()], [401, { error: 'Invalid username or password' }]);
+  assert.equal(compare.mock.callCount(), 2);
+  // bcryptjs returns at once for anything that is not a real hash, so the unknown user must get one.
+  assert.match(compare.mock.calls[0].arguments[1], /^\$2b\$10\$.{53}$/);
+});
+
+test('a disabled account gets 403 only with the right password', async t => {
+  const { hashPassword } = require('../lib/auth');
+  const request = await serve(t, mount);
+  const { id } = user('disabled-singer');
+  db.prepare('UPDATE users SET password_hash = ?, disabled = 1 WHERE id = ?').run(await hashPassword('secret1'), id);
+  const login = password => request('/api/auth/login', { method: 'POST', body: { username: 'disabled-singer', password } });
+  const right = await login('secret1');
+  assert.deepEqual([right.status, await right.json()], [403, { error: 'Account is disabled. Contact an administrator.' }]);
+  const wrong = await login('wrong-pass');
+  assert.deepEqual([wrong.status, await wrong.json()], [401, { error: 'Invalid username or password' }]);
+});
+
+test('password change checks the current password', async t => {
+  const { hashPassword } = require('../lib/auth');
+  const request = await serve(t, mount);
+  const singer = user('changing-singer');
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(await hashPassword('secret1'), singer.id);
+  const change = current_password => request('/api/auth/password', { ...singer, method: 'PUT', body: { current_password, new_password: 'secret2' } });
+  const wrong = await change('wrong-pass');
+  assert.deepEqual([wrong.status, await wrong.json()], [401, { error: 'Current password is incorrect' }]);
+  assert.equal((await change('secret1')).status, 200);
+});
+
+test('createAccount reports a taken username as 400 even from an async create', async () => {
+  const { createAccount } = require('../lib/auth');
+  const taken = Object.assign(new Error('UNIQUE constraint failed'), { code: 'SQLITE_CONSTRAINT_UNIQUE' });
+  await assert.rejects(createAccount(' singer ', 'secret1', async () => { throw taken; }), { status: 400, code: 'DUPLICATE', message: 'Username already taken' });
+});
+
+test('an admin password reset lets the user sign in with the new password', async t => {
+  const request = await serve(t, mount);
+  const { id } = user('reset-singer');
+  assert.equal((await request(`/api/admin/users/${id}/password`, { ...admin, method: 'PUT', body: { password: 'fresh-pass' } })).status, 200);
+  const login = await request('/api/auth/login', { method: 'POST', body: { username: 'reset-singer', password: 'fresh-pass' } });
+  assert.equal(login.status, 200);
+});
