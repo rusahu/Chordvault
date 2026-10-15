@@ -8,12 +8,10 @@ import { useDemo } from '../context/DemoContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
 import { DEFAULT_TAGS } from '../lib/constants';
-import { tagLabel, tagNameError } from '../lib/tagName';
+import { cleanTagName, tagLabel, tagNameError } from '../lib/tagName';
 import type { AdminTagList } from '../types';
 
 interface Editing { name: string; value: string; error: string | null }
-
-const cleanName = (name: string) => name.trim().toLowerCase();
 
 export function AdminTags() {
   const apiCall = useApi();
@@ -64,14 +62,14 @@ export function AdminTags() {
   const add = async () => {
     const error = tagNameError(newName, names);
     setAddError(error);
-    if (!error && await save([...names, cleanName(newName)])) setNewName('');
+    if (!error && await save([...names, cleanTagName(newName)])) setNewName('');
   };
 
   const commitRename = async () => {
     if (!editing) return;
     const error = tagNameError(editing.value, names.filter(name => name !== editing.name));
     if (error) { setEditing({ ...editing, error }); return; }
-    if (await save(names.map(name => (name === editing.name ? cleanName(editing.value) : name)))) setEditing(null);
+    if (await save(names.map(name => (name === editing.name ? cleanTagName(editing.value) : name)))) setEditing(null);
   };
 
   const remove = (name: string) => {
