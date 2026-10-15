@@ -14,6 +14,7 @@ import { useStackedModalProps } from '../hooks/useStackedModalProps';
 import type { SetlistListItem } from '../types';
 import { formatSongCount } from '../lib/format';
 import { VISIBILITY, MAX_LOCAL_SETLISTS } from '../lib/constants';
+import { localSetlistToListItem } from '../lib/setlists';
 
 interface AddToSetlistModalProps {
   isOpen: boolean;
@@ -57,14 +58,7 @@ export function AddToSetlistModal({
         if (session === openSession.current) setUserSetlists(sls);
       } catch { /* ignore */ }
     } else {
-      const formatted = setlists.map((sl) => ({
-        id: sl.id,
-        name: sl.name,
-        song_count: sl.entries.length,
-        visibility: VISIBILITY.PRIVATE,
-        event_date: null,
-      }));
-      setUserSetlists(formatted);
+      setUserSetlists(setlists.map(localSetlistToListItem));
     }
   }, [user, apiCall, setlists]);
 

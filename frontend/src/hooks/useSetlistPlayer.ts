@@ -3,15 +3,14 @@ import { useOffline, useOfflineActivity } from '../context/OfflineContext';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useWindowEvent } from '@mantine/hooks';
 import { useApi } from './useApi';
-import { ApiError } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { showStatusNotification as toast } from '../lib/notifications';
+import { errorMessage, notifyError } from '../lib/errors';
 import { getSetlistOverrides, saveSetlistOverride, migrateOverride } from '../lib/storage';
-import { enrichLocalSetlistSongs } from '../lib/setlists';
+import { enrichLocalSetlistSongs, localSetlistToSetlist } from '../lib/setlists';
 import { entryContent } from '../lib/setlistKeys';
 import { setlistPlayHash, parsePlayHash, replaceHash } from '../lib/routes';
 import type { Setlist, SetlistEntry } from '../types';
-import { VISIBILITY } from '../lib/constants';
 
 interface UseSetlistPlayerOptions {
   setlistId: number | string;
@@ -57,7 +56,7 @@ export function useSetlistPlayer({
   onNavigate,
 }: UseSetlistPlayerOptions) {
   const apiCall = useApi();
-  const { getSong, getSetlist } = useLibraryRead();
+  const { getSong, getSetlistForViewer } = useLibraryRead();
   const { readOnly } = useOffline();
   useOfflineActivity(true);
   const { user } = useAuth();
@@ -89,24 +88,12 @@ export function useSetlistPlayer({
           }
           enrichLocalSetlistSongs(sl.entries, getSong)
             .then((entries) => {
-
-              const enriched: Setlist = {
-                id: setlistId,
-                name: sl.name,
-                entries,
-                isLocal: true,
-                visibility: VISIBILITY.PRIVATE,
-                event_date: null,
-              };
-
-              const merged = applyStoredOverrides(enriched.id, enriched.entries);
-              enriched.entries = merged.entries;
-
-              setSetlist(enriched);
+              const merged = applyStoredOverrides(sl.id, entries);
+              setSetlist(localSetlistToSetlist(sl, merged.entries));
               setSavedTargetKeys(merged.targetKeys);
             })
             .catch((err) => {
-              toast(err.message, 'error');
+              notifyError(err);
               navigate('setlists');
             });
         });
@@ -116,20 +103,7 @@ export function useSetlistPlayer({
 
     const loadSetlist = async () => {
       try {
-        let sl: Setlist;
-        if (user) {
-          try {
-            sl = await getSetlist(Number(setlistId));
-          } catch (err) {
-            if (err instanceof ApiError && (err.status === 404 || err.status === 403)) {
-              sl = await getSetlist(Number(setlistId), true);
-            } else {
-              throw err;
-            }
-          }
-        } else {
-          sl = await getSetlist(Number(setlistId), true);
-        }
+        const sl = await getSetlistForViewer(Number(setlistId));
 
         // Merge local overrides
         const merged = applyStoredOverrides(sl.id, sl.entries);
@@ -138,12 +112,12 @@ export function useSetlistPlayer({
         setSetlist(sl);
         setSavedTargetKeys(merged.targetKeys);
       } catch (e) {
-        setLoadError((e as Error).message);
+        setLoadError(errorMessage(e));
       }
     };
 
     loadSetlist();
-  }, [setlistId, getSong, getSetlist, isLocal, initialSetlist, navigate, user]);
+  }, [setlistId, getSong, getSetlistForViewer, isLocal, initialSetlist, navigate]);
 
   const entry: SetlistEntry | null = setlist?.entries[index] || null;
   const total = setlist?.entries.length || 0;

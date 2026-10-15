@@ -22,7 +22,8 @@ import { SetlistTabs } from '../components/SetlistTabs';
 import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
 import { PageTitle } from '../components/PageTitle';
 import { setlistPlayParams } from '../lib/routes';
-import { VISIBILITY, MAX_SETLIST_NAME_LENGTH, MAX_LOCAL_SETLISTS } from '../lib/constants';
+import { MAX_SETLIST_NAME_LENGTH, MAX_LOCAL_SETLISTS } from '../lib/constants';
+import { localSetlistToListItem } from '../lib/setlists';
 
 interface SetlistsViewProps {
   navigate: (view: string, params?: Record<string, string>) => void;
@@ -168,13 +169,7 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
               localSetlistsToRender.map((sl) => (
                 <SetlistCard
                   key={sl.id}
-                  setlist={{
-                    id: sl.id,
-                    name: sl.name,
-                    visibility: VISIBILITY.PRIVATE,
-                    song_count: sl.entries.length,
-                    event_date: null,
-                  }}
+                  setlist={localSetlistToListItem(sl)}
                   onClick={() => navigate('setlist-edit', { id: sl.id })}
                   onPlay={() => navigate('setlist-play', setlistPlayParams(sl.id))}
                 />

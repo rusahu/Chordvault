@@ -1,5 +1,6 @@
 import { legacyTransposeToTargetKey } from './setlistKeys';
-import type { LocalSetlistEntry, SetlistEntry, Song } from '../types';
+import { VISIBILITY } from './constants';
+import type { LocalSetlist, LocalSetlistEntry, Setlist, SetlistEntry, SetlistListItem, Song } from '../types';
 
 /**
  * Format a minimal local setlist entry from storage into a SetlistEntry.
@@ -81,4 +82,12 @@ export async function enrichLocalSetlistSongs(
   return entries
     .map((e, i) => enrichLocalEntry(e, cache[e.song_id], i))
     .filter(Boolean) as SetlistEntry[];
+}
+
+export function localSetlistToSetlist(sl: LocalSetlist, entries: SetlistEntry[]): Setlist {
+  return { id: sl.id, name: sl.name, entries, isLocal: true, visibility: VISIBILITY.PRIVATE, event_date: null };
+}
+
+export function localSetlistToListItem(sl: LocalSetlist): SetlistListItem {
+  return { id: sl.id, name: sl.name, visibility: VISIBILITY.PRIVATE, song_count: sl.entries.length, event_date: null };
 }

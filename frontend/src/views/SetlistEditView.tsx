@@ -8,14 +8,14 @@ import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
 import { useState, useEffect, useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
-import { ApiError } from '../lib/api';
+import { notifyError } from '../lib/errors';
 import { stepKey } from '../lib/keys';
 import { entryStartKey } from '../lib/setlistKeys';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
 import { useLocalSetlists } from '../hooks/useLocalSetlists';
-import { formatLocalEntry } from '../lib/setlists';
+import { formatLocalEntry, localSetlistToSetlist } from '../lib/setlists';
 import { SongPicker } from '../components/SongPicker';
 import { Loading } from '../components/Loading';
 import { EmptyState } from '../components/EmptyState';
@@ -33,7 +33,7 @@ interface SetlistEditViewProps {
 
 export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
   const apiCall = useApi();
-  const { getSetlist } = useLibraryRead();
+  const { getSetlistForViewer } = useLibraryRead();
   const { readOnly } = useOffline();
   const isWriteLocked = useWriteLock();
   const { user } = useAuth();
@@ -59,44 +59,22 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
     if (isLocal) {
       const sl = getOne(String(setlistId));
       if (!sl) { navigate(user ? 'setlists' : 'public-setlists'); return; }
-
-      const formatted: Setlist = {
-        id: sl.id,
-        name: sl.name,
-        entries: sl.entries.map((e, idx) => formatLocalEntry(e, idx)),
-        isLocal: true,
-        visibility: VISIBILITY.PRIVATE,
-        event_date: null,
-      };
-      setMetadata({ name: formatted.name, visibility: false, event_date: '' });
-      setSetlist(formatted);
+      setMetadata({ name: sl.name, visibility: false, event_date: '' });
+      setSetlist(localSetlistToSetlist(sl, sl.entries.map(formatLocalEntry)));
       location.hash = setlistHash(setlistId);
       return;
     }
 
     try {
-      let sl: Setlist;
-      if (user) {
-        try {
-          sl = await getSetlist(Number(setlistId));
-        } catch (err) {
-          if (err instanceof ApiError && (err.status === 404 || err.status === 403)) {
-            sl = await getSetlist(Number(setlistId), true);
-          } else {
-            throw err;
-          }
-        }
-      } else {
-        sl = await getSetlist(Number(setlistId), true);
-      }
+      const sl = await getSetlistForViewer(Number(setlistId));
       setMetadata({ name: sl.name, visibility: sl.visibility === VISIBILITY.PUBLIC, event_date: sl.event_date || '' });
       setSetlist(sl);
       location.hash = setlistHash(setlistId);
     } catch (e) {
-      toast((e as Error).message, 'error');
+      notifyError(e);
       navigate(user ? 'setlists' : 'public-setlists');
     }
-  }, [getSetlist, navigate, setlistId, user, isLocal, getOne, setMetadata]);
+  }, [getSetlistForViewer, navigate, setlistId, user, isLocal, getOne, setMetadata]);
 
   useEffect(() => { load(); }, [load]);
 
