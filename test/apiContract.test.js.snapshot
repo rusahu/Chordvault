@@ -6005,6 +6005,106 @@ exports[`API responses match the recorded contract 2`] = `
     ]
   },
   {
+    "call": "GET /api/songs/8 as admin",
+    "status": 200,
+    "body": {
+      "id": 8,
+      "user_id": 3,
+      "title": "New",
+      "artist": "",
+      "key": "C",
+      "content": "{title: New}\\n{key: C}\\n{tempo: 120}\\n{x_tags: Worship, worship ,Kids}\\n[C]Hello",
+      "visibility": "private",
+      "parent_id": null,
+      "youtube_url": null,
+      "format_detected": "chordpro",
+      "bpm": 120,
+      "tags": "worship,kids",
+      "language": "",
+      "status": "active",
+      "content_hash": "1d2c6723d3d7a0aedaeeadeaa73223b012213ed405d97632865e30d0dc0e06f9",
+      "created_at": "<time>",
+      "updated_at": "<time>",
+      "username": "alice",
+      "version_count": 0
+    }
+  },
+  {
+    "call": "GET /api/songs/10 as admin",
+    "status": 200,
+    "body": {
+      "id": 10,
+      "user_id": 4,
+      "title": "Grace v2",
+      "artist": "",
+      "key": "",
+      "content": "{title: Grace v2}\\n[E]Amazing",
+      "visibility": "public",
+      "parent_id": 1,
+      "youtube_url": null,
+      "format_detected": null,
+      "bpm": null,
+      "tags": null,
+      "language": "",
+      "status": "active",
+      "content_hash": "43b260070e09b641164bbbc632c829ea1a519f98728beb8ee3c8e3c9931cc3b2",
+      "created_at": "<time>",
+      "updated_at": "<time>",
+      "username": "bob",
+      "version_count": 3
+    }
+  },
+  {
+    "call": "GET /api/songs/11 as admin",
+    "status": 200,
+    "body": {
+      "id": 11,
+      "user_id": 2,
+      "title": "Admin copy",
+      "artist": "",
+      "key": "",
+      "content": "{title: Admin copy}\\n[E]x",
+      "visibility": "private",
+      "parent_id": 5,
+      "youtube_url": null,
+      "format_detected": null,
+      "bpm": null,
+      "tags": null,
+      "language": "",
+      "status": "active",
+      "content_hash": "3d47a7da5513df9738e90e14180f23bfbf35e149dfed8fdb2159430a24144a42",
+      "created_at": "<time>",
+      "updated_at": "<time>",
+      "username": "admin",
+      "version_count": 1
+    }
+  },
+  {
+    "call": "GET /api/songs/13 as admin",
+    "status": 200,
+    "body": {
+      "id": 13,
+      "user_id": 2,
+      "title": "Imp",
+      "artist": "",
+      "key": "",
+      "content": "{title: Imp}\\n[C]a",
+      "visibility": "private",
+      "parent_id": null,
+      "youtube_url": null,
+      "format_detected": null,
+      "bpm": null,
+      "tags": null,
+      "language": "",
+      "status": "active",
+      "content_hash": "8ba5d24b1d7cdf4b02ff94fa0ac97762c906205469357afff1edfb300273f624",
+      "created_at": "<time>",
+      "updated_at": "<time>",
+      "username": "admin",
+      "version_count": 1
+    }
+  },
+  {
     "call": "POST /api/setlists as alice",
     "status": 200,
     "body": {
@@ -6113,6 +6213,24 @@ exports[`API responses match the recorded contract 2`] = `
   },
   {
     "call": "POST /api/setlists/1/songs as alice",
+    "status": 400,
+    "body": {
+      "error": "Invalid key: X"
+    }
+  },
+  {
+    "call": "POST /api/setlists/1/songs as alice",
+    "status": 400,
+    "body": {
+      "error": "Invalid key: X"
+    }
+  },
+  {
+    "call": "setlists touched by failed entry adds",
+    "ids": []
+  },
+  {
+    "call": "POST /api/setlists/1/songs as alice",
     "status": 200,
     "body": {
       "entry_id": 6,
@@ -6120,12 +6238,10 @@ exports[`API responses match the recorded contract 2`] = `
     }
   },
   {
-    "call": "POST /api/setlists/1/songs as alice",
-    "status": 200,
-    "body": {
-      "entry_id": 7,
-      "position": 5
-    }
+    "call": "setlists touched by entry add",
+    "ids": [
+      1
+    ]
   },
   {
     "call": "PUT /api/setlists/abc/entries/xyz as alice",
@@ -6173,6 +6289,17 @@ exports[`API responses match the recorded contract 2`] = `
     "call": "PUT /api/setlists/1/entries/1 as alice",
     "status": 400,
     "body": {
+      "error": "Invalid key: X"
+    }
+  },
+  {
+    "call": "setlists touched by failed entry updates",
+    "ids": []
+  },
+  {
+    "call": "PUT /api/setlists/1/entries/1 as alice",
+    "status": 400,
+    "body": {
       "error": "Content override must be a string or null"
     }
   },
@@ -6191,11 +6318,23 @@ exports[`API responses match the recorded contract 2`] = `
     }
   },
   {
+    "call": "setlists touched by entry update",
+    "ids": [
+      1
+    ]
+  },
+  {
     "call": "PUT /api/setlists/1/entries/6 as alice",
     "status": 200,
     "body": {
       "success": true
     }
+  },
+  {
+    "call": "setlists touched by second entry update",
+    "ids": [
+      1
+    ]
   },
   {
     "call": "GET /api/setlists/1 as alice",
@@ -6269,29 +6408,9 @@ exports[`API responses match the recorded contract 2`] = `
         },
         {
           "entry_id": 6,
-          "song_id": 1,
+          "song_id": 3,
           "position": 4,
           "target_key": null,
-          "nashville": 0,
-          "font": null,
-          "two_col": null,
-          "content_override": null,
-          "title": "Grace",
-          "artist": "",
-          "content": "{title: Grace}\\n{key: G}\\n[G]Amazing Grace",
-          "key": "D",
-          "youtube_url": null,
-          "bpm": null,
-          "tags": null,
-          "language": "",
-          "visibility": "public",
-          "username": "alice"
-        },
-        {
-          "entry_id": 7,
-          "song_id": 3,
-          "position": 5,
-          "target_key": "C#",
           "nashville": 1,
           "font": null,
           "two_col": null,
@@ -6318,11 +6437,21 @@ exports[`API responses match the recorded contract 2`] = `
     }
   },
   {
+    "call": "setlists touched by missing entry delete",
+    "ids": []
+  },
+  {
     "call": "DELETE /api/setlists/1/entries/6 as alice",
     "status": 200,
     "body": {
       "success": true
     }
+  },
+  {
+    "call": "setlists touched by entry delete",
+    "ids": [
+      1
+    ]
   },
   {
     "call": "PUT /api/setlists/1/reorder as bob",
@@ -6360,11 +6489,21 @@ exports[`API responses match the recorded contract 2`] = `
     }
   },
   {
+    "call": "setlists touched by failed reorders",
+    "ids": []
+  },
+  {
     "call": "PUT /api/setlists/1/reorder as alice",
     "status": 200,
     "body": {
       "success": true
     }
+  },
+  {
+    "call": "setlists touched by reorder",
+    "ids": [
+      1
+    ]
   },
   {
     "call": "GET /api/setlists/1 as alice",
@@ -6379,29 +6518,9 @@ exports[`API responses match the recorded contract 2`] = `
       "updated_at": "<time>",
       "entries": [
         {
-          "entry_id": 7,
-          "song_id": 3,
-          "position": 1,
-          "target_key": "C#",
-          "nashville": 1,
-          "font": null,
-          "two_col": null,
-          "content_override": null,
-          "title": "Grace Live",
-          "artist": "Writer",
-          "content": "{title: Grace Live}\\n{key: G}\\n[G]Amazing Grace Live",
-          "key": "",
-          "youtube_url": null,
-          "bpm": null,
-          "tags": "hymn",
-          "language": "en",
-          "visibility": "public",
-          "username": "bob"
-        },
-        {
           "entry_id": 3,
           "song_id": 4,
-          "position": 2,
+          "position": 1,
           "target_key": null,
           "nashville": 0,
           "font": null,
@@ -6421,7 +6540,7 @@ exports[`API responses match the recorded contract 2`] = `
         {
           "entry_id": 2,
           "song_id": 5,
-          "position": 3,
+          "position": 2,
           "target_key": null,
           "nashville": 0,
           "content_override": null,
@@ -6439,7 +6558,7 @@ exports[`API responses match the recorded contract 2`] = `
         {
           "entry_id": 1,
           "song_id": 1,
-          "position": 4,
+          "position": 3,
           "target_key": "F#",
           "nashville": 0,
           "font": 2,
@@ -7751,7 +7870,7 @@ exports[`API responses match the recorded contract 5`] = `
         "event_date": null,
         "created_at": "<time>",
         "updated_at": "<time>",
-        "song_count": 3
+        "song_count": 2
       }
     ]
   },
@@ -7816,7 +7935,7 @@ exports[`API responses match the recorded contract 5`] = `
         "created_at": "<time>",
         "updated_at": "<time>",
         "username": "alice",
-        "song_count": 3
+        "song_count": 2
       }
     ]
   },
@@ -7855,7 +7974,7 @@ exports[`API responses match the recorded contract 5`] = `
         "created_at": "<time>",
         "updated_at": "<time>",
         "username": "alice",
-        "song_count": 3
+        "song_count": 2
       }
     ]
   },
@@ -7894,7 +8013,7 @@ exports[`API responses match the recorded contract 5`] = `
         "created_at": "<time>",
         "updated_at": "<time>",
         "username": "alice",
-        "song_count": 3
+        "song_count": 2
       }
     ]
   },
@@ -7933,7 +8052,7 @@ exports[`API responses match the recorded contract 5`] = `
         "created_at": "<time>",
         "updated_at": "<time>",
         "username": "alice",
-        "song_count": 3
+        "song_count": 2
       }
     ]
   },
@@ -7972,7 +8091,7 @@ exports[`API responses match the recorded contract 5`] = `
         "created_at": "<time>",
         "updated_at": "<time>",
         "username": "alice",
-        "song_count": 3
+        "song_count": 2
       }
     ]
   },
@@ -7996,29 +8115,9 @@ exports[`API responses match the recorded contract 5`] = `
       "updated_at": "<time>",
       "entries": [
         {
-          "entry_id": 7,
-          "song_id": 3,
-          "position": 1,
-          "target_key": "C#",
-          "nashville": 1,
-          "font": null,
-          "two_col": null,
-          "content_override": null,
-          "title": "Grace Live",
-          "artist": "Writer",
-          "content": "{title: Grace Live}\\n{key: G}\\n[G]Amazing Grace Live",
-          "key": "",
-          "youtube_url": null,
-          "bpm": null,
-          "tags": "hymn",
-          "language": "en",
-          "visibility": "public",
-          "username": "bob"
-        },
-        {
           "entry_id": 3,
           "song_id": 4,
-          "position": 2,
+          "position": 1,
           "target_key": null,
           "nashville": 0,
           "font": null,
@@ -8038,7 +8137,7 @@ exports[`API responses match the recorded contract 5`] = `
         {
           "entry_id": 1,
           "song_id": 1,
-          "position": 4,
+          "position": 3,
           "target_key": "F#",
           "nashville": 0,
           "font": 2,
@@ -9503,29 +9602,9 @@ exports[`API responses match the recorded contract 5`] = `
           "updated_at": "<time>",
           "entries": [
             {
-              "entry_id": 7,
-              "song_id": 3,
-              "position": 1,
-              "target_key": "C#",
-              "nashville": 1,
-              "font": null,
-              "two_col": null,
-              "content_override": null,
-              "title": "Grace Live",
-              "artist": "Writer",
-              "content": "{title: Grace Live}\\n{key: G}\\n[G]Amazing Grace Live",
-              "key": "",
-              "youtube_url": null,
-              "bpm": null,
-              "tags": "hymn",
-              "language": "en",
-              "visibility": "public",
-              "username": "bob"
-            },
-            {
               "entry_id": 3,
               "song_id": 4,
-              "position": 2,
+              "position": 1,
               "target_key": null,
               "nashville": 0,
               "font": null,
@@ -9545,7 +9624,7 @@ exports[`API responses match the recorded contract 5`] = `
             {
               "entry_id": 1,
               "song_id": 1,
-              "position": 4,
+              "position": 3,
               "target_key": "F#",
               "nashville": 0,
               "font": 2,
@@ -9563,7 +9642,7 @@ exports[`API responses match the recorded contract 5`] = `
               "username": "alice"
             }
           ],
-          "song_count": 3,
+          "song_count": 2,
           "username": "alice"
         },
         {

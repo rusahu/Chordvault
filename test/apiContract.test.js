@@ -88,6 +88,12 @@ test('API responses match the recorded contract', async t => {
     return parsed;
   }
   const everyone = async (path) => { for (const as of Object.keys(callers)) await call(as, path); };
+  const untouched = '2000-01-01 00:00:00';
+  const resetTouches = () => db.prepare('UPDATE setlists SET updated_at = ?').run(untouched);
+  const recordTouches = label => {
+    results.push({ call: `setlists touched by ${label}`, ids: db.prepare('SELECT id FROM setlists WHERE updated_at != ? ORDER BY id').all(untouched).map(r => r.id) });
+    resetTouches();
+  };
   const entryIds = async id => (await (await request(`/api/setlists/${id}`, { token: alice.token })).json()).entries.map(e => e.entry_id);
 
   const reads = [
@@ -110,7 +116,7 @@ test('API responses match the recorded contract', async t => {
   for (const path of reads) await everyone(path);
   t.assert.snapshot(results.splice(0));
 
-  await call('alice', '/api/songs', { method: 'POST', body: { content: '{title: New}\n{key: C}\n{tempo: 120}\n{x_tags: Worship, worship ,Kids}\n[C]Hello\n', format_detected: 'chordpro', visibility: 'private' } });
+  const created = await call('alice', '/api/songs', { method: 'POST', body: { content: '{title: New}\n{key: C}\n{tempo: 120}\n{x_tags: Worship, worship ,Kids}\n[C]Hello\n', format_detected: 'chordpro', visibility: 'private' } });
   await call('alice', '/api/songs', { method: 'POST', body: { content: '{title: Weird}\n[C]Hi', visibility: 'secret' } });
   await call('alice', '/api/songs', { method: 'POST', body: { content: '[C]No title' } });
   await call('alice', '/api/songs', { method: 'POST', body: { content: '{title: No chords}\nplain' } });
@@ -120,9 +126,9 @@ test('API responses match the recorded contract', async t => {
   await call('bob', `/api/songs/${grace}`, { method: 'PUT', body: { content: '{title: Grace}\n[C]Hijack' } });
   await call('alice', `/api/songs/${grace}`, { method: 'PUT', body: { content: '  {title: Grace}\n{key: D}\n[D]Amazing grace  \n', visibility: 'public' } });
   await call('admin', `/api/songs/${bobSong}`, { method: 'PUT', body: { format_detected: 'plain' } });
-  await call('bob', `/api/songs/${grace}/version`, { method: 'POST', body: { content: '{title: Grace v2}\n[E]Amazing' } });
+  const version = await call('bob', `/api/songs/${grace}/version`, { method: 'POST', body: { content: '{title: Grace v2}\n[E]Amazing' } });
   await call('alice', `/api/songs/${bobPrivate}/version`, { method: 'POST', body: { content: '{title: Steal}\n[E]x' } });
-  await call('admin', `/api/songs/${bobPrivate}/version`, { method: 'POST', body: { content: '{title: Admin copy}\n[E]x' } });
+  const adminCopy = await call('admin', `/api/songs/${bobPrivate}/version`, { method: 'POST', body: { content: '{title: Admin copy}\n[E]x' } });
   await call('bob', `/api/songs/${secret}/correction`, { method: 'POST', body: { content: '{title: Secret}\n[C]fix' } });
   await call('alice', `/api/songs/${pending}/correction`, { method: 'POST', body: { content: '{title: Grace}\n[C]fix' } });
   await call('bob', `/api/songs/${bobSong}/correction`, { method: 'POST', body: { content: '' } });
@@ -137,7 +143,8 @@ test('API responses match the recorded contract', async t => {
   await call('admin', '/api/songs/import', { method: 'POST', body: { songs: [{ content: '{title: Imp}\n[C]a', visibility: 'private' }, { content: '{title: Imp}\n[C]a  ' }, 'bad', { content: 'no title [C]' }, { content: '{title: V}\n[C]x', visibility: 'odd' }] } });
   await call('admin', '/api/songs/import', { method: 'POST', body: { songs: 'x' } });
   await call('alice', '/api/songs/import', { method: 'POST', body: { songs: [] } });
-  await call('admin', '/api/songs?q=imp');
+  const [imported] = await call('admin', '/api/songs?q=imp');
+  for (const id of [created.id, version.id, adminCopy.id, imported.id]) await call('admin', `/api/songs/${id}`);
 
   const easter = await call('alice', '/api/setlists', { method: 'POST', body: { name: '  Easter  ', visibility: 'private', event_date: '2026-04-05' } });
   await call('alice', '/api/setlists', { method: 'POST', body: { name: '' } });
@@ -147,6 +154,7 @@ test('API responses match the recorded contract', async t => {
   await call('bob', `/api/setlists/${sunday}`, { method: 'PUT', body: { name: 'Mine' } });
   await call('alice', `/api/setlists/${sunday}`, { method: 'PUT', body: { name: 'Sunday AM', visibility: 'public' } });
   await call('alice', '/api/setlists/abc', { method: 'PUT', body: { name: 'x' } });
+  resetTouches();
   await call('bob', `/api/setlists/${sunday}/songs`, { method: 'POST', body: { song_id: grace } });
   await call('bob', `/api/setlists/${sunday}/songs`, { method: 'POST', body: {} });
   await call('alice', `/api/setlists/${sunday}/songs`, { method: 'POST', body: {} });
@@ -154,8 +162,11 @@ test('API responses match the recorded contract', async t => {
   await call('alice', `/api/setlists/${sunday}/songs`, { method: 'POST', body: { song_id: grace, nashville: 'yes' } });
   await call('alice', `/api/setlists/${sunday}/songs`, { method: 'POST', body: { song_id: bobPrivate } });
   await call('alice', `/api/setlists/${sunday}/songs`, { method: 'POST', body: { song_id: aliceFix } });
-  await call('alice', `/api/setlists/${sunday}/songs`, { method: 'POST', body: { song_id: grace, target_key: 'H' } });
+  await call('alice', `/api/setlists/${sunday}/songs`, { method: 'POST', body: { song_id: grace, target_key: 'X' } });
+  await call('alice', `/api/setlists/${sunday}/songs`, { method: 'POST', body: { song_id: grace, target_key: 'X', nashville: 'yes' } });
+  recordTouches('failed entry adds');
   await call('alice', `/api/setlists/${sunday}/songs`, { method: 'POST', body: { song_id: graceLive, target_key: ' Db ', nashville: true } });
+  recordTouches('entry add');
   const [first, , , added] = await entryIds(sunday);
   await call('alice', '/api/setlists/abc/entries/xyz', { method: 'PUT', body: {} });
   await call('alice', '/api/setlists/99999/entries/xyz', { method: 'PUT', body: {} });
@@ -163,20 +174,28 @@ test('API responses match the recorded contract', async t => {
   await call('bob', `/api/setlists/${sunday}/entries/${first}`, { method: 'PUT', body: { nashville: 2 } });
   await call('alice', `/api/setlists/${sunday}/entries/99999`, { method: 'PUT', body: {} });
   await call('alice', `/api/setlists/${sunday}/entries/${first}`, { method: 'PUT', body: { nashville: 2 } });
+  await call('alice', `/api/setlists/${sunday}/entries/${first}`, { method: 'PUT', body: { target_key: 'X', nashville: 2 } });
+  recordTouches('failed entry updates');
   await call('alice', `/api/setlists/${sunday}/entries/${first}`, { method: 'PUT', body: { content_override: 5 } });
   await call('alice', `/api/setlists/${sunday}/entries/${first}`, { method: 'PUT', body: { content_override: 'x'.repeat(100001) } });
   await call('alice', `/api/setlists/${sunday}/entries/${first}`, { method: 'PUT', body: { target_key: 'Gb', font: 2, two_col: true, content_override: '{title: G}\n[C]o' } });
+  recordTouches('entry update');
   await call('alice', `/api/setlists/${sunday}/entries/${added}`, { method: 'PUT', body: { target_key: null, two_col: null } });
+  recordTouches('second entry update');
   await call('alice', `/api/setlists/${sunday}`);
   await call('alice', `/api/setlists/${sunday}/entries/99999`, { method: 'DELETE' });
+  recordTouches('missing entry delete');
   await call('alice', `/api/setlists/${sunday}/entries/${added}`, { method: 'DELETE' });
+  recordTouches('entry delete');
   const ids = await entryIds(sunday);
   await call('bob', `/api/setlists/${sunday}/reorder`, { method: 'PUT', body: { entry_ids: ids } });
   await call('alice', `/api/setlists/${sunday}/reorder`, { method: 'PUT', body: {} });
   await call('alice', `/api/setlists/${sunday}/reorder`, { method: 'PUT', body: { entry_ids: ['a'] } });
   await call('alice', `/api/setlists/${sunday}/reorder`, { method: 'PUT', body: { entry_ids: [ids[0], ids[0], ids[1]] } });
   await call('alice', `/api/setlists/${sunday}/reorder`, { method: 'PUT', body: { entry_ids: ids.slice(1) } });
+  recordTouches('failed reorders');
   await call('alice', `/api/setlists/${sunday}/reorder`, { method: 'PUT', body: { entry_ids: [...ids].reverse() } });
+  recordTouches('reorder');
   await call('alice', `/api/setlists/${sunday}`);
   await call('bob', `/api/setlists/${sunday}`, { method: 'DELETE' });
   await call('alice', `/api/setlists/${easter.id}`, { method: 'DELETE' });
