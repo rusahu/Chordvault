@@ -8,6 +8,26 @@ const { DEMO_ACCOUNT } = require('../shared/public-constants.json');
 const image = process.env.DOCKER_TEST_IMAGE || 'chordvault:ci';
 const docker = (...args) => execFileSync('docker', args, { encoding: 'utf8', timeout: 20_000 }).trim();
 
+async function waitForReady(name) {
+  const base = `http://127.0.0.1:${docker('port', name, '3100/tcp').split(':').at(-1)}`;
+  const deadline = Date.now() + 60_000;
+  while (Date.now() < deadline) {
+    assert.equal(docker('inspect', '-f', '{{.State.Running}}', name), 'true', 'container exited before ready');
+    try {
+      const response = await fetch(`${base}/api/auth/config`, { signal: AbortSignal.timeout(2000) });
+      if (response.ok) return { base, config: await response.json() };
+    } catch { /* Connection can fail while Node starts. */ }
+    await sleep(1000);
+  }
+  assert.fail('container did not become ready in 60 seconds');
+}
+
+const publicSongCount = async base => {
+  const songs = await fetch(`${base}/api/songs/public`, { signal: AbortSignal.timeout(5000) });
+  assert.equal(songs.status, 200);
+  return (await songs.json()).length;
+};
+
 async function check(demo) {
   const name = `chordvault-ci-${process.pid}-${demo ? 'demo' : 'normal'}`;
   const volume = `${name}-data`;
@@ -15,19 +35,7 @@ async function check(demo) {
   try {
     docker('run', '-d', '--name', name, '-p', '127.0.0.1::3100', '-v', `${volume}:/app/data`,
       '-e', 'JWT_SECRET=disposable-ci-secret', '-e', 'NODE_ENV=production', '-e', `DEMO_MODE=${demo}`, image);
-    const port = docker('port', name, '3100/tcp').split(':').at(-1);
-    const base = `http://127.0.0.1:${port}`;
-    let config;
-    const deadline = Date.now() + 60_000;
-    while (Date.now() < deadline) {
-      assert.equal(docker('inspect', '-f', '{{.State.Running}}', name), 'true', 'container exited before ready');
-      try {
-        const response = await fetch(`${base}/api/auth/config`, { signal: AbortSignal.timeout(2000) });
-        if (response.ok) { config = await response.json(); break; }
-      } catch { /* Connection can fail while Node starts. */ }
-      await sleep(1000);
-    }
-    assert.ok(config, 'container did not become ready in 60 seconds');
+    const { base, config } = await waitForReady(name);
     assert.equal(config.demoMode, demo);
     const page = await fetch(base, { signal: AbortSignal.timeout(5000) });
     assert.equal(page.status, 200);
@@ -53,9 +61,11 @@ async function check(demo) {
       });
       assert.equal(login.status, 200);
       assert.ok((await login.json()).token);
-      const songs = await fetch(`${base}/api/songs/public`, { signal: AbortSignal.timeout(5000) });
-      assert.equal(songs.status, 200);
-      assert.ok((await songs.json()).length > 0, 'demo seed has no public songs');
+      const seeded = await publicSongCount(base);
+      assert.ok(seeded > 0, 'demo seed has no public songs');
+      docker('restart', name);
+      const restarted = await waitForReady(name);
+      assert.equal(await publicSongCount(restarted.base), seeded, 'demo restart changed the seeded songs');
     }
     const result = `${demo ? 'Demo' : 'Normal'} image startup/API/assets: passed in ${((Date.now() - started) / 1000).toFixed(1)}s`;
     console.log(result);

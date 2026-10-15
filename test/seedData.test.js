@@ -11,9 +11,10 @@ const { DEMO_ACCOUNT } = require('../scripts/lib/session.mjs');
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cv-seed-'));
 fs.mkdirSync(path.join(dir, 'data'));
 const { NODE_TEST_CONTEXT: _testContext, ...env } = process.env;
-execFileSync(process.execPath, [path.join(__dirname, '../scripts/seed-data.mjs')], {
-  cwd: dir, env: { ...env, DB_PATH: path.join(dir, 'data/chordvault.db') }, stdio: 'pipe',
+const seed = () => execFileSync(process.execPath, [path.join(__dirname, '../scripts/seed-data.mjs')], {
+  cwd: dir, env: { ...env, DB_PATH: path.join(dir, 'data/chordvault.db') }, stdio: 'pipe', encoding: 'utf8',
 });
+seed();
 const db = new Database(path.join(dir, 'data/chordvault.db'), { readonly: true });
 const columns = table => db.prepare(`PRAGMA table_info(${table})`).all().map(c => c.name);
 
@@ -45,4 +46,10 @@ test('seeds three setlists in their song order', () => {
     ['Christmas Eve Service', ['Silent Night', 'Amazing Grace']],
     ['Personal Practice', ['Come Thou Fount of Every Blessing']],
   ]);
+});
+
+test('a second run leaves a seeded database alone', () => {
+  assert.match(seed(), /already has users, skipping seed/);
+  assert.equal(db.prepare('SELECT count(*) AS n FROM users').get().n, 2);
+  assert.equal(db.prepare('SELECT count(*) AS n FROM songs').get().n, 6);
 });

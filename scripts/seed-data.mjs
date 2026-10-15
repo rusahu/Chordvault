@@ -1,5 +1,6 @@
 /**
- * Seeds an empty ChordVault DB (DB_PATH, default ./data/chordvault.db) through the app's models:
+ * Seeds an empty ChordVault DB (DB_PATH, default ./data/chordvault.db) through the app's models,
+ * and leaves a DB that already has users alone:
  * a hidden _system owner and the demo admin with sample songs and setlists.
  *
  * Usage: node scripts/seed-data.mjs
@@ -15,6 +16,12 @@ const Song = require('../lib/models/song');
 const Setlist = require('../lib/models/setlist');
 const { hashPassword } = require('../lib/auth');
 const { ROLES, VISIBILITY } = require('../lib/constants');
+
+if (User.count().count > 0) {
+  console.log('Database already has users, skipping seed');
+  db.close();
+  process.exit(0);
+}
 
 const system = User.create('_system', await hashPassword(crypto.randomBytes(32).toString('hex')), ROLES.OWNER);
 console.log(`Created _system (id: ${system.id}, role: owner)`);
