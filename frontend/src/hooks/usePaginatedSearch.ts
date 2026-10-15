@@ -20,6 +20,7 @@ export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filt
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState('');
   const active = useRef(false);
+  const latestRequest = useRef(0);
   const latestPersist = useRef(persist);
 
   useEffect(() => { latestPersist.current = persist; });
@@ -29,10 +30,12 @@ export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filt
   }, []);
 
   const load = useCallback(async (next: LibraryQuery, targetPage = 1) => {
+    const request = ++latestRequest.current;
+    const isCurrent = () => active.current && request === latestRequest.current;
     setLoadError('');
     try {
       const data = await fetchPage({ ...next, page: targetPage });
-      if (!active.current) return;
+      if (!isCurrent()) return;
       const lists: Record<K, T[]> = data;
       setItems(lists[listKey]);
       setPage(data.page);
@@ -41,7 +44,7 @@ export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filt
       latestPersist.current(next);
       savePage(String(data.page));
     } catch (e) {
-      if (active.current) { setLoadError((e as Error).message); setItems([]); }
+      if (isCurrent()) { setLoadError((e as Error).message); setItems([]); }
     }
   }, [fetchPage, listKey, savePage]);
 
