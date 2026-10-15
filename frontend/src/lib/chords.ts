@@ -323,7 +323,7 @@ export function renderChordPro(content: string, semitones = 0, nashville = false
     if (!song) throw new Error('parse failed');
     return `<div class="chord-sheet">${new ResponsiveHtmlFormatter().format(song)}</div>`;
   } catch {
-    return `<pre style="font-family:'JetBrains Mono',monospace;font-size:13px;white-space:pre-wrap;color:var(--text)">${escHtml(content)}</pre>`;
+    return `<pre style="font-family:var(--font-mono);font-size:13px;white-space:pre-wrap;color:var(--text)">${escHtml(content)}</pre>`;
   }
 }
 

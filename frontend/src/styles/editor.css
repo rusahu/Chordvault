@@ -108,7 +108,7 @@
 }
 
 .cm-editor-container .cm-scroller {
-  font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-size: 15px;
   line-height: 1.6;
   padding: 8px 12px;
