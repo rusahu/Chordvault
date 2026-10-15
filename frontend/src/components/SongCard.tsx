@@ -3,8 +3,9 @@ import { IconLock } from '@tabler/icons-react';
 import { KeyBadge } from './KeyBadge';
 import { ListCard } from './ListCard';
 import type { SongListItem } from '../types';
-import { languageName } from '../lib/languages';
+import { LanguageBadge } from './LanguageBadge';
 import { TagBadges } from './TagBadges';
+import { VISIBILITY } from '../lib/constants';
 
 interface SongCardProps {
   song: SongListItem;
@@ -15,7 +16,7 @@ interface SongCardProps {
 
 export function SongCard({ song, isOwner, onClick, onEdit }: SongCardProps) {
   const hasDetails = Boolean(song.tags || song.language || song.key || song.bpm ||
-    (song.version_count ?? 0) > 1 || song.visibility === 'private' || (isOwner && onEdit));
+    (song.version_count ?? 0) > 1 || song.visibility === VISIBILITY.PRIVATE || (isOwner && onEdit));
   return (
     <ListCard
       title={song.title}
@@ -26,8 +27,8 @@ export function SongCard({ song, isOwner, onClick, onEdit }: SongCardProps) {
         <Group gap={6} mt={8}>
           <TagBadges tags={song.tags} />
           {(song.version_count ?? 0) > 1 && <Badge variant="filled">{song.version_count} Versions</Badge>}
-          {song.language && <Badge title={languageName(song.language)}>{song.language.toUpperCase()}</Badge>}
-          {song.visibility === 'private' && <Badge px={8} title="Private"><IconLock size={14} aria-hidden /><VisuallyHidden>Private</VisuallyHidden></Badge>}
+          {song.language && <LanguageBadge code={song.language} />}
+          {song.visibility === VISIBILITY.PRIVATE && <Badge px={8} title="Private"><IconLock size={14} aria-hidden /><VisuallyHidden>Private</VisuallyHidden></Badge>}
           {song.key && <KeyBadge songKey={song.key} />}
           {Boolean(song.bpm) && <Badge>{song.bpm}</Badge>}
           {isOwner && onEdit && (

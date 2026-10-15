@@ -1,5 +1,8 @@
 import shared from '../../../shared/public-constants.json';
 
+export { ROLES, STATUS, VISIBILITY, isAdminRole, normalizeVisibility } from '../../../shared/access.mjs';
+export type { Visibility } from '../../../shared/access.mjs';
+
 export const DEFAULT_TAGS: string[] = shared.DEFAULT_TAGS;
 export const MAX_TAG_LENGTH = shared.limits.MAX_TAG_LENGTH;
 
@@ -8,11 +11,13 @@ export const MAX_LOCAL_ENTRIES = 100;
 export const MAX_CONTENT_LENGTH = shared.limits.MAX_CONTENT;
 export const MAX_BPM = shared.limits.MAX_BPM;
 export const MIN_BPM = shared.limits.MIN_BPM;
+export const MIN_PASSWORD_LENGTH = shared.limits.PASSWORD_MIN;
 export const MAX_SETLIST_NAME_LENGTH = shared.limits.MAX_SETLIST_NAME;
 export const MAX_PREFERRED_LANGUAGES = shared.limits.MAX_PREFERRED_LANGUAGES;
 export const MAX_OCR_PROMPT = shared.limits.MAX_OCR_PROMPT;
 
 export const DEFAULT_GEMINI_MODEL = shared.DEFAULT_GEMINI_MODEL;
+export const DEMO_ACCOUNT = shared.DEMO_ACCOUNT;
 
 export const IMPORT_MAX_BATCH = shared.limits.MAX_IMPORT;
 export const IMPORT_MAX_BATCH_BYTES = 12_000_000;

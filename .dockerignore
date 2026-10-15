@@ -7,6 +7,7 @@ data/
 test/
 scripts/
 !scripts/seed-data.mjs
+!scripts/lib/session.mjs
 docs/
 .github/
 public/assets/

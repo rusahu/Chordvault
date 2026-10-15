@@ -1,6 +1,7 @@
 import * as ChordSheetJS from 'chordsheetjs';
 import { escHtml } from './util';
 import { normalizeKey, normalizeChord } from './keys';
+import { extractDirective } from '../../../shared/chordpro.mjs';
 import type { SetlistEntry, SetlistPreferences } from '../types';
 
 // preserveWhitespace is only an option on UltimateGuitarParser; the other two take
@@ -21,17 +22,13 @@ const SECTION_NAMES = 'Verse|Chorus|Bridge|Intro|Outro|Interlude|Pre-?Chorus|End
 // e.g. "Chorus", "Verse 2", "[Bridge]", "Pre-Chorus:".
 const SECTION_LABEL_RE = new RegExp(`^\\[?(?:${SECTION_NAMES})\\s*\\d*:?\\]?$`, 'i');
 
-export function extractDirective(content: string, name: string): string | null {
-  const re = new RegExp(`^\\{${name}:\\s*([^}]*)\\}`, 'im');
-  const m = content.match(re);
-  return m ? m[1].trim() : null;
-}
+export { extractDirective };
 
 export function updateDirective(content: string, name: string, value: string | null): string {
-  const re = new RegExp(`^\\{${name}:.*\\}[ \\t]*$`, 'im');
+  const re = new RegExp(`^[ \\t]*\\{${name}:.*\\}[ \\t]*$`, 'im');
   if (!value || !value.trim()) {
     // Remove directive line (and trailing newline if present)
-    return content.replace(new RegExp(`^\\{${name}:.*\\}[ \\t]*\\n?`, 'im'), '');
+    return content.replace(new RegExp(`^[ \\t]*\\{${name}:.*\\}[ \\t]*\\n?`, 'im'), '');
   }
   const newLine = `{${name}: ${value.trim()}}`;
   if (re.test(content)) {
@@ -186,7 +183,7 @@ function firstChordRoot(song: ChordSheetJS.Song): string | null {
 }
 
 export function ensureKeyDirective(content: string): string {
-  if (/\{key:\s*\S/.test(content)) return content;
+  if (extractDirective(content, 'key')) return content;
   try {
     const root = firstChordRoot(new ChordSheetJS.ChordProParser().parse(content));
     if (root) return `{key: ${root}}\n${content}`;
@@ -391,10 +388,6 @@ export function songHasKey(content: string, semitones: number): boolean {
 }
 
 export { escHtml } from './util';
-
-export function isAdminRole(role: string): boolean {
-  return role === 'admin' || role === 'owner';
-}
 
 export function clampFontSize(val: number): number {
   return Math.max(-3, Math.min(5, val));

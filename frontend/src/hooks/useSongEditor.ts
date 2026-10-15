@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { extractDirective, updateDirective, detectFormat } from '../lib/chords';
 import { splitTags } from '../lib/tagName';
@@ -23,8 +23,6 @@ export function useSongEditor(initialContent: string = '') {
   const [tags, setTags] = useState<string[]>([]);
   const [language, setLanguage] = useState('');
   const [formatBadge, setFormatBadge] = useState<{ text: string; ok: boolean } | null>(null);
-
-  const syncSource = useRef<'editor' | 'field' | null>(null);
 
   const updateBadge = useCallback((text: string) => {
     const fmt = detectFormat(text);
@@ -56,37 +54,25 @@ export function useSongEditor(initialContent: string = '') {
   const handleContentChange = useCallback((text: string) => {
     setContent(text);
     updateBadge(text);
-    if (syncSource.current === 'field') return;
     scheduleSync(text);
   }, [scheduleSync, updateBadge]);
 
-  const handleFieldChange = useCallback((directive: string, value: string, setter: (v: string) => void) => {
+  const writeDirective = useCallback((directive: string, value: string | null) => {
     scheduleSync.cancel();
-    setter(value);
-    if (syncSource.current === 'editor') return;
-    syncSource.current = 'field';
-    setContent(prev => updateDirective(prev, directive, value || null));
-    syncSource.current = null;
+    setContent(prev => updateDirective(prev, directive, value));
   }, [scheduleSync]);
+
+  const handleFieldChange = useCallback((directive: string, value: string, setter: (v: string) => void) => {
+    setter(value);
+    writeDirective(directive, value || null);
+  }, [writeDirective]);
 
   const handleTagsChange = useCallback((newTags: string[]) => {
-    scheduleSync.cancel();
     setTags(newTags);
-    if (syncSource.current === 'editor') return;
-    syncSource.current = 'field';
-    const val = newTags.length > 0 ? newTags.join(',') : null;
-    setContent(prev => updateDirective(prev, 'x_tags', val));
-    syncSource.current = null;
-  }, [scheduleSync]);
+    writeDirective('x_tags', newTags.length > 0 ? newTags.join(',') : null);
+  }, [writeDirective]);
 
-  const handleLanguageChange = useCallback((lang: string) => {
-    scheduleSync.cancel();
-    setLanguage(lang);
-    if (syncSource.current === 'editor') return;
-    syncSource.current = 'field';
-    setContent(prev => updateDirective(prev, 'x_language', lang || null));
-    syncSource.current = null;
-  }, [scheduleSync]);
+  const handleLanguageChange = useCallback((lang: string) => handleFieldChange('x_language', lang, setLanguage), [handleFieldChange]);
 
   return {
     state: { title, artist, content, youtubeUrl, bpm, tags, language, formatBadge },
@@ -95,7 +81,6 @@ export function useSongEditor(initialContent: string = '') {
     handleFieldChange,
     handleTagsChange,
     handleLanguageChange,
-    // Direct setters for individual fields if needed for UI components
     setTitle,
     setArtist,
     setYoutubeUrl,

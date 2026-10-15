@@ -4,7 +4,10 @@ import { useMediaQuery } from '@mantine/hooks';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
+import { useBusyAction } from '../hooks/useBusyAction';
 import { api } from '../lib/api';
+import { errorMessage } from '../lib/errors';
+import { DEMO_ACCOUNT } from '../lib/constants';
 import type { AuthConfig, AuthResponse } from '../types';
 
 interface AuthViewProps {
@@ -19,8 +22,7 @@ export function AuthView({ navigate }: AuthViewProps) {
   const form = useForm({ initialValues: { username: '', password: '', inviteCode: '' }, validate: { username: value => value ? null : t('auth.fillAllFields'), password: value => value ? null : t('auth.fillAllFields') } });
   const { username, password, inviteCode } = form.values;
   const { setValues } = form;
-  const [submitting, setSubmitting] = useState(false);
-  const submittingRef = useRef(false);
+  const { busy: submitting, run } = useBusyAction();
   const [error, setError] = useState('');
   const [config, setConfig] = useState<AuthConfig>({ allowRegistration: true, invitesEnabled: false, turnstileSiteKey: null, demoMode: false });
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
@@ -31,9 +33,7 @@ export function AuthView({ navigate }: AuthViewProps) {
   useEffect(() => {
     api<AuthConfig>('GET', '/api/auth/config').then((cfg) => {
       setConfig(cfg);
-      if (cfg.demoMode) {
-        setValues({ username: 'demo', password: 'demopass123' });
-      }
+      if (cfg.demoMode) setValues(DEMO_ACCOUNT);
     }).catch(() => {});
   }, [setValues]);
 
@@ -71,23 +71,17 @@ export function AuthView({ navigate }: AuthViewProps) {
     document.head.appendChild(script);
   }, [config.turnstileSiteKey, tab]);
 
-  const submit = async () => {
-    if (submittingRef.current) return;
+  const submit = () => run(async () => {
     setError('');
     if (tab === 'invite' && !inviteCode) { setError(t('auth.fillAllFields')); return; }
-    submittingRef.current = true;
-    setSubmitting(true);
-    try {
-      const effectiveTab = !config.allowRegistration ? 'login' : tab;
-      const endpoint = tab === 'invite' ? '/api/auth/redeem-invite' : effectiveTab === 'login' ? '/api/auth/login' : '/api/auth/register';
-      const body = tab === 'invite' ? { code: inviteCode, username, password, turnstile_token: turnstileToken }
-        : effectiveTab === 'login' ? { username, password } : { username, password, turnstile_token: turnstileToken };
-      const data = await api<AuthResponse>('POST', endpoint, body);
-      login(data);
-      navigate('browse');
-    } catch (e) { setError((e as Error).message); }
-    finally { submittingRef.current = false; setSubmitting(false); }
-  };
+    const effectiveTab = !config.allowRegistration ? 'login' : tab;
+    const endpoint = tab === 'invite' ? '/api/auth/redeem-invite' : effectiveTab === 'login' ? '/api/auth/login' : '/api/auth/register';
+    const body = tab === 'invite' ? { code: inviteCode, username, password, turnstile_token: turnstileToken }
+      : effectiveTab === 'login' ? { username, password } : { username, password, turnstile_token: turnstileToken };
+    const data = await api<AuthResponse>('POST', endpoint, body);
+    login(data);
+    navigate('browse');
+  }, (e) => setError(errorMessage(e)));
 
   const showTabs = config.allowRegistration;
   const showInviteLink = !config.allowRegistration && config.invitesEnabled && tab !== 'invite';

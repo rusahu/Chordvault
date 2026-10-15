@@ -100,6 +100,10 @@ describe('updateDirective', () => {
     const result = updateDirective(content, 'title', 'Updated');
     expect(result).toBe('{title: Updated}\n[G]Lyrics');
   });
+
+  it('replaces an indented directive instead of adding a second one', () => {
+    expect(updateDirective('  {title: A}\nx', 'title', 'B')).toBe('{title: B}\nx');
+  });
 });
 
 // ─── detectFormat ───────────────────────────────────────────────────
@@ -202,6 +206,14 @@ describe('ensureKeyDirective', () => {
     const content = '[Am]Lyrics here [Em]more';
     const result = ensureKeyDirective(content);
     expect(result).toContain('{key: Am}');
+  });
+
+  it('accepts a key directive in any case', () => {
+    expect(ensureKeyDirective('{Key: G}\n[C]a')).toBe('{Key: G}\n[C]a');
+  });
+
+  it('treats an empty key directive as missing', () => {
+    expect(ensureKeyDirective('{key: }\n[C]a')).toMatch(/^\{key: C\}\n/);
   });
 });
 

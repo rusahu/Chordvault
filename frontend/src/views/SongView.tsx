@@ -18,10 +18,15 @@ import { Toolbar } from '../components/Toolbar';
 import { Loading } from '../components/Loading';
 import { AddToSetlistModal } from '../components/AddToSetlistModal';
 import { renderChordPro, songHasKey, autoFit } from '../lib/chords';
-import { languageName } from '../lib/languages';
+import { LanguageBadge } from '../components/LanguageBadge';
 import type { Song, SongVersion, Correction } from '../types';
 import { TagBadges } from '../components/TagBadges';
 import { PageTitle } from '../components/PageTitle';
+import { VISIBILITY } from '../lib/constants';
+import { formatDbDate, versionLabel } from '../lib/format';
+import { errorMessage, notifyError } from '../lib/errors';
+import { usePdfExport } from '../hooks/usePdfExport';
+import { songHash } from '../lib/routes';
 
 interface SongViewProps {
   songId: number;
@@ -39,7 +44,6 @@ export function SongView({ songId, navigate }: SongViewProps) {
   const [versions, setVersions] = useState<SongVersion[]>([]);
   const [corrections, setCorrections] = useState<Correction[]>([]);
   const [addToSetlistOpen, addToSetlist] = useDisclosure(false);
-  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     setSong(null);
@@ -47,9 +51,9 @@ export function SongView({ songId, navigate }: SongViewProps) {
     getSong(songId)
       .then((data) => {
         setSong(data);
-        location.hash = `#song/${songId}`;
+        location.hash = songHash(songId);
       })
-      .catch((e) => setLoadError(e.message));
+      .catch((e) => setLoadError(errorMessage(e)));
   }, [songId, getSong, navigate, user]);
 
   useEffect(() => {
@@ -83,11 +87,6 @@ export function SongView({ songId, navigate }: SongViewProps) {
     resetChordNashville(false);
   }, [songId, resetChordKey, resetChordNashville]);
 
-  const renderedHtml = useMemo(
-    () => renderChordPro(content, chord.transpose, chord.nashville),
-    [content, chord.transpose, chord.nashville]
-  );
-
   const shortcuts = useMemo(() => ({
     'ArrowUp': (e: KeyboardEvent) => { e.preventDefault(); chord.stepCurrentKey(1); },
     'ArrowDown': (e: KeyboardEvent) => { e.preventDefault(); chord.stepCurrentKey(-1); },
@@ -102,26 +101,12 @@ export function SongView({ songId, navigate }: SongViewProps) {
 
   const isOwner = user && song && user.username === song.username;
 
-  const handleExportPdf = async () => {
-    if (!song || exporting) return;
-    setExporting(true);
-    try {
-      const { exportSongPdf } = await import('../lib/pdf-export');
-      const missing = await exportSongPdf(song, {
-        transpose: chord.transpose,
-        nashville: chord.nashville,
-        fontSize: fontScale.fontSize,
-      });
-      if (missing.length) {
-        toast(`PDF exported, but these characters may be missing: ${missing.slice(0, 8).join(' ')}`, 'error');
-      } else {
-        toast('PDF exported', 'success');
-      }
-    } catch (e) {
-      toast((e as Error).message || 'PDF export failed', 'error');
-    } finally {
-      setExporting(false);
-    }
+  const exportPdf = usePdfExport();
+  const handleExportPdf = () => {
+    if (!song) return;
+    void exportPdf('PDF exported', async () => (await import('../lib/pdf-export')).exportSongPdf(song, {
+      transpose: chord.transpose, nashville: chord.nashville, fontSize: fontScale.fontSize,
+    }));
   };
 
 
@@ -134,7 +119,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
       setSong(null);
       const data = await getSong(songId);
       setSong(data);
-    } catch (e) { toast((e as Error).message, 'error'); }
+    } catch (e) { notifyError(e); }
 
 } });
 };
@@ -145,7 +130,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
       await apiCall('DELETE', `/api/corrections/${id}`);
       toast('Correction rejected', 'success');
       setCorrections((prev) => prev.filter((c) => c.id !== id));
-    } catch (e) { toast((e as Error).message, 'error'); }
+    } catch (e) { notifyError(e); }
 
 } });
 };
@@ -166,7 +151,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
                 &#9998; {t('songView.edit')}
               </Button>
             )}
-            {user && !isOwner && song.visibility !== 'private' && (
+            {user && !isOwner && song.visibility !== VISIBILITY.PRIVATE && (
               <>
                 <Button disabled={readOnly} variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => navigate('song-edit', { id: String(song.id) })}>
                   &#43; Create Version
@@ -186,8 +171,8 @@ export function SongView({ songId, navigate }: SongViewProps) {
         <Group gap="xs" mt="xs">
           {!isOwner && song.username && <span className="song-view-by">@{song.username}</span>}
           {song.bpm && <Badge>{song.bpm} bpm</Badge>}
-          {song.language && <Badge title={languageName(song.language)}>{song.language.toUpperCase()}</Badge>}
-          {isOwner && song.visibility === 'private' && <Badge leftSection={<IconLock size={14} aria-hidden />}>Private</Badge>}
+          {song.language && <LanguageBadge code={song.language} />}
+          {isOwner && song.visibility === VISIBILITY.PRIVATE && <Badge leftSection={<IconLock size={14} aria-hidden />}>Private</Badge>}
           {versions.length > 1 && (
             <Group gap="xs" wrap="nowrap">
               <Text component="label" htmlFor="song-version" size="xs" c="dimmed" fw={600}>Version</Text>
@@ -198,7 +183,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
               >
                 {versions.map((v, idx) => (
                   <option key={v.id} value={v.id}>
-                    {idx + 1} (@{v.username}) {v.youtube_url ? '▶' : ''}
+                    {versionLabel(v, idx)}
                   </option>
                 ))}
               </NativeSelect>
@@ -227,7 +212,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
       />
 
       <ChordSheet
-        html={renderedHtml}
+        html={chord.renderedHtml}
         twoCol={twoColState.twoCol}
         fontSize={fontScale.fontSize}
       />
@@ -246,7 +231,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
           {corrections.map((c) => (
             <Paper withBorder key={c.id} className="correction-card" bg="var(--ui-card-bg)" radius={12} p={16} mb={12} shadow="sm">
               <Group justify="space-between" gap={8} mb={12} c="dimmed" fz={13}>
-                <span>@{c.username} &middot; {new Date(c.created_at).toLocaleDateString()}</span>
+                <span>@{c.username} &middot; {formatDbDate(c.created_at)}</span>
                 <Group gap={8}>
                   <Button size="xs" className="btn btn-sm" disabled={readOnly} onClick={() => approveCorrection(c.id)}>Approve</Button>
                   <Button color="red" size="xs" className="btn btn-danger btn-sm" disabled={readOnly} onClick={() => rejectCorrection(c.id)}>Reject</Button>

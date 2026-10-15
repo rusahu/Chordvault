@@ -1,8 +1,11 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { SettingsView } from '../SettingsView';
-const { call } = vi.hoisted(() => ({ call: vi.fn() }));
+import { exportSongsBlob } from '../../lib/api';
+const { call, auth } = vi.hoisted(() => ({ call: vi.fn(), auth: { user: null as { token: string } | null, isAdmin: false } }));
 vi.mock('../../hooks/useApi', () => ({ useApi: () => call }));
-vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ user: null, isAdmin: false }) }));
+vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
+vi.mock('../../lib/api', async (original) => ({ ...await original<typeof import('../../lib/api')>(), exportSongsBlob: vi.fn() }));
+afterEach(() => { auth.user = null; });
 vi.mock('../../context/I18nContext', () => ({ useI18n: () => ({ t: (key: string, fallback?: string) => fallback || key }) }));
 vi.mock('../../context/DemoContext', () => ({ useDemo: () => ({ demoMode: false }) }));
 vi.mock('../../components/GeminiKeySettings', () => ({ GeminiKeySettings: () => null }));
@@ -50,4 +53,21 @@ it('exposes standalone language removal to keyboard and screen-reader users', as
   fireEvent.click(remove);
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Remove Chinese' })).not.toBeInTheDocument());
   expect(call).toHaveBeenCalledWith('PUT', '/api/settings/languages', { languages: ['en'] });
+});
+
+it('reports a failed export and frees the button', async () => {
+  auth.user = { token: 't' };
+  vi.mocked(exportSongsBlob).mockRejectedValueOnce(new Error('Export failed (500)'));
+  render(<SettingsView />);
+  fireEvent.click(screen.getByRole('button', { name: 'Export Songs' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Export failed (500)');
+  expect(screen.getByRole('button', { name: 'Export Songs' })).toBeEnabled();
+});
+
+it('saves an added language and says so', async () => {
+  render(<SettingsView />);
+  fireEvent.click(await screen.findByPlaceholderText('Search languages'));
+  fireEvent.click(await screen.findByRole('option', { name: 'Chinese (zh)' }));
+  await waitFor(() => expect(call).toHaveBeenCalledWith('PUT', '/api/settings/languages', { languages: ['zh'] }));
+  expect(await screen.findByRole('status')).toHaveTextContent('Saved');
 });

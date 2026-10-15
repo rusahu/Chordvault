@@ -1,15 +1,17 @@
-import { Alert, Button, SimpleGrid, Group } from '@mantine/core';
+import { Alert, Button, Group } from '@mantine/core';
 import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
 import { SearchField } from '../components/SearchField';
 import { SearchRow } from '../components/SearchRow';
 import { IconPlus, IconGuitarPick } from '@tabler/icons-react';
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useI18n } from '../context/I18nContext';
 import { SongCard } from '../components/SongCard';
 import { EmptyState } from '../components/EmptyState';
+import { CardGrid } from '../components/CardGrid';
 import { Pagination } from '../components/Pagination';
-import { useSearchSessionValue } from '../hooks/useSearchSessionValue';
+import { useSessionField } from '../hooks/useSearchSessionValue';
+import { searchKey } from '../lib/storage';
 import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
 import type { LibraryQuery } from '../types/offline';
 import { PageTitle } from '../components/PageTitle';
@@ -22,11 +24,10 @@ export function MySongsView({ navigate }: MySongsViewProps) {
   const { t } = useI18n();
   const { readOnly } = useOffline();
   const { querySongs } = useLibraryRead();
-  const [savedQuery, saveQuery] = useSearchSessionValue('cv_mysongs_query');
-  const [query, setQuery] = useState(savedQuery);
+  const [query, setQuery, saveQuery] = useSessionField(searchKey('mysongs', 'query'));
   const fetchOwnSongs = useCallback((filters: LibraryQuery) => querySongs({ ...filters, q: filters.q?.trim(), own: true }), [querySongs]);
   const { items: songs, page, totalPages, loaded, loadError, load } = usePaginatedSearch({
-    pageKey: 'cv_mysongs_page', listKey: 'songs', fetchPage: fetchOwnSongs,
+    pageKey: searchKey('mysongs', 'page'), listKey: 'songs', fetchPage: fetchOwnSongs,
     filters: { q: query },
     persist: ({ q = '' }) => saveQuery(q),
   });
@@ -54,7 +55,7 @@ export function MySongsView({ navigate }: MySongsViewProps) {
         <Button variant="default" size="sm" onClick={doSearch}>{t('songs.search')}</Button>
         <Button size="sm" w={{ base: '100%', xs: 'auto' }} leftSection={<IconPlus size={16} aria-hidden />} disabled={readOnly} onClick={() => navigate('song-edit')}>{t('songs.newSong')}</Button>
       </SearchRow>
-      <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12}>
+      <CardGrid>
         {!loadError && loaded && songs.length === 0 ? (
           <EmptyState
             icon={<IconGuitarPick size={56} aria-hidden />}
@@ -72,7 +73,7 @@ export function MySongsView({ navigate }: MySongsViewProps) {
             />
           ))
         )}
-      </SimpleGrid>
+      </CardGrid>
       <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
     </>
   );

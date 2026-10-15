@@ -1,6 +1,6 @@
 const express = require('express');
 const yazl = require('yazl');
-const { requireAuth, requireAdmin, optionalAuth, isAdminRole, canManageSong } = require('../lib/auth');
+const { requireAuth, requireAdmin, optionalAuth, isAdminRole, canManageSong, viewerId } = require('../lib/auth');
 const { STATUS, VISIBILITY, LIMITS } = require('../lib/constants');
 const { validateListQuery, validateObjectBody, requireId, assertValid, validateSongInput, validateVisibility, validateSongMetadata, parsePaginationParams, songListOptions } = require('../lib/validation');
 const { AppError, requireFound } = require('../lib/errors');
@@ -9,24 +9,18 @@ const { makeUniqueNamer } = require('../lib/exportFilename');
 const Song = require('../lib/models/song');
 const User = require('../lib/models/user');
 const Tags = require('../lib/models/tags');
-const { canViewSongVisibility } = require('../lib/songAccess');
+const { canViewSongVisibility, familyRootId } = require('../lib/songAccess');
 const { splitTags } = require('../shared/tags.mjs');
-
-function extractDirective(content, name) {
-  const re = new RegExp(`\\{${name}:\\s*([^}]*)\\}`, 'i');
-  const m = content.match(re);
-  return m ? m[1].trim() : null;
-}
+const { normalizeVisibility } = require('../shared/access.mjs');
+const { extractDirective, parseBpm } = require('../shared/chordpro.mjs');
 
 function extractMetadata(content) {
   const cleanedTags = splitTags(extractDirective(content, 'x_tags')).join(',') || null;
-  const bpmStr = extractDirective(content, 'tempo');
-  const bpm = bpmStr ? parseInt(bpmStr, 10) : null;
   return {
     title: extractDirective(content, 'title') || '',
     artist: extractDirective(content, 'artist') || '',
     key: extractDirective(content, 'key') || '',
-    bpm: (bpm && bpm >= 1 && bpm <= 300) ? bpm : null,
+    bpm: parseBpm(extractDirective(content, 'tempo'), LIMITS.MIN_BPM, LIMITS.MAX_BPM),
     youtube_url: extractDirective(content, 'x_youtube') || null,
     tags: cleanedTags,
     language: extractDirective(content, 'x_language') || '',
@@ -39,6 +33,10 @@ function requireSongMetadata(content) {
   return meta;
 }
 
+function assertManagesCorrections(user, ownerId, action) {
+  if (!canManageSong(user, ownerId)) throw new AppError(`Only the song owner or admins can ${action} corrections`, 403);
+}
+
 function findSong(rawId) {
   return requireFound(Song.findById(requireId(rawId, 'Invalid song ID')), 'Song not found');
 }
@@ -49,9 +47,7 @@ function resolveCorrectionWithAuth(req) {
   const originalId = correction.parent_id;
   if (!originalId) throw new AppError('Correction has no parent song', 400);
   const original = requireFound(Song.findById(originalId), 'Original song not found');
-  if (original.user_id !== req.user.id && !isAdminRole(req.user.role)) {
-    throw new AppError('Only the song owner or admins can manage corrections', 403);
-  }
+  assertManagesCorrections(req.user, original.user_id, 'manage');
   return { correction, original, originalId };
 }
 
@@ -64,7 +60,7 @@ function createSongsRouter() {
   });
 
   router.get('/songs/public', optionalAuth, validateListQuery, (req, res) => {
-    res.json(Song.listPublic({ ...songListOptions(req.query), userId: req.user ? req.user.id : 0 }));
+    res.json(Song.listPublic({ ...songListOptions(req.query), userId: viewerId(req) }));
   });
 
   router.get('/songs/export', requireAuth, (req, res) => {
@@ -89,10 +85,7 @@ function createSongsRouter() {
 
   router.get('/users/:username/songs', validateListQuery, (req, res) => {
     const user = requireFound(User.findByUsername(req.params.username), 'User not found');
-    const { page, limit } = req.query;
-    const { page: pageNum, limit: limitNum } = parsePaginationParams(page, limit);
-    const songs = Song.listByUser(user.id, { page: pageNum, limit: limitNum });
-    res.json(songs);
+    res.json(Song.listByUser(user.id, parsePaginationParams(req.query.page, req.query.limit)));
   });
 
   router.get('/tags', (_req, res) => res.json({ tags: Tags.getTags() }));
@@ -107,8 +100,7 @@ function createSongsRouter() {
     }
     if (!canViewSongVisibility(req.user, song)) throw new AppError('Song not found', 404);
     // Include version_count for single song view
-    const userId = req.user ? req.user.id : 0;
-    const versionCount = Song.getVersionCount(song.parent_id, song.id, userId);
+    const versionCount = Song.getVersionCount(song.parent_id, song.id, viewerId(req));
     res.json({ ...song, version_count: versionCount });
   });
 
@@ -119,7 +111,7 @@ function createSongsRouter() {
     assertValid(validateVisibility(visibility));
 
     const fmt = format_detected?.trim() || null;
-    const finalVisibility = visibility === VISIBILITY.PRIVATE ? VISIBILITY.PRIVATE : VISIBILITY.PUBLIC;
+    const finalVisibility = normalizeVisibility(visibility);
     const result = Song.create(req.user.id, meta, content, finalVisibility, fmt);
     res.json({ id: result.lastInsertRowid });
   });
@@ -146,7 +138,7 @@ function createSongsRouter() {
         index: i,
         ...meta,
         content: s.content.trim(),
-        visibility: s.visibility === VISIBILITY.PRIVATE ? VISIBILITY.PRIVATE : VISIBILITY.PUBLIC,
+        visibility: normalizeVisibility(s.visibility),
       });
     });
 
@@ -170,7 +162,7 @@ function createSongsRouter() {
     assertValid(validateVisibility(visibility));
 
     const fmt = format_detected !== undefined ? (format_detected?.trim() || null) : existing.format_detected;
-    const finalVisibility = visibility !== undefined ? (visibility === VISIBILITY.PRIVATE ? VISIBILITY.PRIVATE : VISIBILITY.PUBLIC) : existing.visibility;
+    const finalVisibility = visibility !== undefined ? normalizeVisibility(visibility) : existing.visibility;
     Song.update(id, meta, finalContent, finalVisibility, fmt);
     res.json({ success: true });
   });
@@ -187,15 +179,12 @@ function createSongsRouter() {
     const original = findSong(req.params.id);
     if (original.status !== STATUS.ACTIVE) throw new AppError('Song not found', 404);
 
-    const isOwner = original.user_id === req.user.id;
-    const isAdmin = isAdminRole(req.user.role);
-    const isPublic = original.visibility === VISIBILITY.PUBLIC;
-    if (!isOwner && !isAdmin && !isPublic) throw new AppError('Not authorized', 403);
+    if (!canManageSong(req.user, original.user_id) && original.visibility !== VISIBILITY.PUBLIC) throw new AppError('Not authorized', 403);
 
     const { content, youtube_url } = req.body;
     assertValid(validateSongInput({ content, youtube_url, requireContent: true, requireChord: true }));
 
-    const parentId = original.parent_id || original.id;
+    const parentId = familyRootId(original);
     const meta = requireSongMetadata(content);
     const result = Song.createVersion(req.user.id, parentId, meta, content, original.visibility);
     res.json({ id: result.lastInsertRowid });
@@ -204,10 +193,7 @@ function createSongsRouter() {
   router.get('/songs/:id/versions', optionalAuth, (req, res) => {
     const song = findSong(req.params.id);
     if (song.status !== STATUS.ACTIVE || !canViewSongVisibility(req.user, song)) throw new AppError('Song not found', 404);
-    const rootId = song.parent_id || song.id;
-    const userId = req.user ? req.user.id : 0;
-    const versions = Song.getVersions(rootId, userId);
-    res.json(versions);
+    res.json(Song.getVersions(familyRootId(song), viewerId(req)));
   });
 
   router.post('/songs/:id/correction', requireAuth, (req, res) => {
@@ -218,7 +204,7 @@ function createSongsRouter() {
     const validationError = validateSongInput({ content, youtube_url, requireContent: true, requireChord: true });
     if (validationError) throw new AppError(validationError.replace('before saving', 'before submitting'), 400);
 
-    const parentId = original.parent_id || original.id;
+    const parentId = familyRootId(original);
     const meta = requireSongMetadata(content);
     const result = Song.createCorrection(req.user.id, parentId, meta, content);
     res.json({ id: result.lastInsertRowid });
@@ -226,11 +212,8 @@ function createSongsRouter() {
 
   router.get('/songs/:id/corrections', requireAuth, (req, res) => {
     const song = findSong(req.params.id);
-    const isOwner = song.user_id === req.user.id;
-    if (!isOwner && !isAdminRole(req.user.role)) throw new AppError('Only the song owner or admins can view corrections', 403);
-    const rootId = song.parent_id || song.id;
-    const corrections = Song.getCorrections(rootId);
-    res.json(corrections);
+    assertManagesCorrections(req.user, song.user_id, 'view');
+    res.json(Song.getCorrections(familyRootId(song)));
   });
 
   router.put('/corrections/:id/approve', requireAuth, (req, res) => {

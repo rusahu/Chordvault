@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from 'react';
+import { errorMessage } from '../lib/errors';
+import { useActiveRef } from './useActiveRef';
 import type { LibraryPage, LibraryQuery } from '../types/offline';
 import { searchPage, useSearchSessionValue } from './useSearchSessionValue';
 
@@ -19,15 +21,11 @@ export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filt
   const [totalPages, setTotalPages] = useState(1);
   const [loaded, setLoaded] = useState(false);
   const [loadError, setLoadError] = useState('');
-  const active = useRef(false);
+  const active = useActiveRef();
   const latestRequest = useRef(0);
   const latestPersist = useRef(persist);
 
   useEffect(() => { latestPersist.current = persist; });
-  useEffect(() => {
-    active.current = true;
-    return () => { active.current = false; };
-  }, []);
 
   const load = useCallback(async (next: LibraryQuery, targetPage = 1) => {
     const request = ++latestRequest.current;
@@ -44,9 +42,9 @@ export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filt
       latestPersist.current(next);
       savePage(String(data.page));
     } catch (e) {
-      if (isCurrent()) { setLoadError((e as Error).message); setItems([]); }
+      if (isCurrent()) { setLoadError(errorMessage(e)); setItems([]); }
     }
-  }, [fetchPage, listKey, savePage]);
+  }, [active, fetchPage, listKey, savePage]);
 
   const loadCurrent = useEffectEvent((run: typeof load, on: boolean) => {
     if (on) void run(filters, page);

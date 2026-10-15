@@ -5,10 +5,21 @@ const { GEMINI_MODELS, isValidGeminiModel, resolveGeminiModel } = require('../li
 const { validateObjectBody, assertValid, validatePreferredLanguages, validateGeminiApiKey, validateOcrPrompt, validateOcrImage, validateRefineInput } = require('../lib/validation');
 const { LANGUAGE_CODES } = require('../lib/languages');
 const { AppError } = require('../lib/errors');
-const { parseDataUrl, stripFences, callGemini } = require('../lib/gemini');
+const { imageTurn, stripFences, callGemini } = require('../lib/gemini');
 const { jsonToChordPro } = require('../lib/ocr-convert');
 const { encryptApiKey, loadGeminiCredentials } = require('../lib/geminiKey');
 const { DEFAULT_OCR_PROMPT, OCR_JSON_SCHEMA, OCR_REFINE_PROMPT } = require('../lib/ocrPrompts');
+
+const DETECTED_LANGUAGE_RE = /^DETECTED_LANGUAGE:\s*([a-z]{2})\s*$/m;
+
+/** Custom prompts reply in text with an optional DETECTED_LANGUAGE line. */
+function readLegacyOcrText(text) {
+  const match = text.match(DETECTED_LANGUAGE_RE);
+  return {
+    text: stripFences(text.replace(DETECTED_LANGUAGE_RE, '')),
+    language: match && LANGUAGE_CODES.has(match[1]) ? match[1] : null,
+  };
+}
 
 function createSettingsRouter() {
   const router = express.Router();
@@ -83,18 +94,12 @@ function createSettingsRouter() {
     assertValid(validateOcrImage(image));
     const { user, apiKey } = loadGeminiCredentials(req.user.id);
 
-    const { mimeType, base64 } = parseDataUrl(image);
     const isJsonMode = !user.gemini_prompt;
 
     const text = await callGemini({
       apiKey,
       model: resolveGeminiModel(requestModel, user.gemini_model),
-      contents: [{
-        parts: [
-          { text: user.gemini_prompt || DEFAULT_OCR_PROMPT },
-          { inline_data: { mime_type: mimeType, data: base64 } },
-        ],
-      }],
+      contents: [imageTurn(user.gemini_prompt || DEFAULT_OCR_PROMPT, image)],
       schema: isJsonMode ? OCR_JSON_SCHEMA : undefined,
       subject: 'image',
       retryHint: 'Try a clearer photo.',
@@ -118,11 +123,7 @@ function createSettingsRouter() {
     }
 
     // Legacy text mode (custom prompt users)
-    const langMatch = text.match(/^DETECTED_LANGUAGE:\s*([a-z]{2})\s*$/m);
-    const detectedLang = langMatch && LANGUAGE_CODES.has(langMatch[1]) ? langMatch[1] : null;
-    const cleanedText = stripFences(text.replace(/^DETECTED_LANGUAGE:\s*[a-z]{2}\s*$/m, ''));
-
-    res.json({ text: cleanedText, language: detectedLang });
+    res.json(readLegacyOcrText(text));
   });
 
   // Refinement endpoint — multi-turn conversation with image context
@@ -131,18 +132,8 @@ function createSettingsRouter() {
     assertValid(validateRefineInput({ image, history, message }));
     const { user, apiKey } = loadGeminiCredentials(req.user.id);
 
-    const { mimeType, base64 } = parseDataUrl(image);
-
     // Refine always uses text-based prompt for context (even if initial extraction used JSON mode)
-    const contents = [
-      {
-        role: 'user',
-        parts: [
-          { text: user.gemini_prompt || OCR_REFINE_PROMPT },
-          { inline_data: { mime_type: mimeType, data: base64 } },
-        ],
-      },
-    ];
+    const contents = [{ role: 'user', ...imageTurn(user.gemini_prompt || OCR_REFINE_PROMPT, image) }];
     for (const msg of history) {
       if (msg.role === 'model' || msg.role === 'user') {
         contents.push({ role: msg.role, parts: [{ text: msg.text }] });

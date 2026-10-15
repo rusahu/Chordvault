@@ -96,7 +96,6 @@ for (const { View, prefix, path } of cases.filter(c => c.prefix.includes('setlis
     expect(screen.getByLabelText('From')).toHaveValue('2026-10-01');
     api.mockRejectedValueOnce(new Error('Date search failed'));
     fireEvent.change(screen.getByLabelText('From'), { target: { value: '2026-09-01' } });
-    if (prefix === 'cv_setlists') fireEvent.click(screen.getByRole('button', { name: 'songs.search' }));
     expect(await screen.findByRole('alert')).toHaveTextContent('Date search failed');
     expect(sessionStorage.getItem(`${prefix}_date_from`)).toBe('2026-10-01');
   });

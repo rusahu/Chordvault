@@ -71,7 +71,7 @@ describe('local setlist reorder', () => {
 
     expect(titles()).toEqual(['Alpha', 'Bravo']);
     expect(stored()[0].transpose).toBe(2);
-    expect(mockToast).toHaveBeenCalledWith('setlist.reorderFailed', 'error');
+    await waitFor(() => expect(mockToast).toHaveBeenCalledWith('setlist.reorderFailed', 'error'));
     await waitFor(() => expect(screen.queryByText('Charlie')).toBeNull());
   });
 
@@ -86,5 +86,12 @@ describe('local setlist reorder', () => {
     expect(titles()).toEqual(['Charlie', 'Bravo', 'Alpha']);
     expect(stored()[2].transpose).toBe(2);
     expect(stored()[1].target_key).toBe('G');
+  });
+
+  it('plays a local setlist from the tapped entry (characterization)', async () => {
+    const navigate = vi.fn();
+    render(<SetlistEditView setlistId="local_1" navigate={navigate} />);
+    fireEvent.click(await screen.findByText('Bravo'));
+    expect(navigate).toHaveBeenLastCalledWith('setlist-play', { id: 'local_1', local: '1', index: '1' });
   });
 });

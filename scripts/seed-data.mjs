@@ -1,113 +1,26 @@
 /**
- * seed-data.mjs — Seeds ChordVault with demo data via direct DB access.
+ * Seeds an empty ChordVault DB (DB_PATH, default ./data/chordvault.db) through the app's models:
+ * a hidden _system owner and the demo admin with sample songs and setlists.
  *
  * Usage: node scripts/seed-data.mjs
- *
- * Creates a hidden _system owner and a demo admin user with sample data.
- * Uses CommonJS require for better-sqlite3 and bcryptjs (bundled in node_modules).
  */
 
 import { createRequire } from 'module';
 import crypto from 'crypto';
+import { DEMO_ACCOUNT } from './lib/session.mjs';
 const require = createRequire(import.meta.url);
-const Database = require('better-sqlite3');
-const bcrypt = require('bcryptjs');
+const { db } = require('../lib/db');
+const User = require('../lib/models/user');
+const Song = require('../lib/models/song');
+const Setlist = require('../lib/models/setlist');
+const { hashPassword } = require('../lib/auth');
+const { ROLES, VISIBILITY } = require('../lib/constants');
 
-const DB_PATH = './data/chordvault.db';
+const system = User.create('_system', await hashPassword(crypto.randomBytes(32).toString('hex')), ROLES.OWNER);
+console.log(`Created _system (id: ${system.id}, role: owner)`);
+const demo = User.create(DEMO_ACCOUNT.username, await hashPassword(DEMO_ACCOUNT.password), ROLES.ADMIN);
+console.log(`Created ${DEMO_ACCOUNT.username} (id: ${demo.id}, role: admin)`);
 
-// Open DB — server.js hasn't started yet, so we init tables ourselves
-const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
-
-// Create tables (same schema as lib/db.js)
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id            INTEGER PRIMARY KEY AUTOINCREMENT,
-    username      TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    role          TEXT DEFAULT 'user',
-    disabled      INTEGER DEFAULT 0,
-    gemini_api_key TEXT DEFAULT NULL,
-    gemini_prompt  TEXT DEFAULT NULL,
-    preferred_languages TEXT DEFAULT NULL,
-    created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE TABLE IF NOT EXISTS songs (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id         INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    title           TEXT NOT NULL,
-    artist          TEXT DEFAULT '',
-    key             TEXT DEFAULT '',
-    content         TEXT NOT NULL,
-    visibility      TEXT DEFAULT 'public',
-    parent_id       INTEGER REFERENCES songs(id) ON DELETE SET NULL,
-    youtube_url     TEXT DEFAULT NULL,
-    format_detected TEXT DEFAULT NULL,
-    bpm             INTEGER DEFAULT NULL,
-    tags            TEXT DEFAULT NULL,
-    language        TEXT NOT NULL DEFAULT '',
-    status          TEXT DEFAULT 'active',
-    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at      DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE TABLE IF NOT EXISTS setlists (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id    INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    name       TEXT NOT NULL,
-    visibility TEXT DEFAULT 'private',
-    event_date TEXT DEFAULT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-  CREATE TABLE IF NOT EXISTS setlist_songs (
-    id               INTEGER PRIMARY KEY AUTOINCREMENT,
-    setlist_id       INTEGER REFERENCES setlists(id) ON DELETE CASCADE,
-    song_id          INTEGER REFERENCES songs(id) ON DELETE CASCADE,
-    position         INTEGER NOT NULL,
-    transpose        INTEGER DEFAULT 0,
-    nashville        INTEGER DEFAULT 0,
-    content_override TEXT DEFAULT NULL
-  );
-  CREATE TABLE IF NOT EXISTS invites (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    code       TEXT UNIQUE NOT NULL,
-    created_by INTEGER REFERENCES users(id),
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    used_by    INTEGER REFERENCES users(id) DEFAULT NULL,
-    used_at    DATETIME DEFAULT NULL
-  );
-  CREATE TABLE IF NOT EXISTS settings (
-    key   TEXT PRIMARY KEY,
-    value TEXT NOT NULL
-  );
-  CREATE INDEX IF NOT EXISTS idx_songs_user_status ON songs(user_id, status);
-  CREATE INDEX IF NOT EXISTS idx_songs_visibility_status ON songs(visibility, status);
-  CREATE INDEX IF NOT EXISTS idx_songs_parent_id ON songs(parent_id);
-  CREATE INDEX IF NOT EXISTS idx_setlists_user ON setlists(user_id);
-  CREATE INDEX IF NOT EXISTS idx_setlist_songs_setlist ON setlist_songs(setlist_id, position);
-  CREATE INDEX IF NOT EXISTS idx_songs_language ON songs(language);
-`);
-
-// Settings
-db.prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('allow_registration', '0')").run();
-
-// Step 1: Create hidden _system owner
-const systemPassword = crypto.randomBytes(32).toString('hex');
-const systemHash = bcrypt.hashSync(systemPassword, 10);
-console.log('Creating hidden owner: _system');
-db.prepare("INSERT INTO users (username, password_hash, role) VALUES ('_system', ?, 'owner')").run(systemHash);
-const systemUser = db.prepare("SELECT id FROM users WHERE username = '_system'").get();
-console.log(`  Created _system (id: ${systemUser.id}, role: owner)`);
-
-// Step 2: Create demo admin user
-const demoHash = bcrypt.hashSync('demopass123', 10);
-console.log('Creating demo admin user...');
-db.prepare("INSERT INTO users (username, password_hash, role) VALUES ('demo', ?, 'admin')").run(demoHash);
-const demoUser = db.prepare("SELECT id FROM users WHERE username = 'demo'").get();
-console.log(`  Created demo (id: ${demoUser.id}, role: admin)`);
-
-// Step 3: Create songs owned by demo user
 const songs = [
   {
     title: 'Amazing Grace',
@@ -148,49 +61,23 @@ const songs = [
   },
 ];
 
-const insertSong = db.prepare(`
-  INSERT INTO songs (user_id, title, artist, key, content, language, tags, bpm, format_detected, youtube_url)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-`);
+const songIds = songs.map(({ content, format_detected, youtube_url = null, ...meta }) => {
+  const id = Song.create(demo.id, { ...meta, youtube_url }, content, VISIBILITY.PUBLIC, format_detected).lastInsertRowid;
+  console.log(`  Song: ${meta.title} (id: ${id})`);
+  return id;
+});
 
-console.log('\nCreating songs...');
-const songIds = [];
-for (const s of songs) {
-  const result = insertSong.run(
-    demoUser.id, s.title, s.artist, s.key, s.content,
-    s.language, s.tags, s.bpm, s.format_detected, s.youtube_url || null
-  );
-  songIds.push(result.lastInsertRowid);
-  console.log(`  ✓ ${s.title} (id: ${result.lastInsertRowid})`);
+// Sunday opens with a song that has a chorus, so playback shows every section style.
+const setlists = [
+  ['Sunday Morning Worship', VISIBILITY.PUBLIC, '2026-03-23', [1, 2, 3, 0]],
+  ['Christmas Eve Service', VISIBILITY.PUBLIC, '2025-12-24', [5, 0]],
+  ['Personal Practice', VISIBILITY.PRIVATE, '2026-03-19', [4]],
+];
+for (const [name, visibility, date, order] of setlists) {
+  const setlistId = Setlist.create(demo.id, name, visibility, date).lastInsertRowid;
+  for (const i of order) Setlist.addSongEntry(setlistId, songIds[i], {});
+  console.log(`  Setlist: ${name} (id: ${setlistId}, ${visibility}, ${order.length} songs)`);
 }
 
-// Step 4: Create setlists
-const insertSetlist = db.prepare(`
-  INSERT INTO setlists (user_id, name, visibility, event_date)
-  VALUES (?, ?, ?, ?)
-`);
-const insertSetlistSong = db.prepare(`
-  INSERT INTO setlist_songs (setlist_id, song_id, position, transpose)
-  VALUES (?, ?, ?, 0)
-`);
-
-console.log('\nCreating setlists...');
-
-const sl1 = insertSetlist.run(demoUser.id, 'Sunday Morning Worship', 'public', '2026-03-23');
-console.log(`  ✓ Sunday Morning Worship (id: ${sl1.lastInsertRowid}, public)`);
-// Opens with a song that has a chorus, so playback shows every section style.
-[1, 2, 3, 0].forEach((songIdx, position) => insertSetlistSong.run(sl1.lastInsertRowid, songIds[songIdx], position));
-console.log('    Added 4 songs');
-
-const sl2 = insertSetlist.run(demoUser.id, 'Christmas Eve Service', 'public', '2025-12-24');
-console.log(`  ✓ Christmas Eve Service (id: ${sl2.lastInsertRowid}, public)`);
-if (songIds[5]) insertSetlistSong.run(sl2.lastInsertRowid, songIds[5], 0);
-if (songIds[0]) insertSetlistSong.run(sl2.lastInsertRowid, songIds[0], 1);
-console.log('    Added 2 songs');
-
-const sl3 = insertSetlist.run(demoUser.id, 'Personal Practice', 'private', '2026-03-19');
-console.log(`  ✓ Personal Practice (id: ${sl3.lastInsertRowid}, private)`);
-if (songIds[4]) insertSetlistSong.run(sl3.lastInsertRowid, songIds[4], 0);
-
 db.close();
-console.log('\n✅ Seed complete!');
+console.log('Seed complete');

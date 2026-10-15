@@ -3,10 +3,12 @@ import { ActionIcon, Box, Button, Divider, Flex, Group, Paper, Stack, Text, Text
 import { modals } from '@mantine/modals';
 import { IconCheck, IconGripVertical, IconPencil, IconTrash, IconX } from '@tabler/icons-react';
 import { useApi } from '../hooks/useApi';
+import { useBusyAction } from '../hooks/useBusyAction';
 import { useDragReorder } from '../hooks/useDragReorder';
 import { useDemo } from '../context/DemoContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
+import { notifyError } from '../lib/errors';
 import { DEFAULT_TAGS } from '../lib/constants';
 import { cleanTagName, tagLabel, tagNameError } from '../lib/tagName';
 import type { AdminTagList } from '../types';
@@ -18,8 +20,7 @@ export function AdminTags() {
   const { demoMode } = useDemo();
   const { t, tReplace } = useI18n();
   const [data, setData] = useState<AdminTagList | null>(null);
-  const [busy, setBusy] = useState(false);
-  const pending = useRef(false);
+  const { busy, run: runOnce } = useBusyAction();
   const restoreOrder = useRef<(list: string[]) => void>(() => {});
   const [newName, setNewName] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
@@ -33,23 +34,13 @@ export function AdminTags() {
       .catch(() => {});
   }, [apiCall]);
 
-  const run = async (request: () => Promise<AdminTagList>) => {
-    if (pending.current) return false;
-    pending.current = true;
-    setBusy(true);
-    try {
-      setData(await request());
-      toast(t('admin.tagsSaved'), 'success');
-      return true;
-    } catch (e) {
-      restoreOrder.current(names);
-      toast((e as Error).message, 'error');
-      return false;
-    } finally {
-      pending.current = false;
-      setBusy(false);
-    }
-  };
+  const run = (request: () => Promise<AdminTagList>) => runOnce(async () => {
+    setData(await request());
+    toast(t('admin.tagsSaved'), 'success');
+  }, (e) => {
+    restoreOrder.current(names);
+    notifyError(e);
+  });
 
   const save = async (list: string[]) => {
     if (list.length === names.length && list.every((name, i) => name === names[i])) return true;

@@ -41,3 +41,9 @@ test('saving a song stores its tags cleaned and without duplicates', async t => 
   const { id } = await (await request('/api/songs', { ...member, method: 'POST', body: { content } })).json();
   assert.equal(db.prepare('SELECT tags FROM songs WHERE id = ?').get(id).tags, 'worship,kids');
 });
+
+test('every /admin path needs an admin, including unknown ones', async t => {
+  const request = await serve(t, mount);
+  assert.equal((await request('/api/admin/nope')).status, 401);
+  assert.equal((await request('/api/admin/nope', { token: member.token })).status, 403);
+});

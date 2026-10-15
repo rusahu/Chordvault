@@ -181,6 +181,16 @@ describe('useSetlistPlayer Hook', () => {
     expect(result.current.isModified).toBe(false);
   });
 
+  it('shows the server error when saving the key to the cloud fails', async () => {
+    mockApiCall.mockResolvedValue(mockSetlist);
+    const { result } = renderHook(() => useSetlistPlayer({ setlistId: 1, navigate }));
+    await waitFor(() => expect(result.current.entry).not.toBeNull());
+    act(() => { result.current.updateEntry({ target_key: 'C' }); });
+    mockApiCall.mockRejectedValueOnce(new Error('Entry not found'));
+    await act(async () => { await result.current.saveOnline(); });
+    expect(mockToast).toHaveBeenLastCalledWith('Entry not found', 'error');
+  });
+
   it('saves only the target key locally during saveLocal', async () => {
     mockApiCall.mockResolvedValue(mockSetlist);
 

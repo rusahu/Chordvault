@@ -1,13 +1,18 @@
 import { Button, PasswordInput, Stack, Group, Badge, Alert } from '@mantine/core';
 import { useCallback, useEffect, useState } from 'react';
 import { useApi } from '../hooks/useApi';
+import { useBusyAction } from '../hooks/useBusyAction';
+import { useStatusMessage } from '../hooks/useStatusMessage';
+import { errorMessage } from '../lib/errors';
 
 export function GeminiKeySettings() {
   const apiCall = useApi();
   const [hasKey, setHasKey] = useState<boolean | null>(null);
   const [geminiKey, setGeminiKey] = useState('');
-  const [pending, setPending] = useState<'save' | 'remove' | null>(null);
-  const [message, setMessage] = useState<{ text: string; color: string } | null>(null);
+  const { status, succeed, fail, clear } = useStatusMessage();
+  const { busy, run } = useBusyAction();
+  const [which, setWhich] = useState<'save' | 'remove' | null>(null);
+  const failWith = (e: unknown) => fail(errorMessage(e));
 
   const loadStatus = useCallback(async () => {
     try {
@@ -15,48 +20,34 @@ export function GeminiKeySettings() {
       setHasKey(data.hasKey);
     } catch {
       setHasKey(null);
-      setMessage({ text: 'Could not check key status', color: 'red' });
+      fail('Could not check key status');
     }
-  }, [apiCall]);
+  }, [apiCall, fail]);
 
   useEffect(() => {
     loadStatus();
   }, [loadStatus]);
 
-  const saveKey = async () => {
-    if (pending) return;
-    setMessage(null);
-    if (!geminiKey.trim()) {
-      setMessage({ text: 'Enter an API key', color: 'red' });
-      return;
-    }
-    setPending('save');
-    try {
-      await apiCall('PUT', '/api/settings/gemini-key', { api_key: geminiKey.trim() });
-      setHasKey(true);
-      setGeminiKey('');
-      setMessage({ text: hasKey ? 'Key replaced' : 'Key saved', color: 'green' });
-    } catch (error) {
-      setMessage({ text: (error as Error).message, color: 'red' });
-    } finally {
-      setPending(null);
-    }
-  };
+  const saveKey = () => run(async () => {
+    setWhich('save');
+    clear();
+    if (!geminiKey.trim()) { fail('Enter an API key'); return; }
+    await apiCall('PUT', '/api/settings/gemini-key', { api_key: geminiKey.trim() });
+    setHasKey(true);
+    setGeminiKey('');
+    succeed(hasKey ? 'Key replaced' : 'Key saved');
+  }, failWith);
 
-  const removeKey = async () => {
-    if (pending) return;
-    setPending('remove');
-    try {
-      await apiCall('DELETE', '/api/settings/gemini-key');
-      setHasKey(false);
-      setGeminiKey('');
-      setMessage({ text: 'Key removed', color: 'green' });
-    } catch (error) {
-      setMessage({ text: (error as Error).message, color: 'red' });
-    } finally {
-      setPending(null);
-    }
-  };
+  const removeKey = () => run(async () => {
+    setWhich('remove');
+    await apiCall('DELETE', '/api/settings/gemini-key');
+    setHasKey(false);
+    setGeminiKey('');
+    succeed('Key removed');
+  }, failWith);
+
+  const saving = busy && which === 'save';
+  const removing = busy && which === 'remove';
 
   return (
     <Stack gap="sm">
@@ -74,18 +65,18 @@ export function GeminiKeySettings() {
           autoComplete="off"
         />
       <Group gap={8}>
-        <Button size="xs" className="btn btn-sm" onClick={saveKey} loading={pending === 'save'} disabled={pending === 'remove'}>
+        <Button size="xs" className="btn btn-sm" onClick={saveKey} loading={saving} disabled={removing}>
           {hasKey ? 'Replace Key' : 'Save Key'}
         </Button>
         {hasKey && (
-          <Button color="red" size="xs" className="btn btn-danger btn-sm" onClick={removeKey} loading={pending === 'remove'} disabled={pending === 'save'}>
+          <Button color="red" size="xs" className="btn btn-danger btn-sm" onClick={removeKey} loading={removing} disabled={saving}>
             Remove Key
           </Button>
         )}
       </Group>
-      {message && (
-        <Alert color={message.color} role={message.color === 'red' ? 'alert' : 'status'}>
-          {message.text}
+      {status && (
+        <Alert color={status.error ? 'red' : 'green'} role={status.error ? 'alert' : 'status'}>
+          {status.text}
         </Alert>
       )}
     </Stack>

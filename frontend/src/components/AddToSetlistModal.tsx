@@ -1,15 +1,21 @@
-import { Badge, Group, Modal, SimpleGrid } from '@mantine/core';
+import { Badge, Group, Modal } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { ListCard } from './ListCard';
-import { modals, useModals } from '@mantine/modals';
+import { CardGrid } from './CardGrid';
+import { modals } from '@mantine/modals';
 import { useFocusReturn } from '@mantine/hooks';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
-import { useLocalSetlists } from '../hooks/useLocalSetlists';
+import { useSetlistStore } from '../hooks/useSetlistStore';
+import { notifyError } from '../lib/errors';
+import { useStackedModalProps } from '../hooks/useStackedModalProps';
 import type { SetlistListItem } from '../types';
+import { formatSongCount } from '../lib/format';
+import { VISIBILITY } from '../lib/constants';
+import { localSetlistToListItem } from '../lib/setlists';
 
 interface AddToSetlistModalProps {
   isOpen: boolean;
@@ -32,12 +38,14 @@ export function AddToSetlistModal({
   targetKey,
   nashville,
 }: AddToSetlistModalProps) {
-  const modalManager = useModals();
+  const stacked = useStackedModalProps();
   useFocusReturn({ opened: isOpen });
   const apiCall = useApi();
   const { user } = useAuth();
   const { t } = useI18n();
-  const { setlists, addEntry: lsAddEntry, create: lsCreate } = useLocalSetlists();
+  const store = useSetlistStore(!user);
+  const song = { id: songId, title: songTitle, artist: songArtist };
+  const pick = { targetKey, nashville };
   const [userSetlists, setUserSetlists] = useState<SetlistListItem[]>([]);
   const openSession = useRef(0);
   useEffect(() => {
@@ -53,16 +61,9 @@ export function AddToSetlistModal({
         if (session === openSession.current) setUserSetlists(sls);
       } catch { /* ignore */ }
     } else {
-      const formatted = setlists.map((sl) => ({
-        id: sl.id,
-        name: sl.name,
-        song_count: sl.entries.length,
-        visibility: 'private',
-        event_date: null,
-      }));
-      setUserSetlists(formatted);
+      setUserSetlists(store.setlists.map(localSetlistToListItem));
     }
-  }, [user, apiCall, setlists]);
+  }, [user, apiCall, store.setlists]);
 
   useEffect(() => {
     if (isOpen) {
@@ -72,100 +73,57 @@ export function AddToSetlistModal({
 
   const addToExisting = async (targetId: number | string, confirmed = false) => {
     const session = openSession.current;
-    const targetSetlist = userSetlists.find((sl) => sl.id === targetId);
-    if (!user) {
-      const added = lsAddEntry(String(targetId), {
-        song_id: songId,
-        title: songTitle,
-        artist: songArtist,
-        target_key: targetKey,
-        nashville: nashville ? 1 : 0,
-      });
-      if (added) {
-        onClose();
-        toast(t('setlist.songAdded'), 'success');
-      } else {
-        toast('Failed to add song', 'error');
-      }
-      return;
-    }
-    if (!confirmed && songVisibility === 'private' && targetSetlist?.visibility === 'public') {
+    const target = userSetlists.find((sl) => sl.id === targetId);
+    if (user && !confirmed && songVisibility === VISIBILITY.PRIVATE && target?.visibility === VISIBILITY.PUBLIC) {
       modals.openConfirmModal({ children: 'This song is private. Other viewers of this public setlist will see it as "[Private Song]". Continue?', labels: { confirm: 'Continue', cancel: 'Cancel' }, onConfirm: () => { void addToExisting(targetId, true); } });
       return;
     }
     try {
-      await apiCall('POST', `/api/setlists/${targetId}/songs`, {
-        song_id: songId,
-        target_key: targetKey,
-        nashville,
-      });
+      await store.addSong(String(targetId), song, pick);
       if (session !== openSession.current) return;
       onClose();
       toast(t('setlist.songAdded'), 'success');
     } catch (e) {
-      if (session === openSession.current) toast((e as Error).message, 'error');
+      if (session === openSession.current) notifyError(e);
     }
   };
 
   const createAndAdd = () => {
     const session = openSession.current;
     modals.openContextModal({ modal: 'setlistName', title: t('setlist.enterName'), innerProps: { onSubmit: async (name: string) => {
-    if (session !== openSession.current) return;
-    if (!user) {
-      const sl = lsCreate(name.trim());
-      if (!sl) {
-        toast('Max 50 setlists', 'error');
-        return;
-      }
-      lsAddEntry(sl.id, {
-        song_id: songId,
-        title: songTitle,
-        artist: songArtist,
-        target_key: targetKey,
-        nashville: nashville ? 1 : 0,
-      });
-      onClose();
-      toast(t('setlist.songAdded'), 'success');
-      return;
-    }
-    try {
-      const result = await apiCall<{ id: number }>('POST', '/api/setlists', {
-        name: name.trim(),
-      });
-      await apiCall('POST', `/api/setlists/${result.id}/songs`, {
-        song_id: songId,
-        target_key: targetKey,
-        nashville,
-      });
       if (session !== openSession.current) return;
-      onClose();
-      toast(t('setlist.songAdded'), 'success');
-    } catch (e) {
-      if (session === openSession.current) toast((e as Error).message, 'error');
-    }
-  } } });
+      try {
+        const id = await store.create(name.trim());
+        await store.addSong(id, song, pick);
+        if (session !== openSession.current) return;
+        onClose();
+        toast(t('setlist.songAdded'), 'success');
+      } catch (e) {
+        if (session === openSession.current) notifyError(e);
+      }
+    } } });
   };
 
   return (
-    <Modal opened={isOpen} onClose={onClose} title={<>{t('setlist.addToSetlist')}</>} returnFocus={false} trapFocus={modalManager.modals.length === 0} closeOnEscape={modalManager.modals.length === 0} closeOnClickOutside={modalManager.modals.length === 0}>
+    <Modal opened={isOpen} onClose={onClose} title={<>{t('setlist.addToSetlist')}</>} returnFocus={false} {...stacked}>
 
 
-        <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12}>
+        <CardGrid>
           <ListCard className="mantine-focus-auto" title={<Group gap={6}><IconPlus size={16} aria-hidden />{t('setlist.newSetlist')}</Group>} onClick={createAndAdd} />
           {userSetlists.map((sl) => (
             <ListCard
               key={sl.id}
               className="mantine-focus-auto"
               title={sl.name}
-              meta={<>{sl.song_count} {sl.song_count !== 1 ? t('admin.songPlural') : t('admin.song')}</>}
+              meta={formatSongCount(sl.song_count, t)}
               onClick={() => { void addToExisting(sl.id); }}
             >
-              {sl.visibility === 'public' && (
+              {sl.visibility === VISIBILITY.PUBLIC && (
                 <Badge size="sm">Public</Badge>
               )}
             </ListCard>
           ))}
-        </SimpleGrid>
+        </CardGrid>
 
     </Modal>
   );

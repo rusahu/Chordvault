@@ -21,11 +21,14 @@ import { PlaybackMoreMenu } from '../components/PlaybackMoreMenu';
 import { SettingsPanel } from '../components/SettingsPanel';
 import { EmptyState } from '../components/EmptyState';
 import { Loading } from '../components/Loading';
-import { renderChordPro, getSongKey, clampFontSize, songHasKey, resolveEffectivePreferences, autoFit } from '../lib/chords';
+import { renderChordPro, getSongKey, clampFontSize, songHasKey, autoFit } from '../lib/chords';
 import { useSetlistPreferences } from '../hooks/useSetlistPreferences';
 import { stepKey } from '../lib/keys';
-import { entrySemitones } from '../lib/setlistKeys';
+import { entryContent, entrySemitones, entryStartKey } from '../lib/setlistKeys';
 import { songEditFromSetlist } from '../lib/songEditRoute';
+import { prepareSongForSave } from '../lib/songSubmit';
+import { notifyError } from '../lib/errors';
+import { usePdfExport } from '../hooks/usePdfExport';
 import type { Setlist } from '../types';
 
 interface SetlistPlayViewProps {
@@ -44,7 +47,6 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
   const { readOnly } = useOffline();
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
-  const [exportingPdf, setExportingPdf] = useState(false);
 
   // Global setlist settings
   const [slNashville, setSlNashville] = useState(false);
@@ -64,7 +66,7 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
     },
   });
 
-  const content = entry ? (entry.content_override || entry.content) : '';
+  const content = entry ? entryContent(entry) : '';
 
   const { user } = useAuth();
   const isOwner = setlist?.user_id && user && setlist.user_id === user.id;
@@ -96,10 +98,10 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
   // Key stepping
   const stepEntryKey = useCallback((direction: 1 | -1) => {
     if (!entry) return;
-    const current = entry.target_key || getSongKey(content, 0);
+    const current = entryStartKey(entry);
     if (!current) return;
     updateEntry({ target_key: stepKey(current, direction) });
-  }, [entry, content, updateEntry]);
+  }, [entry, updateEntry]);
 
   // Per-song overrides
   const toggleEntryNum = useCallback((checked: boolean) => {
@@ -112,27 +114,15 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
 
   const toggleEntryTwoCol = useCallback(() => {
     if (!entry) return;
-    const prefs = resolveEffectivePreferences(entry, {
-      nashville: slNashville,
-      twoCol: twoColState.twoCol,
-      fontSize: fontScale.fontSize,
-      hideYt: slHideYt,
-    });
-    const nextVal = !prefs.twoCol;
+    const nextVal = !effTwoCol;
     updateEntry({ _twoCol: nextVal === (!!twoColState.twoCol) ? null : nextVal });
-  }, [entry, slNashville, twoColState.twoCol, fontScale.fontSize, slHideYt, updateEntry]);
+  }, [entry, effTwoCol, twoColState.twoCol, updateEntry]);
 
   const changeEntryFont = useCallback((delta: number) => {
     if (!entry) return;
-    const prefs = resolveEffectivePreferences(entry, {
-      nashville: slNashville,
-      twoCol: twoColState.twoCol,
-      fontSize: fontScale.fontSize,
-      hideYt: slHideYt,
-    });
-    const nextVal = clampFontSize(prefs.fontSize + delta);
+    const nextVal = clampFontSize(effFont + delta);
     updateEntry({ _font: nextVal === fontScale.fontSize ? null : nextVal });
-  }, [entry, slNashville, twoColState.twoCol, fontScale.fontSize, slHideYt, updateEntry]);
+  }, [entry, effFont, fontScale.fontSize, updateEntry]);
 
   // Key picker
   const pickKey = useCallback((targetKey: string) => {
@@ -143,7 +133,7 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
   // Inline editor
   const openEditor = useCallback(() => {
     if (readOnly || !entry || setlist?.isLocal) return;
-    setEditContent(entry.content_override || entry.content);
+    setEditContent(entryContent(entry));
     setEditing(true);
   }, [entry, setlist, readOnly]);
 
@@ -154,18 +144,20 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
       updateEntry({ content_override: editContent });
       setEditing(false);
       toast(t('setlist.editSaved'), 'success');
-    } catch (e) { toast((e as Error).message, 'error'); }
+    } catch (e) { notifyError(e); }
   };
 
   const saveEditorAsVersion = async () => {
     if (!setlist || !entry) return;
+    const prepared = prepareSongForSave(editContent, t, { requireLanguage: false });
+    if ('error' in prepared) { toast(prepared.error, 'error'); return; }
     try {
-      await apiCall('POST', `/api/songs/${entry.song_id}/version`, { content: editContent });
-      await apiCall('PUT', `/api/setlists/${setlist.id}/entries/${entry.entry_id}`, { content_override: editContent });
-      updateEntry({ content_override: editContent });
+      await apiCall('POST', `/api/songs/${entry.song_id}/version`, { content: prepared.content });
+      await apiCall('PUT', `/api/setlists/${setlist.id}/entries/${entry.entry_id}`, { content_override: prepared.content });
+      updateEntry({ content_override: prepared.content });
       setEditing(false);
       toast(t('setlist.versionCreated'), 'success');
-    } catch (e) { toast((e as Error).message, 'error'); }
+    } catch (e) { notifyError(e); }
   };
 
   // Swipe
@@ -191,28 +183,12 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
     if (entry) updateEntry({ _font: null });
   };
 
-  const handleExportAllPdf = async () => {
-    if (!setlist || exportingPdf) return;
-    setExportingPdf(true);
-    try {
-      const { exportSetlistPdf } = await import('../lib/pdf-export');
-      const missing = await exportSetlistPdf(setlist, {
-        nashville: slNashville,
-        fontSize: fontScale.fontSize,
-      });
-      if (missing.length) {
-        toast(
-          `Setlist PDF exported, but these characters may be missing: ${missing.slice(0, 8).join(' ')}`,
-          'error',
-        );
-      } else {
-        toast('Setlist PDF exported', 'success');
-      }
-    } catch (e) {
-      toast((e as Error).message || 'PDF export failed', 'error');
-    } finally {
-      setExportingPdf(false);
-    }
+  const exportPdf = usePdfExport();
+  const handleExportAllPdf = () => {
+    if (!setlist) return;
+    void exportPdf('Setlist PDF exported', async () => (await import('../lib/pdf-export')).exportSetlistPdf(setlist, {
+      nashville: slNashville, fontSize: fontScale.fontSize,
+    }));
   };
 
   const doFit = () => {

@@ -1,5 +1,6 @@
 import { getSongKey } from './chords';
 import { getTransposeDelta } from './keys';
+import type { SetlistEntry } from '../types';
 
 /**
  * Semitone shift that renders `content` in `targetKey`.
@@ -23,3 +24,11 @@ export function legacyTransposeToTargetKey(content: string, transpose: number | 
   if (!transpose) return null;
   return getSongKey(content, transpose) || null;
 }
+
+type PlayedEntry = Pick<SetlistEntry, 'content' | 'content_override'>;
+
+/** What an entry plays: its setlist override, else the song. */
+export const entryContent = (entry: PlayedEntry) => entry.content_override || entry.content;
+
+/** Where key stepping starts: the pinned key, else the written key of what is played ('' when neither exists). */
+export const entryStartKey = (entry: PlayedEntry & Pick<SetlistEntry, 'target_key'>) => entry.target_key || getSongKey(entryContent(entry), 0);

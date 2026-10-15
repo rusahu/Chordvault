@@ -34,6 +34,7 @@ export interface Setlist {
   created_at?: string;
   updated_at?: string;
   isLocal?: boolean;
+  search?: string[];
 }
 
 export interface SetlistListItem {

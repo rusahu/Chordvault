@@ -1,10 +1,13 @@
 import { useMediaQuery } from '@mantine/hooks';
 import { Badge, Paper, Switch, Button, SimpleGrid, Group, Stack, Text, Box, Divider, Code } from '@mantine/core';
 import { ListCard } from '../components/ListCard';
+import { CardGrid } from '../components/CardGrid';
 import { useCopyNotification } from '../hooks/useCopyNotification';
 import { modals } from '@mantine/modals';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
+import { useBusyAction } from '../hooks/useBusyAction';
+import { notifyError } from '../lib/errors';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
@@ -14,6 +17,8 @@ import { useDemo } from '../context/DemoContext';
 import { languageName } from '../lib/languages';
 import { PageTitle } from '../components/PageTitle';
 import { AdminTags } from '../components/AdminTags';
+import { ROLES } from '../lib/constants';
+import { formatDbDate, formatSongCount } from '../lib/format';
 
 interface AdminViewProps {
   navigate: (view: string, params?: Record<string, string>) => void;
@@ -32,17 +37,7 @@ export function AdminView({ navigate }: AdminViewProps) {
   const [config, setConfig] = useState<AdminConfig>({ allowRegistration: true });
   const [invites, setInvites] = useState<InviteCode[]>([]);
   const [inviteCode, setInviteCode] = useState('');
-  const [busy, setBusy] = useState(false);
-  const pendingAction = useRef(false);
-
-  const runAction = async (action: () => Promise<void>) => {
-    if (pendingAction.current) return;
-    pendingAction.current = true;
-    setBusy(true);
-    try { await action(); }
-    catch (e) { toast((e as Error).message, 'error'); }
-    finally { pendingAction.current = false; setBusy(false); }
-  };
+  const { busy, run: runAction } = useBusyAction();
 
   const loadInvites = useCallback(async () => {
     try {
@@ -61,7 +56,7 @@ export function AdminView({ navigate }: AdminViewProps) {
       ]);
       setStats(s); setUsers(u); setCorrections(c); setConfig(cfg);
       await loadInvites();
-    } catch (e) { toast((e as Error).message, 'error'); navigate('my-songs'); }
+    } catch (e) { notifyError(e); navigate('my-songs'); }
   }, [apiCall, navigate, loadInvites]);
 
   useEffect(() => {
@@ -87,10 +82,10 @@ export function AdminView({ navigate }: AdminViewProps) {
   });
 
   const setRole = (userId: number, role: string) => {
-    const action = role === 'admin' ? t('admin.confirmPromote') : t('admin.confirmDemote');
+    const action = role === ROLES.ADMIN ? t('admin.confirmPromote') : t('admin.confirmDemote');
     modals.openConfirmModal({ children: action, onConfirm: () => runAction(async () => {
       await apiCall('PUT', `/api/admin/users/${userId}/role`, { role });
-      toast(role === 'admin' ? t('admin.userPromoted') : t('admin.userDemoted'), 'success');
+      toast(role === ROLES.ADMIN ? t('admin.userPromoted') : t('admin.userDemoted'), 'success');
       await load();
     }) });
   };
@@ -126,7 +121,7 @@ export function AdminView({ navigate }: AdminViewProps) {
 
   if (!stats) return <Loading />;
 
-  const isOwner = user?.role === 'owner';
+  const isOwner = user?.role === ROLES.OWNER;
   const currentId = user?.id;
   const pending = invites.filter((i) => !i.used_at);
 
@@ -180,7 +175,7 @@ export function AdminView({ navigate }: AdminViewProps) {
               {pending.map((inv) => (
                 <Group key={inv.id} gap={8} mb={4}>
                   <code style={{ fontSize: 13 }}>{inv.code}</code>
-                  <span className="muted-text" style={{ fontSize: 12 }}>{new Date(inv.created_at).toLocaleDateString()}</span>
+                  <span className="muted-text" style={{ fontSize: 12 }}>{formatDbDate(inv.created_at)}</span>
                   <Button variant="default" size="xs" className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: '2px 6px' }} onClick={() => deleteInvite(inv.id)} disabled={demoMode || busy}>&#10005;</Button>
                 </Group>
               ))}
@@ -193,11 +188,11 @@ export function AdminView({ navigate }: AdminViewProps) {
 
       <h3 className="admin-section-title">{t('admin.users')}</h3>
 
-      <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12} mb={28}>
+      <CardGrid mb={28}>
         {users.map((u) => {
           const isSelf = u.id === currentId;
-          const isTargetOwner = u.role === 'owner';
-          const isTargetAdmin = u.role === 'admin';
+          const isTargetOwner = u.role === ROLES.OWNER;
+          const isTargetAdmin = u.role === ROLES.ADMIN;
           const canManage = !isSelf && !isTargetOwner && (isOwner || !isTargetAdmin);
 
           return (
@@ -205,19 +200,19 @@ export function AdminView({ navigate }: AdminViewProps) {
               <Group className="user-card-top" justify="space-between" gap={12}>
                 <Box flex="1 1 180px" miw={0}>
                   <div className="song-card-title">@{u.username}{isSelf && <span className="muted-text"> {t('admin.you')}</span>}</div>
-                  <div className="song-card-meta">{u.song_count} {u.song_count !== 1 ? t('admin.songPlural') : t('admin.song')} &middot; {t('admin.joined')} {new Date(u.created_at).toLocaleDateString()}</div>
+                  <div className="song-card-meta">{formatSongCount(u.song_count, t)} &middot; {t('admin.joined')} {formatDbDate(u.created_at)}</div>
                 </Box>
                 <Group gap={6}>
-                  {u.role === 'owner' && <Badge>owner</Badge>}
-                  {u.role === 'admin' && <Badge>admin</Badge>}
+                  {u.role === ROLES.OWNER && <Badge>owner</Badge>}
+                  {u.role === ROLES.ADMIN && <Badge>admin</Badge>}
                   {u.disabled && <Badge color="red">disabled</Badge>}
                 </Group>
               </Group>
               {canManage && !demoMode && (
                 <Stack gap={10} mt={10}><Divider /><Group className="user-card-actions" gap={6}>
                   {isOwner && (isTargetAdmin
-                    ? <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, 'user'); }}>{t('admin.demote')}</Button>
-                    : <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, 'admin'); }}>{t('admin.promote')}</Button>
+                    ? <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, ROLES.USER); }}>{t('admin.demote')}</Button>
+                    : <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, ROLES.ADMIN); }}>{t('admin.promote')}</Button>
                   )}
                   <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); resetPassword(u.id, u.username); }}>{t('admin.resetPassword')}</Button>
                   <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setDisabled(u.id, !u.disabled); }}>{u.disabled ? t('admin.enable') : t('admin.disable')}</Button>
@@ -227,41 +222,41 @@ export function AdminView({ navigate }: AdminViewProps) {
             </Paper>
           );
         })}
-      </SimpleGrid>
+      </CardGrid>
 
       {stats.recentSongs.length > 0 && (
         <>
           <h3 className="admin-section-title">{t('admin.recentSongs')}</h3>
-          <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12}>
+          <CardGrid>
             {stats.recentSongs.map((s) => (
               <ListCard
                 key={s.id}
                 className="mantine-focus-auto"
                 title={s.title}
-                meta={<>{s.artist ? `${s.artist} · ` : ''}@{s.username} &middot; {new Date(s.created_at).toLocaleDateString()}</>}
+                meta={<>{s.artist ? `${s.artist} · ` : ''}@{s.username} &middot; {formatDbDate(s.created_at)}</>}
                 onClick={() => navigate('song-view', { id: String(s.id) })}
                 actions={<Button color="red" size="xs" className="btn btn-danger btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); deleteSong(s.id, s.title); }}>{t('admin.delete')}</Button>}
               />
             ))}
-          </SimpleGrid>
+          </CardGrid>
         </>
       )}
 
       {corrections.length > 0 && (
         <>
           <h3 className="admin-section-title">Pending Corrections ({corrections.length})</h3>
-          <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12}>
+          <CardGrid>
             {corrections.map((c) => (
               <ListCard
                 key={c.id}
                 className="mantine-focus-auto"
                 title={c.title}
-                meta={<>by @{c.submitter} &middot; {new Date(c.created_at).toLocaleDateString()}</>}
+                meta={<>by @{c.submitter} &middot; {formatDbDate(c.created_at)}</>}
                 onClick={() => navigate('song-view', { id: String(c.parent_id) })}
                 actions={<Badge color="yellow">pending</Badge>}
               />
             ))}
-          </SimpleGrid>
+          </CardGrid>
         </>
       )}
     </>

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
+import { DEMO_ACCOUNT } from './lib/session.mjs';
 const base = process.env.CV_CHECK_BASE || 'http://localhost:3118';
 const browser = await chromium.launch({ ...(process.env.CV_CHECK_CHANNEL ? { channel: process.env.CV_CHECK_CHANNEL } : {}) });
 try {
@@ -10,8 +11,8 @@ try {
     await page.locator('.song-card').first().waitFor();
     await page.evaluate(() => sessionStorage.setItem('cv_browse_query', 'old guest search'));
     await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-    await page.getByLabel('Username', { exact: true }).fill(process.env.CV_CHECK_USER || 'demo');
-    await page.getByLabel('Password', { exact: true }).fill(process.env.CV_CHECK_PASSWORD || 'demopass123');
+    await page.getByLabel('Username', { exact: true }).fill(process.env.CV_CHECK_USER || DEMO_ACCOUNT.username);
+    await page.getByLabel('Password', { exact: true }).fill(process.env.CV_CHECK_PASSWORD || DEMO_ACCOUNT.password);
     await page.locator('#auth-submit').click();
     const search = page.getByRole('searchbox');
     await search.waitFor();

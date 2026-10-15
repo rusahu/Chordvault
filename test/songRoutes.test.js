@@ -59,3 +59,12 @@ test('both setlist entry responses mask private song contents and overrides', as
   assert.equal(data.entries[0].title,'[Private Song]');
   assert.equal(data.entries[0].content_override,null);
 });
+
+test('created songs read line-start directives and store only a valid tempo', async t => {
+  const request = await serve(t, mount);
+  const create = async content => (await (await request('/api/songs', { ...owner, method:'POST', body:{ content } })).json()).id;
+  const loose = await create('{title: T}\n{tempo: 120bpm}\n{x_language: en}\n[C]a');
+  assert.equal(db.prepare('SELECT bpm FROM songs WHERE id = ?').get(loose).bpm, null);
+  const mid = await create('[C]la {title: Mid}\n{title: Real}\n{x_language: en}\n[C]a');
+  assert.equal(db.prepare('SELECT title FROM songs WHERE id = ?').get(mid).title, 'Real');
+});

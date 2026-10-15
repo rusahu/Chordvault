@@ -2,6 +2,7 @@ import Dexie, { type Table } from 'dexie';
 import type { Setlist, SongListItem } from '../types';
 import type { CatalogSong, LibraryQuery, OfflineSnapshot, OfflineSong, OfflineState, RefreshTicket } from '../types/offline';
 import { splitTags } from './tagName';
+import { STATUS, VISIBILITY } from './constants';
 
 type Database = Dexie & {
   songs: Table<OfflineSong, number>;
@@ -32,8 +33,8 @@ export function validateSnapshot(value: unknown, accountId: number): asserts val
   const ids = new Set(value.songs.map(s => s.id));
   const songs = new Map(value.songs.map(s => [s.id, s]));
   if (value.catalog.length !== ids.size || value.songs.some(s => typeof s.content !== 'string' ||
-      typeof s.title !== 'string' || typeof s.updated_at !== 'string' || typeof s.created_at !== 'string' || !Number.isSafeInteger(s.familyId) || s.status !== 'active' ||
-      (s.visibility !== 'public' && s.user_id !== accountId)) ||
+      typeof s.title !== 'string' || typeof s.updated_at !== 'string' || typeof s.created_at !== 'string' || !Number.isSafeInteger(s.familyId) || s.status !== STATUS.ACTIVE ||
+      (s.visibility !== VISIBILITY.PUBLIC && s.user_id !== accountId)) ||
       value.catalog.some(s => !ids.has(s.id) || ['familyId', 'user_id', 'title', 'artist', 'visibility', 'status', 'language', 'updated_at', 'created_at'].some(key => s[key] !== songs.get(s.id)?.[key]) || !record(s.search) || typeof s.search.pinyin !== 'string' ||
         !['title', 'artist', 'lyrics'].every(key => Array.isArray((s.search as Record<string, unknown>)[key]) &&
           ((s.search as Record<string, unknown>)[key] as unknown[]).every(v => typeof v === 'string'))) ||
@@ -142,11 +143,11 @@ export function createOfflineLibrary(name = 'chordvault-offline') {
     const terms = (query.q || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
     const pinyin = terms.join('');
     const tags = query.tags ?? [];
-    const groups = new Map<number, { row: CatalogSong; score: number }>();
+    const groups = new Map<number, { row: CatalogSong; score: number; familyUpdated: string }>();
     const counts = new Map<number, number>();
     await db.catalog.each(row => {
       counts.set(row.familyId, (counts.get(row.familyId) || 0) + 1);
-      if (query.own ? row.user_id !== accountId : row.visibility !== 'public') return;
+      if (query.own ? row.user_id !== accountId : row.visibility !== VISIBILITY.PUBLIC) return;
       if (query.language && row.language !== query.language) return;
       if (tags.length && !splitTags(row.tags).some(tag => tags.includes(tag))) return;
       const fieldMatch = (forms: string[]) => terms.every(term => forms.some(form => form.includes(term)));
@@ -154,11 +155,13 @@ export function createOfflineLibrary(name = 'chordvault-offline') {
       if (terms.length && !fieldMatch([...title, ...artist, ...lyrics]) && !row.search.pinyin.includes(pinyin)) return;
       const score = terms.length ? (fieldMatch(title) ? 2 : fieldMatch(artist) ? 1 : 0) : 0;
       const previous = groups.get(row.familyId);
-      if (!previous || score > previous.score || (score === previous.score && row.updated_at > previous.row.updated_at)) {
-        groups.set(row.familyId, { row, score });
-      }
+      const familyUpdated = previous && previous.familyUpdated > row.updated_at ? previous.familyUpdated : row.updated_at;
+      if (!previous || score > previous.score || (score === previous.score &&
+        (row.updated_at > previous.row.updated_at || (row.updated_at === previous.row.updated_at && row.id > previous.row.id)))) {
+        groups.set(row.familyId, { row, score, familyUpdated });
+      } else previous.familyUpdated = familyUpdated;
     });
-    const results = [...groups.values()].sort((a, b) => b.score - a.score || b.row.updated_at.localeCompare(a.row.updated_at) || a.row.id - b.row.id);
+    const results = [...groups.values()].sort((a, b) => b.score - a.score || b.familyUpdated.localeCompare(a.familyUpdated) || b.row.id - a.row.id);
     const paging = pageInfo(results.length, query);
     const songs: SongListItem[] = results.slice((paging.page - 1) * paging.limit, paging.page * paging.limit).map(({ row }) => {
       const { search: _, familyId, ...metadata } = row;
@@ -167,11 +170,13 @@ export function createOfflineLibrary(name = 'chordvault-offline') {
     return { ...paging, songs };
   });
   const querySetlists = (accountId: number, query: LibraryQuery) => read(accountId, async () => {
-    const rows = (await db.setlists.toArray()).filter(s => (!query.q || s.name.toLowerCase().includes(query.q.toLowerCase())) &&
-      (!query.dateFrom || (s.event_date && s.event_date >= query.dateFrom)) && (!query.dateTo || (s.event_date && s.event_date <= query.dateTo)))
-      .sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || '') || Number(a.id) - Number(b.id));
+    const q = (query.q || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const day = (s: Setlist) => s.event_date || (s.created_at || '').slice(0, 10);
+    const rows = (await db.setlists.toArray()).filter(s => (!q || (s.search ?? [s.name.toLowerCase()]).some(form => form.includes(q))) &&
+      (!query.dateFrom || day(s) >= query.dateFrom) && (!query.dateTo || (!!day(s) && day(s) <= query.dateTo)))
+      .sort((a, b) => (b.event_date || '').localeCompare(a.event_date || '') || (b.updated_at || '').localeCompare(a.updated_at || '') || Number(a.id) - Number(b.id));
     const paging = pageInfo(rows.length, query);
-    return { ...paging, setlists: rows.slice((paging.page - 1) * paging.limit, paging.page * paging.limit).map(({ entries, ...s }) => ({ ...s, song_count: entries.length })) };
+    return { ...paging, setlists: rows.slice((paging.page - 1) * paging.limit, paging.page * paging.limit).map(({ entries, search: _, ...s }) => ({ ...s, song_count: entries.length })) };
   });
   return { db, state, status, enable, invalidate, disable: (accountId: number, ticket?: RefreshTicket) => invalidate(accountId, true, ticket), beginRefresh,
     replaceDownload, markChecked, getSong, getVersions, getSetlist, querySongs, querySetlists };

@@ -60,3 +60,23 @@ it('announces a save failure as an alert while keeping the configured status', a
   expect(await screen.findByRole('alert')).toHaveTextContent('Could not save key');
   expect(screen.getByRole('status')).toHaveTextContent('✓ Key configured');
 });
+
+it('reports an empty key and a rejected save as alerts', async () => {
+  mockApiCall.mockResolvedValueOnce({ hasKey: false }).mockRejectedValueOnce(new Error('Invalid API key'));
+  render(<GeminiKeySettings />);
+  await screen.findByText('No key configured');
+  fireEvent.click(screen.getByRole('button', { name: 'Save Key' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Enter an API key');
+  fireEvent.change(screen.getByLabelText('Gemini API Key'), { target: { value: 'abc' } });
+  fireEvent.click(screen.getByRole('button', { name: 'Save Key' }));
+  await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Invalid API key'));
+  expect(screen.getByRole('button', { name: 'Save Key' })).toBeEnabled();
+});
+
+it('checks the key status once on mount', async () => {
+  mockApiCall.mockReset().mockResolvedValue({ hasKey: true });
+  render(<GeminiKeySettings />);
+  await screen.findByText('✓ Key configured');
+  await new Promise(resolve => setTimeout(resolve, 20));
+  expect(mockApiCall.mock.calls.filter(call => call[0] === 'GET')).toHaveLength(1);
+});

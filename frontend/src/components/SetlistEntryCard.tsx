@@ -1,8 +1,9 @@
 import { Badge, Box, Button, VisuallyHidden, CloseButton, Flex, Group } from '@mantine/core';
 import { IconGripVertical, IconLock, IconPencil } from '@tabler/icons-react';
 import { getSongKey } from '../lib/chords';
-import { entrySemitones } from '../lib/setlistKeys';
+import { entryContent, entrySemitones, entryStartKey } from '../lib/setlistKeys';
 import type { SetlistEntry } from '../types';
+import { VISIBILITY } from '../lib/constants';
 
 interface SetlistEntryCardProps {
   entry: SetlistEntry;
@@ -33,10 +34,10 @@ export function SetlistEntryCard({
   handleProps,
   isDragging,
 }: SetlistEntryCardProps) {
-  const content = entry.content_override || entry.content;
+  const content = entryContent(entry);
   const semitones = entrySemitones(content, entry.target_key);
   const keyDisplay = getSongKey(content, semitones);
-  const canStep = !!(entry.target_key || getSongKey(content, 0));
+  const canStep = !!entryStartKey(entry);
 
   return (
     <Flex
@@ -66,7 +67,7 @@ export function SetlistEntryCard({
       <Box className="song-card-info" flex={1} miw={0}>
         <div className="song-card-title">
           {entry.title}
-          {entry.visibility === 'private' && (
+          {entry.visibility === VISIBILITY.PRIVATE && (
             <Badge ml={8} px={8} title="Private"><IconLock size={14} aria-hidden /><VisuallyHidden>Private</VisuallyHidden></Badge>
           )}
           {!isLocal && isEditable && entry.content_override && (

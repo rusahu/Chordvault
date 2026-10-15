@@ -58,6 +58,18 @@ describe('ImportModal', () => {
     });
   });
 
+  it('reads a UTF-16 file saved with a byte order mark', async () => {
+    const text = '{title: 喜樂}\n[G]a';
+    const bytes = new Uint8Array(2 + text.length * 2);
+    bytes.set([0xff, 0xfe]);
+    for (let i = 0; i < text.length; i++) new DataView(bytes.buffer).setUint16(2 + i * 2, text.charCodeAt(i), true);
+    render(<ImportModal opened onClose={() => {}} onDone={() => {}} />);
+    await userEvent.upload(screen.getByLabelText('ChordPro file upload'), [new File([bytes], 'U.cho', { type: 'text/plain' })]);
+    await userEvent.click(screen.getByTestId('import-start'));
+    await waitFor(() => expect(vi.mocked(importSongs)).toHaveBeenCalled());
+    expect(vi.mocked(importSongs).mock.calls[0][0]).toEqual([{ content: text }]);
+  });
+
   it('Escape dismisses only the bulk confirmation and performs no import', async () => {
     const onClose = vi.fn();
     render(<ImportModal opened onClose={onClose} onDone={vi.fn()} />);
