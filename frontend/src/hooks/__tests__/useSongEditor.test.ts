@@ -34,3 +34,19 @@ describe('useSongEditor pending source edits', () => {
     expect(result.current.state.tags).toEqual(['worship', 'kids']);
   });
 });
+
+describe('useSongEditor field writes', () => {
+  it('writes and removes the tags, language and plain field directives', () => {
+    const { result } = renderHook(() => useSongEditor());
+    act(() => result.current.setInitialContent('{title: T}\n[G]Music'));
+    act(() => result.current.handleTagsChange(['worship', 'kids']));
+    act(() => result.current.handleLanguageChange('zh'));
+    act(() => result.current.handleFieldChange('tempo', '90', result.current.setBpm));
+    expect(result.current.state).toMatchObject({ tags: ['worship', 'kids'], language: 'zh', bpm: '90' });
+    expect(result.current.state.content).toBe('{title: T}\n{tempo: 90}\n{x_tags: worship,kids}\n{x_language: zh}\n[G]Music');
+    act(() => result.current.handleTagsChange([]));
+    act(() => result.current.handleLanguageChange(''));
+    act(() => result.current.handleFieldChange('tempo', '', result.current.setBpm));
+    expect(result.current.state.content).toBe('{title: T}\n[G]Music');
+  });
+});
