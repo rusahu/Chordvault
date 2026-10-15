@@ -91,3 +91,13 @@ test('both routes reject a key the renderer cannot use', async () => {
   assert.equal(put.status, 400);
   assert.equal(keyOf(entryId), 'A');
 });
+
+test('reorder rejects an id that is not an entry of this setlist', async () => {
+  await addEntry('C');
+  const order = () => db.prepare('SELECT id FROM setlist_songs WHERE setlist_id = ? ORDER BY position, id').all(setlistId).map(r => r.id);
+  const before = order();
+  const res = await api('PUT', `/setlists/${setlistId}/reorder`, { entry_ids: [...before.slice(0, -1), 999999] });
+  assert.equal(res.status, 400);
+  assert.equal((await res.json()).error, 'entry_ids must be the entries of this setlist');
+  assert.deepEqual(order(), before);
+});

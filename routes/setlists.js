@@ -123,6 +123,8 @@ function createSetlistsRouter() {
     if (new Set(parsedIds).size !== parsedIds.length) throw new AppError('Duplicate entry_ids are not allowed', 400);
     const entries = Setlist.getEntries(id);
     if (parsedIds.length !== entries.length) throw new AppError('entry_ids count must match the number of entries in the setlist', 400);
+    const entryIds = new Set(entries.map(e => e.entry_id));
+    if (parsedIds.some(e => !entryIds.has(e))) throw new AppError('entry_ids must be the entries of this setlist', 400);
     Setlist.reorderEntries(id, parsedIds);
     res.json({ success: true });
   });
