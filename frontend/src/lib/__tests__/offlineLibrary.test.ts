@@ -192,3 +192,13 @@ it('reports a song, its versions or a setlist missing from the download as unava
     await expect(read).rejects.toThrow('not available in your downloaded library');
   }
 });
+
+it('ranks a pinyin hit above short words that only appear inside newer lyrics', async () => {
+  const data = snapshot();
+  const noise = { ...data.songs[0], id: 4, familyId: 4, title: 'Morning Praise', content: '[C]flexible', updated_at: '2026-01-09' };
+  data.songs.push(noise);
+  const { content: _, ...meta } = noise;
+  data.catalog.push({ ...meta, search: { title: ['morning praise'], artist: ['anonymous'], lyrics: ['flexible'], pinyin: 'morningpraiseanonymous' } });
+  await save(data);
+  expect((await library.querySongs(1, { q: 'xi le' })).songs.map(s => s.id)).toEqual([3, 4]);
+});

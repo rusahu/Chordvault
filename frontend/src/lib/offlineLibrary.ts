@@ -150,7 +150,8 @@ export function createOfflineLibrary(name = 'chordvault-offline') {
       const fieldMatch = (forms: string[]) => terms.every(term => forms.some(form => form.includes(term)));
       const { title, artist, lyrics } = row.search;
       if (terms.length && !fieldMatch([...title, ...artist, ...lyrics]) && !row.search.pinyin.includes(pinyin)) return;
-      const score = terms.length ? (fieldMatch(title) ? 2 : fieldMatch(artist) ? 1 : 0) : 0;
+      // Same ranking as the server: title > artist > pinyin > lyrics only.
+      const score = terms.length ? (fieldMatch(title) ? 3 : fieldMatch(artist) ? 2 : row.search.pinyin.includes(pinyin) ? 1 : 0) : 0;
       const previous = groups.get(row.familyId);
       const familyUpdated = previous && previous.familyUpdated > row.updated_at ? previous.familyUpdated : row.updated_at;
       if (!previous || score > previous.score || (score === previous.score &&
