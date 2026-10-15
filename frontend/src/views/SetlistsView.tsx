@@ -20,6 +20,7 @@ import { DateRangeFilter, type DateRange } from '../components/DateRangeFilter';
 import { SetlistTabs } from '../components/SetlistTabs';
 import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
 import { PageTitle } from '../components/PageTitle';
+import { setlistPlayParams } from '../lib/routes';
 import { VISIBILITY, MAX_SETLIST_NAME_LENGTH, MAX_LOCAL_SETLISTS } from '../lib/constants';
 
 interface SetlistsViewProps {
@@ -155,7 +156,7 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
                   key={sl.id}
                   setlist={sl}
                   onClick={() => navigate('setlist-edit', { id: String(sl.id) })}
-                  onPlay={() => navigate('setlist-play', { id: String(sl.id) })}
+                  onPlay={() => navigate('setlist-play', setlistPlayParams(sl.id))}
                 />
               ))
             )
@@ -174,7 +175,7 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
                     event_date: null,
                   }}
                   onClick={() => navigate('setlist-edit', { id: sl.id })}
-                  onPlay={() => navigate('setlist-play', { id: sl.id, local: '1' })}
+                  onPlay={() => navigate('setlist-play', setlistPlayParams(sl.id))}
                 />
               ))
             )

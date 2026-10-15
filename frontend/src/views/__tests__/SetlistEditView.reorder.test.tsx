@@ -87,4 +87,11 @@ describe('local setlist reorder', () => {
     expect(stored()[2].transpose).toBe(2);
     expect(stored()[1].target_key).toBe('G');
   });
+
+  it('plays a local setlist from the tapped entry (characterization)', async () => {
+    const navigate = vi.fn();
+    render(<SetlistEditView setlistId="local_1" navigate={navigate} />);
+    fireEvent.click(await screen.findByText('Bravo'));
+    expect(navigate).toHaveBeenLastCalledWith('setlist-play', { id: 'local_1', local: '1', index: '1' });
+  });
 });

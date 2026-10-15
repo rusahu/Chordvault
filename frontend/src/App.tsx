@@ -24,48 +24,9 @@ import { AdminView } from './views/AdminView';
 import { SettingsView } from './views/SettingsView';
 import { AboutView } from './views/AboutView';
 import { api } from './lib/api';
-import { songEditReturn } from './lib/songEditRoute';
+import { songEditReturn, type Destination } from './lib/songEditRoute';
+import { parseHash, parseSetlistId, isLocalSetlistId, routeHash, replaceHash } from './lib/routes';
 import type { AuthConfig } from './types';
-
-interface Route {
-  view: string;
-  params: Record<string, string>;
-}
-
-function parseHash(): Route {
-  const hash = location.hash.slice(1); // remove #
-  if (!hash) return { view: 'browse', params: {} };
-
-  // #song/42
-  const songMatch = hash.match(/^song\/(\d+)$/);
-  if (songMatch) return { view: 'song-view', params: { id: songMatch[1] } };
-
-  // #setlist/42/play or #setlist/local_123/play
-  const playMatch = hash.match(/^setlist\/(local_\w+|\d+)\/play(?:\/(\d+))?$/);
-  if (playMatch) {
-    return {
-      view: 'setlist-play',
-      params: {
-        id: playMatch[1],
-        ...(playMatch[1].startsWith('local_') ? { local: '1' } : {}),
-        ...(playMatch[2] ? { index: playMatch[2] } : {}),
-      },
-    };
-  }
-
-  // #setlist/42 or #setlist/local_123
-  const setlistMatch = hash.match(/^setlist\/(local_\w+|\d+)$/);
-  if (setlistMatch) {
-    return {
-      view: 'setlist-edit',
-      params: {
-        id: setlistMatch[1],
-      },
-    };
-  }
-
-  return { view: 'browse', params: {} };
-}
 
 export function App() {
   const { user } = useAuth();
@@ -73,7 +34,7 @@ export function App() {
   const { setDemoMode } = useDemo();
   const isWriteLocked = useWriteLock();
   const listIdentity = user?.id ?? 'guest';
-  const [route, setRoute] = useState<Route>(() => parseHash());
+  const [route, setRoute] = useState<Destination>(() => parseHash(location.hash));
   const [animClass, setAnimClass] = useState('');
 
   useEffect(() => {
@@ -84,7 +45,7 @@ export function App() {
 
   // Listen for hash changes
   useWindowEvent('hashchange', () => {
-    const newRoute = parseHash();
+    const newRoute = parseHash(location.hash);
     setRoute((prev) => {
       const isSameView = prev.view === newRoute.view;
       const isSameParams =
@@ -104,20 +65,10 @@ export function App() {
       setAnimClass('view-enter');
     });
 
-    // Update hash for deep-linkable views
-    if (view === 'song-view' && params.id) location.hash = `#song/${params.id}`;
-    else if (view === 'setlist-edit' && params.id) {
-      location.hash = `#setlist/${params.id}`;
-    }
-    else if (view === 'setlist-play' && params.id) {
-      let h = `#setlist/${params.id}/play`;
-      if (params.index && params.index !== '0') h += `/${params.index}`;
-      location.hash = h;
-    }
-    else if (['browse', 'my-songs', 'setlists', 'admin', 'settings', 'auth', 'about', 'public-setlists'].includes(view)) {
-      // Use replaceState to clear hash without triggering hashchange (which would race with the rAF setRoute above)
-      history.replaceState(null, '', location.pathname + location.search);
-    }
+    const hash = routeHash(view, params);
+    if (hash) location.hash = hash;
+    // replaceState clears the hash without a hashchange, which would race the rAF setRoute above.
+    else if (hash === '') replaceHash('');
   }, [isWriteLocked]);
 
 
@@ -145,7 +96,7 @@ export function App() {
       case 'setlist-edit':
         return params.id ? (
           <SetlistEditView
-            setlistId={params.id.startsWith('local_') ? params.id : parseInt(params.id)}
+            setlistId={parseSetlistId(params.id)}
             navigate={navigate}
           />
         ) : <SetlistsView key={listIdentity} navigate={navigate} />;
@@ -154,8 +105,8 @@ export function App() {
         return params.id ? (
           <SetlistPlayView
             key={params.id}
-            setlistId={params.id.startsWith('local_') ? params.id : parseInt(params.id)}
-            isLocal={!!params.local || params.id.startsWith('local_')}
+            setlistId={parseSetlistId(params.id)}
+            isLocal={!!params.local || isLocalSetlistId(params.id)}
             initialIndex={initialIdx}
             navigate={navigate}
           />

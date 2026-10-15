@@ -23,6 +23,7 @@ import { SetlistEntryCard } from '../components/SetlistEntryCard';
 import type { Setlist, SongListItem } from '../types';
 import { useDragReorder } from '../hooks/useDragReorder';
 import { songEditFromSetlist } from '../lib/songEditRoute';
+import { isLocalSetlistId, setlistHash, setlistPlayParams } from '../lib/routes';
 import { VISIBILITY, MAX_SETLIST_NAME_LENGTH } from '../lib/constants';
 
 interface SetlistEditViewProps {
@@ -48,7 +49,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
     reorderEntries: lsReorderEntries,
   } = useLocalSetlists();
 
-  const isLocal = typeof setlistId === 'string' && setlistId.startsWith('local_');
+  const isLocal = isLocalSetlistId(setlistId);
   const [setlist, setSetlist] = useState<Setlist | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const metadata = useForm({ initialValues: { name: '', visibility: false, event_date: '' } });
@@ -69,7 +70,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
       };
       setMetadata({ name: formatted.name, visibility: false, event_date: '' });
       setSetlist(formatted);
-      location.hash = `#setlist/${setlistId}`;
+      location.hash = setlistHash(setlistId);
       return;
     }
 
@@ -90,7 +91,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
       }
       setMetadata({ name: sl.name, visibility: sl.visibility === VISIBILITY.PUBLIC, event_date: sl.event_date || '' });
       setSetlist(sl);
-      location.hash = `#setlist/${setlistId}`;
+      location.hash = setlistHash(setlistId);
     } catch (e) {
       toast((e as Error).message, 'error');
       navigate(user ? 'setlists' : 'public-setlists');
@@ -249,18 +250,9 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
     }
   };
 
-  const playLocal = (startIndex = 0) => {
-    const sl = getOne(String(setlistId));
-    if (!sl?.entries.length) return;
-    navigate('setlist-play', { id: String(setlistId), local: '1', index: String(startIndex) });
-  };
-
-  const handleItemClick = (idx: number) => {
-    if (isLocal) {
-      playLocal(idx);
-    } else {
-      navigate('setlist-play', { id: String(setlistId), index: String(idx) });
-    }
+  const play = (idx: number) => {
+    if (isLocal && !getOne(String(setlistId))?.entries.length) return;
+    navigate('setlist-play', setlistPlayParams(setlistId, idx));
   };
 
   const editSong = (idx: number) => {
@@ -268,7 +260,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
   };
 
   const copyShareLink = () => {
-    const url = window.location.origin + window.location.pathname + `#setlist/${setlistId}`;
+    const url = window.location.origin + window.location.pathname + setlistHash(setlistId);
     copyWithFeedback(url);
   };
 
@@ -285,7 +277,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
           <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => navigate(isEditable ? 'setlists' : 'public-setlists')}>&#8592; {t('songView.back')}</Button>
           <Group gap="xs">
             {setlist.entries.length > 0 && (
-              <Button size="xs" className="btn btn-sm" onClick={() => handleItemClick(0)}>{t('setlist.play')}</Button>
+              <Button size="xs" className="btn btn-sm" onClick={() => play(0)}>{t('setlist.play')}</Button>
             )}
             {!isLocal && setlist.visibility === VISIBILITY.PUBLIC && (
               <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={copyShareLink}>{t('setlist.share')}</Button>
@@ -337,7 +329,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
               isLocal={isLocal}
               onRemove={removeEntry}
               onStepKey={handleStepEntryKey}
-              onClick={handleItemClick}
+              onClick={play}
               onEdit={canEditSongs && !entry.is_private_placeholder ? editSong : undefined}
               dragProps={isEditable ? dragProps(idx) : undefined}
               handleProps={isEditable ? handleProps(idx) : undefined}

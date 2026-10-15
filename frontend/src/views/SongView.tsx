@@ -26,6 +26,7 @@ import { VISIBILITY } from '../lib/constants';
 import { formatDbDate } from '../lib/format';
 import { errorMessage, notifyError } from '../lib/errors';
 import { usePdfExport } from '../hooks/usePdfExport';
+import { songHash } from '../lib/routes';
 
 interface SongViewProps {
   songId: number;
@@ -50,7 +51,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
     getSong(songId)
       .then((data) => {
         setSong(data);
-        location.hash = `#song/${songId}`;
+        location.hash = songHash(songId);
       })
       .catch((e) => setLoadError(errorMessage(e)));
   }, [songId, getSong, navigate, user]);

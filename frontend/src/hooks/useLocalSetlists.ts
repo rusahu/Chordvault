@@ -3,6 +3,7 @@ import type { LocalSetlist, LocalSetlistEntry } from '../types';
 import { getLocalSetlists, saveLocalSetlists } from '../lib/storage';
 import { MAX_LOCAL_SETLISTS, MAX_LOCAL_ENTRIES } from '../lib/constants';
 import { useWriteLock } from './useWriteLock';
+import { newLocalSetlistId } from '../lib/routes';
 
 export function useLocalSetlists() {
   const isWriteLocked = useWriteLock();
@@ -27,7 +28,7 @@ export function useLocalSetlists() {
     if (isWriteLocked()) return null;
     const all = getLocalSetlists();
     if (all.length >= MAX_LOCAL_SETLISTS) return null;
-    const sl: LocalSetlist = { id: 'local_' + Date.now(), name, entries: [] };
+    const sl: LocalSetlist = { id: newLocalSetlistId(), name, entries: [] };
     write([...all, sl]);
     return sl;
   }, [isWriteLocked, write]);

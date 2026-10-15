@@ -52,4 +52,12 @@ describe('SetlistEditView key buttons', () => {
     expect(screen.getByRole('button', { name: '♭' })).toBeDisabled();
     expect(screen.getByRole('button', { name: '♯' })).toBeDisabled();
   });
+
+  it('plays from the first song without writing index 0', async () => {
+    const navigate = vi.fn();
+    render(<SetlistEditView setlistId={1} navigate={navigate} />);
+    await waitFor(() => expect(screen.getByText('S')).toBeTruthy());
+    fireEvent.click(screen.getByRole('button', { name: 'setlist.play' }));
+    expect(navigate).toHaveBeenLastCalledWith('setlist-play', { id: '1' });
+  });
 });

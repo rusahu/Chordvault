@@ -9,6 +9,7 @@ import { showStatusNotification as toast } from '../lib/notifications';
 import { getSetlistOverrides, saveSetlistOverride, migrateOverride } from '../lib/storage';
 import { enrichLocalSetlistSongs } from '../lib/setlists';
 import { entryContent } from '../lib/setlistKeys';
+import { setlistPlayHash, parsePlayHash, replaceHash } from '../lib/routes';
 import type { Setlist, SetlistEntry } from '../types';
 import { VISIBILITY } from '../lib/constants';
 
@@ -191,22 +192,14 @@ export function useSetlistPlayer({
 
     if (newIdx < 0 || newIdx >= setlist.entries.length) {
       // Revert URL to current valid index
-      if (!setlist.isLocal) {
-        let h = `#setlist/${setlistId}/play`;
-        if (index > 0) h += `/${index}`;
-        history.replaceState(null, '', location.pathname + location.search + h);
-      }
+      if (!setlist.isLocal) replaceHash(setlistPlayHash(setlistId, index));
       return;
     }
 
     setIndex(newIdx);
     onNavigate?.();
 
-    if (!setlist.isLocal) {
-      let h = `#setlist/${setlistId}/play`;
-      if (newIdx > 0) h += `/${newIdx}`;
-      history.replaceState(null, '', location.pathname + location.search + h);
-    }
+    if (!setlist.isLocal) replaceHash(setlistPlayHash(setlistId, newIdx));
 
     // Scroll after React re-renders the new song content
     // We use a small timeout to ensure the DOM has actually updated and stabilized
@@ -218,13 +211,8 @@ export function useSetlistPlayer({
   }, [setlist, onNavigate, setlistId, index]);
 
   useWindowEvent('hashchange', () => {
-    const match = location.hash.match(/^#setlist\/(local_\w+|\d+)\/play(?:\/(\d+))?$/);
-    if (match && match[1] === String(setlistId)) {
-      const urlIdx = match[2] ? parseInt(match[2]) : 0;
-      if (urlIdx !== index) {
-        goTo(urlIdx);
-      }
-    }
+    const play = parsePlayHash(location.hash);
+    if (play && play.id === String(setlistId) && play.index !== index) goTo(play.index);
   });
 
   const prev = useCallback(() => goTo(index - 1), [goTo, index]);
