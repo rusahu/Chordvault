@@ -1,16 +1,20 @@
-import { Alert, Tabs, Button, TextInput, ActionIcon, SimpleGrid, Group } from '@mantine/core';
+import { Alert, Button, SimpleGrid, Group } from '@mantine/core';
 import { useOffline } from '../context/OfflineContext';
 import { SearchField } from '../components/SearchField';
 import { SearchRow } from '../components/SearchRow';
 import { IconCalendar, IconSearch } from '@tabler/icons-react';
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useI18n } from '../context/I18nContext';
 import { SetlistCard } from '../components/SetlistCard';
 import { EmptyState } from '../components/EmptyState';
 import { Pagination } from '../components/Pagination';
 import type { SetlistListItem } from '../types';
-import { useSearchSessionValue } from '../hooks/useSearchSessionValue';
+import { useSessionField, useSessionToggle } from '../hooks/useSearchSessionValue';
+import { searchKey } from '../lib/storage';
+import { FilterToggle } from '../components/FilterToggle';
+import { DateRangeFilter, type DateRange } from '../components/DateRangeFilter';
+import { SetlistTabs } from '../components/SetlistTabs';
 import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
 import { libraryQueryString } from '../lib/libraryQuery';
 import type { LibraryPage, LibraryQuery } from '../types/offline';
@@ -24,21 +28,23 @@ export function PublicSetlistsView({ navigate }: PublicSetlistsViewProps) {
   const { readOnly } = useOffline();
   const apiCall = useApi();
   const { t } = useI18n();
-  const [savedQuery, saveQuery] = useSearchSessionValue('cv_publicsetlists_query');
-  const [query, setQuery] = useState(savedQuery);
-  const [savedDateFrom, saveDateFrom] = useSearchSessionValue('cv_publicsetlists_date_from');
-  const [dateFrom, setDateFrom] = useState(savedDateFrom);
-  const [savedDateTo, saveDateTo] = useSearchSessionValue('cv_publicsetlists_date_to');
-  const [dateTo, setDateTo] = useState(savedDateTo);
-  const [savedShowDates, saveShowDates] = useSearchSessionValue('cv_publicsetlists_show_dates', 'false');
-  const showDates = savedShowDates === 'true';
+  const [query, setQuery, saveQuery] = useSessionField(searchKey('publicsetlists', 'query'));
+  const [dateFrom, setDateFrom, saveDateFrom] = useSessionField(searchKey('publicsetlists', 'date_from'));
+  const [dateTo, setDateTo, saveDateTo] = useSessionField(searchKey('publicsetlists', 'date_to'));
+  const [showDates, toggleDates] = useSessionToggle(searchKey('publicsetlists', 'show_dates'));
   const fetchPublicSetlists = useCallback((filters: LibraryQuery) =>
     apiCall<LibraryPage<SetlistListItem, 'setlists'>>('GET', `/api/setlists/public${libraryQueryString(filters)}`), [apiCall]);
   const { items: setlists, page, totalPages, loaded, loadError, load } = usePaginatedSearch({
-    pageKey: 'cv_publicsetlists_page', listKey: 'setlists', fetchPage: fetchPublicSetlists,
+    pageKey: searchKey('publicsetlists', 'page'), listKey: 'setlists', fetchPage: fetchPublicSetlists,
     filters: { q: query, dateFrom, dateTo },
     persist: ({ q = '', dateFrom = '', dateTo = '' }) => { saveQuery(q); saveDateFrom(dateFrom); saveDateTo(dateTo); },
   });
+
+  const changeDates = (range: DateRange) => {
+    setDateFrom(range.dateFrom);
+    setDateTo(range.dateTo);
+    load({ q: query, ...range });
+  };
 
   const handleClear = () => {
     setQuery('');
@@ -62,34 +68,15 @@ export function PublicSetlistsView({ navigate }: PublicSetlistsViewProps) {
       <Group justify="space-between" mb="lg">
         <PageTitle className="view-title">{t('setlist.browseSetlists')}</PageTitle>
       </Group>
-      <Tabs variant="pills" value="public" onChange={(tab) => navigate(tab === 'public' ? 'public-setlists' : 'setlists')} className="setlist-tabs">
-        <Tabs.List grow><Tabs.Tab value="mine">My Setlists</Tabs.Tab><Tabs.Tab value="public">Public Setlists</Tabs.Tab></Tabs.List>
-      </Tabs>
+      <SetlistTabs value="public" navigate={navigate} />
       {showSearch && (
         <>
           <SearchRow>
             <SearchField label={t('setlist.searchPlaceholder')} value={query} onChange={setQuery} onSearch={handleSearch} onClear={handleClear} />
             <Button variant="default" size="sm" onClick={handleSearch}>{t('songs.search')}</Button>
-            <ActionIcon
-              size="input-sm"
-              variant={showDates ? 'filled' : 'default'}
-              aria-label="Filter by date"
-              aria-pressed={showDates}
-              title="Filter by date"
-              onClick={() => {
-                const next = !showDates;
-                saveShowDates(String(next));
-              }}
-            >
-              <IconCalendar size={18} aria-hidden />
-            </ActionIcon>
+            <FilterToggle label="Filter by date" icon={<IconCalendar size={18} aria-hidden />} pressed={showDates} onToggle={toggleDates} />
           </SearchRow>
-          {showDates && (
-            <SearchRow mt={-10}>
-              <TextInput label={<>From</>} type="date" flex={1} miw={0} value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); load({ q: query, dateFrom: e.target.value, dateTo }); }} />
-              <TextInput label={<>To</>} type="date" flex={1} miw={0} value={dateTo} onChange={(e) => { setDateTo(e.target.value); load({ q: query, dateFrom, dateTo: e.target.value }); }} />
-            </SearchRow>
-          )}
+          {showDates && <DateRangeFilter dateFrom={dateFrom} dateTo={dateTo} onChange={changeDates} />}
         </>
       )}
       {!loadError && loaded && setlists.length === 0 ? (

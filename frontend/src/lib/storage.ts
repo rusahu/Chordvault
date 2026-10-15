@@ -87,24 +87,21 @@ function removeSessionItem(key: string): void {
   } catch {}
 }
 
+const SEARCH_FIELDS = {
+  browse: ['query', 'lang', 'tags', 'show_filters', 'page'],
+  mysongs: ['query', 'page'],
+  publicsetlists: ['query', 'date_from', 'date_to', 'show_dates', 'page'],
+  setlists: ['query', 'date_from', 'date_to', 'show_dates', 'page'],
+} as const;
+
+type SearchView = keyof typeof SEARCH_FIELDS;
+const sessionKey = (view: string, field: string) => `cv_${view}_${field}`;
+
+/** Session key for a list view's saved search field; every key in the registry is cleared on sign in and out. */
+export const searchKey = <V extends SearchView>(view: V, field: (typeof SEARCH_FIELDS)[V][number]) => sessionKey(view, field);
+
 export function clearSearchSession(): void {
-  [
-    'cv_browse_query',
-    'cv_browse_lang',
-    'cv_browse_tags',
-    'cv_browse_show_filters',
-    'cv_browse_page',
-    'cv_mysongs_query',
-    'cv_mysongs_page',
-    'cv_publicsetlists_query',
-    'cv_publicsetlists_date_from',
-    'cv_publicsetlists_date_to',
-    'cv_publicsetlists_show_dates',
-    'cv_publicsetlists_page',
-    'cv_setlists_query',
-    'cv_setlists_date_from',
-    'cv_setlists_date_to',
-    'cv_setlists_show_dates',
-    'cv_setlists_page',
-  ].forEach(removeSessionItem);
+  for (const [view, fields] of Object.entries(SEARCH_FIELDS)) {
+    for (const field of fields) removeSessionItem(sessionKey(view, field));
+  }
 }
