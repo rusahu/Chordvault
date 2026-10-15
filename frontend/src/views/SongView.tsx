@@ -50,7 +50,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
     getSong(songId)
       .then(setSong)
       .catch((e) => setLoadError(errorMessage(e)));
-  }, [songId, getSong, navigate, user]);
+  }, [songId, getSong, user]);
 
   useEffect(() => {
     if (!song) return;
