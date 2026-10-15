@@ -1,6 +1,7 @@
 import { useMediaQuery } from '@mantine/hooks';
 import { Badge, Paper, Switch, Button, SimpleGrid, Group, Stack, Text, Box, Divider, Code } from '@mantine/core';
 import { ListCard } from '../components/ListCard';
+import { CardGrid } from '../components/CardGrid';
 import { useCopyNotification } from '../hooks/useCopyNotification';
 import { modals } from '@mantine/modals';
 import { useState, useEffect, useCallback } from 'react';
@@ -17,7 +18,7 @@ import { languageName } from '../lib/languages';
 import { PageTitle } from '../components/PageTitle';
 import { AdminTags } from '../components/AdminTags';
 import { ROLES } from '../lib/constants';
-import { formatDbDate } from '../lib/format';
+import { formatDbDate, formatSongCount } from '../lib/format';
 
 interface AdminViewProps {
   navigate: (view: string, params?: Record<string, string>) => void;
@@ -187,7 +188,7 @@ export function AdminView({ navigate }: AdminViewProps) {
 
       <h3 className="admin-section-title">{t('admin.users')}</h3>
 
-      <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12} mb={28}>
+      <CardGrid mb={28}>
         {users.map((u) => {
           const isSelf = u.id === currentId;
           const isTargetOwner = u.role === ROLES.OWNER;
@@ -199,7 +200,7 @@ export function AdminView({ navigate }: AdminViewProps) {
               <Group className="user-card-top" justify="space-between" gap={12}>
                 <Box flex="1 1 180px" miw={0}>
                   <div className="song-card-title">@{u.username}{isSelf && <span className="muted-text"> {t('admin.you')}</span>}</div>
-                  <div className="song-card-meta">{u.song_count} {u.song_count !== 1 ? t('admin.songPlural') : t('admin.song')} &middot; {t('admin.joined')} {formatDbDate(u.created_at)}</div>
+                  <div className="song-card-meta">{formatSongCount(u.song_count, t)} &middot; {t('admin.joined')} {formatDbDate(u.created_at)}</div>
                 </Box>
                 <Group gap={6}>
                   {u.role === ROLES.OWNER && <Badge>owner</Badge>}
@@ -221,12 +222,12 @@ export function AdminView({ navigate }: AdminViewProps) {
             </Paper>
           );
         })}
-      </SimpleGrid>
+      </CardGrid>
 
       {stats.recentSongs.length > 0 && (
         <>
           <h3 className="admin-section-title">{t('admin.recentSongs')}</h3>
-          <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12}>
+          <CardGrid>
             {stats.recentSongs.map((s) => (
               <ListCard
                 key={s.id}
@@ -237,14 +238,14 @@ export function AdminView({ navigate }: AdminViewProps) {
                 actions={<Button color="red" size="xs" className="btn btn-danger btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); deleteSong(s.id, s.title); }}>{t('admin.delete')}</Button>}
               />
             ))}
-          </SimpleGrid>
+          </CardGrid>
         </>
       )}
 
       {corrections.length > 0 && (
         <>
           <h3 className="admin-section-title">Pending Corrections ({corrections.length})</h3>
-          <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12}>
+          <CardGrid>
             {corrections.map((c) => (
               <ListCard
                 key={c.id}
@@ -255,7 +256,7 @@ export function AdminView({ navigate }: AdminViewProps) {
                 actions={<Badge color="yellow">pending</Badge>}
               />
             ))}
-          </SimpleGrid>
+          </CardGrid>
         </>
       )}
     </>

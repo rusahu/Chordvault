@@ -1,6 +1,7 @@
-import { Badge, Group, Modal, SimpleGrid } from '@mantine/core';
+import { Badge, Group, Modal } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { ListCard } from './ListCard';
+import { CardGrid } from './CardGrid';
 import { modals } from '@mantine/modals';
 import { useFocusReturn } from '@mantine/hooks';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -11,6 +12,7 @@ import { showStatusNotification as toast } from '../lib/notifications';
 import { useLocalSetlists } from '../hooks/useLocalSetlists';
 import { useStackedModalProps } from '../hooks/useStackedModalProps';
 import type { SetlistListItem } from '../types';
+import { formatSongCount } from '../lib/format';
 import { VISIBILITY, MAX_LOCAL_SETLISTS } from '../lib/constants';
 
 interface AddToSetlistModalProps {
@@ -152,14 +154,14 @@ export function AddToSetlistModal({
     <Modal opened={isOpen} onClose={onClose} title={<>{t('setlist.addToSetlist')}</>} returnFocus={false} {...stacked}>
 
 
-        <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12}>
+        <CardGrid>
           <ListCard className="mantine-focus-auto" title={<Group gap={6}><IconPlus size={16} aria-hidden />{t('setlist.newSetlist')}</Group>} onClick={createAndAdd} />
           {userSetlists.map((sl) => (
             <ListCard
               key={sl.id}
               className="mantine-focus-auto"
               title={sl.name}
-              meta={<>{sl.song_count} {sl.song_count !== 1 ? t('admin.songPlural') : t('admin.song')}</>}
+              meta={formatSongCount(sl.song_count, t)}
               onClick={() => { void addToExisting(sl.id); }}
             >
               {sl.visibility === VISIBILITY.PUBLIC && (
@@ -167,7 +169,7 @@ export function AddToSetlistModal({
               )}
             </ListCard>
           ))}
-        </SimpleGrid>
+        </CardGrid>
 
     </Modal>
   );

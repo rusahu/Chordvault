@@ -1,4 +1,4 @@
-import { Alert, Button, TextInput, SimpleGrid, Group } from '@mantine/core';
+import { Alert, Button, TextInput, Group } from '@mantine/core';
 import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
 import { SearchField } from '../components/SearchField';
@@ -12,6 +12,7 @@ import { showStatusNotification as toast } from '../lib/notifications';
 import { useLocalSetlists } from '../hooks/useLocalSetlists';
 import { SetlistCard } from '../components/SetlistCard';
 import { EmptyState } from '../components/EmptyState';
+import { CardGrid } from '../components/CardGrid';
 import { Pagination } from '../components/Pagination';
 import { useSessionField, useSessionToggle } from '../hooks/useSearchSessionValue';
 import { searchKey } from '../lib/storage';
@@ -145,7 +146,7 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
         )}
       </SearchRow>
       {activeTab === 'cloud' && showDates && <DateRangeFilter dateFrom={dateFrom} dateTo={dateTo} onChange={changeDates} />}
-      <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12}>
+      <CardGrid>
         {!loadError && loaded && (
           activeTab === 'cloud' ? (
             setlists.length === 0 ? (
@@ -181,7 +182,7 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
             )
           )
         )}
-      </SimpleGrid>
+      </CardGrid>
       {activeTab === 'cloud' && (
         <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
       )}

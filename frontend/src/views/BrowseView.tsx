@@ -1,4 +1,4 @@
-import { Alert, Button, NativeSelect, SimpleGrid, Box, Title, Text, Group } from '@mantine/core';
+import { Alert, Button, NativeSelect, Box, Title, Text, Group } from '@mantine/core';
 import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
 import { SearchField } from '../components/SearchField';
@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { SongCard } from '../components/SongCard';
 import { EmptyState } from '../components/EmptyState';
+import { CardGrid } from '../components/CardGrid';
 import { Pagination } from '../components/Pagination';
 import { LANGUAGES } from '../lib/languages';
 import { useSearchSessionValue, useSessionField, useSessionToggle } from '../hooks/useSearchSessionValue';
@@ -93,7 +94,7 @@ export function BrowseView({ navigate }: BrowseViewProps) {
               <TagFilter value={tagFilter} onChange={next => { setTagFilter(next); load({ ...filters, tags: next }); }} />
             </div>
           )}
-          <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12}>
+          <CardGrid>
             {!loadError && loaded && songs.length === 0 ? (
               <EmptyState icon={<IconSearch size={56} aria-hidden />} text={t('songs.noPublicSongs')} />
             ) : (
@@ -107,7 +108,7 @@ export function BrowseView({ navigate }: BrowseViewProps) {
                 />
               ))
             )}
-          </SimpleGrid>
+          </CardGrid>
           <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
         </>
       )}

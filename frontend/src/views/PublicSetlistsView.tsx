@@ -1,4 +1,4 @@
-import { Alert, Button, SimpleGrid, Group } from '@mantine/core';
+import { Alert, Button, Group } from '@mantine/core';
 import { useOffline } from '../context/OfflineContext';
 import { SearchField } from '../components/SearchField';
 import { SearchRow } from '../components/SearchRow';
@@ -8,6 +8,7 @@ import { useApi } from '../hooks/useApi';
 import { useI18n } from '../context/I18nContext';
 import { SetlistCard } from '../components/SetlistCard';
 import { EmptyState } from '../components/EmptyState';
+import { CardGrid } from '../components/CardGrid';
 import { Pagination } from '../components/Pagination';
 import type { SetlistListItem } from '../types';
 import { useSessionField, useSessionToggle } from '../hooks/useSearchSessionValue';
@@ -83,7 +84,7 @@ export function PublicSetlistsView({ navigate }: PublicSetlistsViewProps) {
         <EmptyState icon={<IconSearch size={56} aria-hidden />} text={t('setlist.noPublicSetlists')} />
       ) : (
         <>
-          <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12}>
+          <CardGrid>
             {setlists.map((sl) => (
               <SetlistCard
                 key={sl.id}
@@ -92,7 +93,7 @@ export function PublicSetlistsView({ navigate }: PublicSetlistsViewProps) {
                 showUsername
               />
             ))}
-          </SimpleGrid>
+          </CardGrid>
           <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
         </>
       )}

@@ -2,7 +2,7 @@ import { Button } from '@mantine/core';
 import type { SetlistListItem } from '../types';
 import { useI18n } from '../context/I18nContext';
 import { ListCard } from './ListCard';
-import { formatDbDate } from '../lib/format';
+import { formatDbDate, formatSongCount } from '../lib/format';
 
 interface SetlistCardProps {
   setlist: SetlistListItem;
@@ -21,7 +21,7 @@ export function SetlistCard({ setlist, onClick, onPlay, showUsername }: SetlistC
       title={setlist.name}
       meta={<>
         {showUsername && setlist.username && `@${setlist.username} · `}
-        {setlist.song_count} {setlist.song_count !== 1 ? t('admin.songPlural') : t('admin.song')}
+        {formatSongCount(setlist.song_count, t)}
         {date && ` · ${date}`}
       </>}
       onClick={onClick}

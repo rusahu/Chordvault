@@ -18,12 +18,12 @@ import { Toolbar } from '../components/Toolbar';
 import { Loading } from '../components/Loading';
 import { AddToSetlistModal } from '../components/AddToSetlistModal';
 import { renderChordPro, songHasKey, autoFit } from '../lib/chords';
-import { languageName } from '../lib/languages';
+import { LanguageBadge } from '../components/LanguageBadge';
 import type { Song, SongVersion, Correction } from '../types';
 import { TagBadges } from '../components/TagBadges';
 import { PageTitle } from '../components/PageTitle';
 import { VISIBILITY } from '../lib/constants';
-import { formatDbDate } from '../lib/format';
+import { formatDbDate, versionLabel } from '../lib/format';
 import { errorMessage, notifyError } from '../lib/errors';
 import { usePdfExport } from '../hooks/usePdfExport';
 import { songHash } from '../lib/routes';
@@ -171,7 +171,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
         <Group gap="xs" mt="xs">
           {!isOwner && song.username && <span className="song-view-by">@{song.username}</span>}
           {song.bpm && <Badge>{song.bpm} bpm</Badge>}
-          {song.language && <Badge title={languageName(song.language)}>{song.language.toUpperCase()}</Badge>}
+          {song.language && <LanguageBadge code={song.language} />}
           {isOwner && song.visibility === VISIBILITY.PRIVATE && <Badge leftSection={<IconLock size={14} aria-hidden />}>Private</Badge>}
           {versions.length > 1 && (
             <Group gap="xs" wrap="nowrap">
@@ -183,7 +183,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
               >
                 {versions.map((v, idx) => (
                   <option key={v.id} value={v.id}>
-                    {idx + 1} (@{v.username}) {v.youtube_url ? '▶' : ''}
+                    {versionLabel(v, idx)}
                   </option>
                 ))}
               </NativeSelect>
