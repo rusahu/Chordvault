@@ -14,7 +14,6 @@ import { IMPORT_ACCEPT, IMPORT_CONFIRM_FILE_COUNT, DEMO_MAX_IMPORT } from '../li
 interface ImportModalProps {
   opened: boolean;
   onClose: () => void;
-  onDone: () => void;
 }
 
 interface Summary {
@@ -35,7 +34,7 @@ function readText(file: File): Promise<string> {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-export function ImportModal({ opened, onClose, onDone }: ImportModalProps) {
+export function ImportModal({ opened, onClose }: ImportModalProps) {
   useFocusReturn({ opened });
   const [busy, setBusy] = useState(false);
   const stacked = useStackedModalProps({ locked: busy });
@@ -43,12 +42,12 @@ export function ImportModal({ opened, onClose, onDone }: ImportModalProps) {
   const close = () => { if (!busy) onClose(); };
   return (
     <Modal opened={opened} onClose={close} title="Import ChordPro files" returnFocus={false} {...stacked} closeButtonProps={{ disabled: busy }}>
-      {opened && <ImportContent busy={busy} setBusy={setBusy} onClose={close} onDone={onDone} />}
+      {opened && <ImportContent busy={busy} setBusy={setBusy} onClose={close} />}
     </Modal>
   );
 }
 
-function ImportContent({ busy, setBusy, onClose, onDone }: Omit<ImportModalProps, 'opened'> & { busy: boolean; setBusy: (busy: boolean) => void }) {
+function ImportContent({ busy, setBusy, onClose }: Omit<ImportModalProps, 'opened'> & { busy: boolean; setBusy: (busy: boolean) => void }) {
   const active = useActiveRef();
   const { user } = useAuth();
   const { demoMode } = useDemo();
@@ -108,7 +107,6 @@ function ImportContent({ busy, setBusy, onClose, onDone }: Omit<ImportModalProps
         setProgress(offset);
       }
       setSummary(agg);
-      onDone();
     } catch (e) {
       if (active.current) notifyError(e);
     } finally {

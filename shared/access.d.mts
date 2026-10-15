@@ -4,3 +4,4 @@ export declare const VISIBILITY: { readonly PUBLIC: 'public'; readonly PRIVATE: 
 export type Visibility = 'public' | 'private';
 export declare function isAdminRole(role: string | undefined): boolean;
 export declare function normalizeVisibility(visibility: unknown): Visibility;
+export declare function manageUserError(actor: { id: number; role: string }, target: { id: number; role: string }): string | null;

@@ -1,9 +1,9 @@
 const express = require('express');
 const yazl = require('yazl');
 const { requireAuth, requireAdmin, optionalAuth, isAdminRole, canManageSong, viewerId } = require('../lib/auth');
-const { STATUS, VISIBILITY, LIMITS } = require('../lib/constants');
+const { STATUS, LIMITS } = require('../lib/constants');
 const { validateListQuery, validateObjectBody, requireId, assertValid, validateSongInput, validateVisibility, validateSongMetadata, parsePaginationParams, songListOptions } = require('../lib/validation');
-const { AppError, requireFound } = require('../lib/errors');
+const { AppError, requireFound, requireChanged } = require('../lib/errors');
 const { DEMO_MODE } = require('../lib/demo');
 const { makeUniqueNamer } = require('../lib/exportFilename');
 const Song = require('../lib/models/song');
@@ -27,10 +27,20 @@ function extractMetadata(content) {
   };
 }
 
-function requireSongMetadata(content) {
-  const meta = extractMetadata(content);
-  assertValid(validateSongMetadata(meta));
-  return meta;
+/** Every song save: the submitted text, then the metadata stored from the saved text (an edit without text keeps the stored text). */
+function checkSongSave({ content, format_detected }, { fallbackContent = null } = {}) {
+  const error = validateSongInput({ content, format_detected, requireContent: fallbackContent === null });
+  if (error) return { error };
+  const saved = fallbackContent === null ? content : content?.trim() || fallbackContent;
+  const meta = extractMetadata(saved);
+  const metaError = validateSongMetadata(meta);
+  return metaError ? { error: metaError } : { meta, content: saved };
+}
+
+function requireSongSave(body, options) {
+  const { error, ...saved } = checkSongSave(body, options);
+  assertValid(error);
+  return saved;
 }
 
 function assertManagesCorrections(user, ownerId, action) {
@@ -106,8 +116,7 @@ function createSongsRouter() {
 
   router.post('/songs', requireAuth, (req, res) => {
     const { content, format_detected, visibility } = req.body;
-    assertValid(validateSongInput({ content, format_detected, requireContent: true, requireChord: true }));
-    const meta = requireSongMetadata(content);
+    const { meta } = requireSongSave(req.body);
     assertValid(validateVisibility(visibility));
 
     const fmt = format_detected?.trim() || null;
@@ -126,12 +135,8 @@ function createSongsRouter() {
     const valid = [];
 
     songs.forEach((s, i) => {
-      const inputError = !s || typeof s !== 'object' || Array.isArray(s) ? 'Song must be an object'
-        : validateSongInput({ content: s.content, requireContent: true });
-      if (inputError) { errors.push({ index: i, error: inputError }); return; }
-      const meta = extractMetadata(s.content);
-      const metaError = validateSongMetadata(meta);
-      if (metaError) { errors.push({ index: i, error: metaError }); return; }
+      const { error, meta } = !s || typeof s !== 'object' || Array.isArray(s) ? { error: 'Song must be an object' } : checkSongSave({ content: s.content });
+      if (error) { errors.push({ index: i, error }); return; }
       const visError = validateVisibility(s.visibility);
       if (visError) { errors.push({ index: i, error: visError }); return; }
       valid.push({
@@ -155,10 +160,8 @@ function createSongsRouter() {
     const id = requireId(req.params.id, 'Invalid song ID');
     const existing = Song.findById(id);
     if (!existing || !canManageSong(req.user, existing.user_id)) throw new AppError('Song not found or not yours', 404);
-    const { content, format_detected, visibility } = req.body;
-    assertValid(validateSongInput({ content, format_detected, requireChord: true }));
-    const finalContent = content?.trim() || existing.content;
-    const meta = requireSongMetadata(finalContent);
+    const { format_detected, visibility } = req.body;
+    const { meta, content: finalContent } = requireSongSave(req.body, { fallbackContent: existing.content });
     assertValid(validateVisibility(visibility));
 
     const fmt = format_detected !== undefined ? (format_detected?.trim() || null) : existing.format_detected;
@@ -169,9 +172,7 @@ function createSongsRouter() {
 
   router.delete('/songs/:id', requireAuth, (req, res) => {
     const id = requireId(req.params.id, 'Invalid song ID');
-    const isAdmin = isAdminRole(req.user.role);
-    const result = Song.delete(id, isAdmin ? null : req.user.id);
-    if (!result.changes) throw new AppError('Song not found or not yours', 404);
+    requireChanged(Song.delete(id, isAdminRole(req.user.role) ? null : req.user.id), 'Song not found or not yours');
     res.json({ success: true });
   });
 
@@ -179,13 +180,11 @@ function createSongsRouter() {
     const original = findSong(req.params.id);
     if (original.status !== STATUS.ACTIVE) throw new AppError('Song not found', 404);
 
-    if (!canManageSong(req.user, original.user_id) && original.visibility !== VISIBILITY.PUBLIC) throw new AppError('Not authorized', 403);
+    if (!canViewSongVisibility(req.user, original)) throw new AppError('Not authorized', 403);
 
-    const { content, youtube_url } = req.body;
-    assertValid(validateSongInput({ content, youtube_url, requireContent: true, requireChord: true }));
-
+    const { content } = req.body;
+    const { meta } = requireSongSave({ content });
     const parentId = familyRootId(original);
-    const meta = requireSongMetadata(content);
     const result = Song.createVersion(req.user.id, parentId, meta, content, original.visibility);
     res.json({ id: result.lastInsertRowid });
   });
@@ -199,13 +198,10 @@ function createSongsRouter() {
   router.post('/songs/:id/correction', requireAuth, (req, res) => {
     const original = findSong(req.params.id);
     if (original.status === STATUS.PENDING) throw new AppError('Cannot correct a pending correction', 400);
-    if (original.visibility === VISIBILITY.PRIVATE && req.user.id !== original.user_id) throw new AppError('Cannot submit corrections on private songs', 403);
-    const { content, youtube_url } = req.body;
-    const validationError = validateSongInput({ content, youtube_url, requireContent: true, requireChord: true });
-    if (validationError) throw new AppError(validationError.replace('before saving', 'before submitting'), 400);
-
+    if (!canViewSongVisibility(req.user, original)) throw new AppError('Cannot submit corrections on private songs', 403);
+    const { content } = req.body;
+    const { meta } = requireSongSave({ content });
     const parentId = familyRootId(original);
-    const meta = requireSongMetadata(content);
     const result = Song.createCorrection(req.user.id, parentId, meta, content);
     res.json({ id: result.lastInsertRowid });
   });

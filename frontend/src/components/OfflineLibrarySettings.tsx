@@ -1,4 +1,5 @@
-import { Alert, Button, Group, Loader, Paper, Stack, Switch, Text, Title } from '@mantine/core';
+import { Alert, Button, Group, Loader, Stack, Switch, Text } from '@mantine/core';
+import { SettingsSection } from './SettingsSection';
 import { useOffline } from '../context/OfflineContext';
 import { useI18n } from '../context/I18nContext';
 
@@ -6,9 +7,8 @@ export function OfflineLibrarySettings() {
   const offline = useOffline();
   const { t } = useI18n();
   const { state, busy, enabled, error, shellError, shellReady, persisted } = offline;
-  return <Paper component="section" withBorder radius="lg" p="lg" bg="var(--cv-raise)" className="settings-section">
-    <Stack gap="sm">
-      <Title order={3} fz={16}>{t('offline.title', 'Offline library')}</Title>
+  return <SettingsSection title={t('offline.title', 'Offline library')}>
+    <Stack gap="sm" mt="sm">
       <Switch label={t('offline.enable', 'Keep my library offline')} checked={enabled}
         onChange={event => { void (event.currentTarget.checked ? offline.enable() : offline.disable()); }} />
       <Text size="sm" c="dimmed">{t('offline.description', 'Download public songs, your private songs and your saved setlists for viewing. Stored on this device. Removed when you sign out.')}</Text>
@@ -26,5 +26,5 @@ export function OfflineLibrarySettings() {
       </Alert>}
       {enabled && <Button variant="default" disabled={busy || !offline.online} onClick={() => { void offline.refresh(true); }}>{t('offline.refresh', 'Refresh now')}</Button>}
     </Stack>
-  </Paper>;
+  </SettingsSection>;
 }

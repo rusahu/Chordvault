@@ -1,6 +1,6 @@
 import { OfflineLibrarySettings } from '../components/OfflineLibrarySettings';
 import { useOffline } from '../context/OfflineContext';
-import { Anchor, Box, Group, Text, Select, Paper, Pill, Button, NativeSelect, PasswordInput, Stack, Textarea, Title } from '@mantine/core';
+import { Anchor, Box, Group, Text, Select, Pill, Button, PasswordInput, Stack, Textarea } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import { useState, useEffect, useCallback } from 'react';
@@ -18,9 +18,14 @@ import { ImportModal } from '../components/ImportModal';
 import { GeminiKeySettings } from '../components/GeminiKeySettings';
 import { MAX_PREFERRED_LANGUAGES, MAX_OCR_PROMPT, MIN_PASSWORD_LENGTH, DEFAULT_GEMINI_MODEL } from '../lib/constants';
 import { PageTitle } from '../components/PageTitle';
+import { SettingsSection } from '../components/SettingsSection';
+import { ModelSelect } from '../components/ModelSelect';
+import { getLanguages, getOcrModels, type OcrModels } from '../lib/settingsApi';
+import { useI18n } from '../context/I18nContext';
 
 export function SettingsView() {
   const { readOnly } = useOffline();
+  const { t } = useI18n();
   const apiCall = useApi();
   const { demoMode } = useDemo();
   const { user, isAdmin } = useAuth();
@@ -38,15 +43,9 @@ export function SettingsView() {
   const [defaultPrompt, setDefaultPrompt] = useState('');
   const [hasCustomPrompt, setHasCustomPrompt] = useState(false);
   const [ocrModel, setOcrModel] = useState(DEFAULT_GEMINI_MODEL);
-  const [modelList, setModelList] = useState<{ id: string; label: string }[]>([]);
+  const [modelList, setModelList] = useState<OcrModels['models']>([]);
   const [showImport, { open: openImport, close: closeImport }] = useDisclosure(false);
 
-  const loadPreferredLangs = useCallback(async () => {
-    try {
-      const data = await apiCall<{ languages: string[] }>('GET', '/api/settings/languages');
-      setPreferredLangs(data.languages);
-    } catch {}
-  }, [apiCall]);
 
   const loadOcrPrompt = useCallback(async () => {
     try {
@@ -59,16 +58,12 @@ export function SettingsView() {
     } catch {}
   }, [apiCall]);
 
-  const loadOcrModel = useCallback(async () => {
-    try {
-      const data = await apiCall<{ model: string; models: { id: string; label: string }[] }>('GET', '/api/settings/ocr-model');
-      setOcrModel(data.model);
-      setModelList(data.models);
-    } catch {}
-  }, [apiCall]);
 
-  useEffect(() => { loadOcrPrompt(); loadOcrModel(); }, [loadOcrPrompt, loadOcrModel]);
-  useEffect(() => { loadPreferredLangs(); }, [loadPreferredLangs]);
+  useEffect(() => {
+    loadOcrPrompt();
+    getOcrModels(apiCall).then(data => { setOcrModel(data.model); setModelList(data.models); }).catch(() => {});
+    getLanguages(apiCall).then(setPreferredLangs).catch(() => {});
+  }, [apiCall, loadOcrPrompt]);
 
   const changePassword = () => passwordAction.run(async () => {
     pwStatus.clear();
@@ -132,10 +127,9 @@ export function SettingsView() {
       <OfflineLibrarySettings />
       <Box component="fieldset" disabled={readOnly} bd={0} p={0} m={0} miw={0} mt="lg">
       <div className="settings-grid">
-        <Paper component="section" withBorder radius="lg" p="lg" bg="var(--cv-raise)" className="settings-section">
-          <Title order={3} fz={16} mb={4}>Change Password</Title>
+        <SettingsSection title="Change Password">
           {demoMode ? (
-            <Text size="sm" c="dimmed">Disabled in demo mode</Text>
+            <Text size="sm" c="dimmed">{t('common.demoDisabled')}</Text>
           ) : (
             <Stack gap="sm" renderRoot={(props) => <form {...props} onSubmit={passwordForm.onSubmit(changePassword)} />}>
               <PasswordInput label={<>Current Password</>} type="password" {...passwordForm.getInputProps('currentPw')} autoComplete="current-password" />
@@ -145,10 +139,9 @@ export function SettingsView() {
               <StatusText status={pwStatus.status} />
             </Stack>
           )}
-        </Paper>
+        </SettingsSection>
 
-        <Paper component="section" withBorder radius="lg" p="lg" bg="var(--cv-raise)" className="settings-section">
-          <Title order={3} fz={16} mb={4}>My Languages</Title>
+        <SettingsSection title="My Languages">
           <Text size="sm" c="dimmed" mb="sm">
             Your preferred languages appear at the top of the language picker when creating songs.
           </Text>
@@ -166,10 +159,9 @@ export function SettingsView() {
             )}
             <StatusText status={langStatus.status} />
           </Stack>
-        </Paper>
+        </SettingsSection>
 
-        <Paper component="section" withBorder radius="lg" p="lg" bg="var(--cv-raise)" className="settings-section">
-          <Title order={3} fz={16} mb={4}>{isAdmin ? 'Import & Export' : 'Export Songs'}</Title>
+        <SettingsSection title={isAdmin ? 'Import & Export' : 'Export Songs'}>
           <Text size="sm" c="dimmed" mb="sm">
             Download all songs you can access as ChordPro (.cho) files in a zip.
             {isAdmin ? ' As an admin, you can also bulk import ChordPro files into the library.' : ''}
@@ -177,41 +169,32 @@ export function SettingsView() {
           <Stack gap="sm">
             <Group>
               {isAdmin && (
-                <Button size="xs" className="btn btn-sm" onClick={openImport}>Import Songs</Button>
+                <Button size="xs" onClick={openImport}>{t('admin.importSongs')}</Button>
               )}
-              <Button size="xs" className="btn btn-sm" onClick={handleExport} disabled={exportAction.busy}>
+              <Button size="xs" onClick={handleExport} disabled={exportAction.busy}>
                 {exportAction.busy ? 'Exporting…' : 'Export Songs'}
               </Button>
             </Group>
             <StatusText status={exportStatus.status} />
           </Stack>
-          <ImportModal opened={showImport} onClose={closeImport} onDone={() => {}} />
-        </Paper>
+          <ImportModal opened={showImport} onClose={closeImport} />
+        </SettingsSection>
 
-        <Paper component="section" withBorder radius="lg" p="lg" bg="var(--cv-raise)" className="settings-section">
-          <Title order={3} fz={16} mb={4}>OCR: API Key</Title>
+        <SettingsSection title="OCR: API Key">
           <Text size="sm" c="dimmed" mb="sm">
             Smart OCR uses Google Gemini to extract chords from photos with higher accuracy. Get a free API key at{' '}
             <Anchor href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" inherit>aistudio.google.com/apikey</Anchor>
           </Text>
           <GeminiKeySettings />
-        </Paper>
+        </SettingsSection>
 
-        <Paper component="section" withBorder radius="lg" p="lg" bg="var(--cv-raise)" className="settings-section">
-          <Title order={3} fz={16} mb={4}>OCR: Model &amp; Prompt</Title>
+        <SettingsSection title="OCR: Model & Prompt">
           <Text size="sm" c="dimmed" mb="sm">
             Choose which Gemini model to use for OCR and customize the extraction prompt. You can also change the model per-extraction in the OCR modal.
           </Text>
           <Stack gap="sm">
             <Box>
-              <NativeSelect label={<>Model</>}
-                value={ocrModel}
-                onChange={(e) => saveOcrModel(e.target.value)}
-              >
-                {modelList.map(m => (
-                  <option key={m.id} value={m.id}>{m.label}</option>
-                ))}
-              </NativeSelect>
+              <ModelSelect label="Model" models={modelList} value={ocrModel} onChange={saveOcrModel} />
               <StatusText status={modelStatus.status} mt={4} />
             </Box>
             <Box>
@@ -228,19 +211,19 @@ export function SettingsView() {
               </Text>
             </Box>
             <Group gap="xs">
-              <Button size="xs" className="btn btn-sm" onClick={saveOcrPrompt}>Save Prompt</Button>
+              <Button size="xs" onClick={saveOcrPrompt}>Save Prompt</Button>
               {!ocrPrompt && (
-                <Button size="xs" className="btn btn-sm" style={{ background: 'var(--surface-alt, var(--surface))' }} onClick={() => setOcrPrompt(defaultPrompt)}>
+                <Button size="xs" style={{ background: 'var(--surface-alt, var(--surface))' }} onClick={() => setOcrPrompt(defaultPrompt)}>
                   Copy Default
                 </Button>
               )}
               {hasCustomPrompt && (
-                <Button color="red" size="xs" className="btn btn-danger btn-sm" onClick={resetOcrPrompt}>Reset to Default</Button>
+                <Button color="red" size="xs" onClick={resetOcrPrompt}>Reset to Default</Button>
               )}
             </Group>
             <StatusText status={promptStatus.status} />
           </Stack>
-        </Paper>
+        </SettingsSection>
       </div>
       </Box>
     </>

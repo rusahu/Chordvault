@@ -1,11 +1,11 @@
 const express = require('express');
 const { requireAuth, optionalAuth } = require('../lib/auth');
-const { STATUS, VISIBILITY, LIMITS } = require('../lib/constants');
-const { validateListQuery, validateObjectBody, parseId, requireId, assertValid, validateSetlistInput, validateTargetKey, canonicalTargetKey, validateNashville, setlistListOptions } = require('../lib/validation');
-const { AppError, requireFound } = require('../lib/errors');
+const { STATUS, LIMITS } = require('../lib/constants');
+const { validateListQuery, validateObjectBody, parseId, requireId, assertValid, validateSetlistInput, validateTargetKey, canonicalTargetKey, validateNashville, validateContentOverride, setlistListOptions } = require('../lib/validation');
+const { AppError, requireFound, requireChanged } = require('../lib/errors');
 const Setlist = require('../lib/models/setlist');
 const Song = require('../lib/models/song');
-const { maskSetlistEntry } = require('../lib/songAccess');
+const { maskSetlistEntry, canViewSongVisibility } = require('../lib/songAccess');
 const { normalizeVisibility } = require('../shared/access.mjs');
 
 const requireSetlistId = raw => requireId(raw, 'Invalid setlist ID');
@@ -30,7 +30,7 @@ function createSetlistsRouter() {
 
   router.post('/setlists', requireAuth, (req, res) => {
     const { name, visibility, event_date } = req.body;
-    assertValid(validateSetlistInput(name, event_date));
+    assertValid(validateSetlistInput(name, event_date, visibility));
     const vis = normalizeVisibility(visibility);
     const result = Setlist.create(req.user.id, name.trim(), vis, event_date || null);
     res.json({ id: result.lastInsertRowid, name: name.trim() });
@@ -51,17 +51,14 @@ function createSetlistsRouter() {
   router.put('/setlists/:id', requireAuth, (req, res) => {
     const id = requireSetlistId(req.params.id);
     const { name, visibility, event_date } = req.body;
-    assertValid(validateSetlistInput(name, event_date));
-    const vis = normalizeVisibility(visibility);
-    const result = Setlist.update(id, req.user.id, name.trim(), vis, event_date !== undefined ? (event_date || null) : null);
-    if (!result.changes) throw new AppError('Setlist not found', 404);
+    assertValid(validateSetlistInput(name, event_date, visibility));
+    requireChanged(Setlist.update(id, req.user.id, name.trim(), normalizeVisibility(visibility), event_date || null), 'Setlist not found');
     res.json({ success: true });
   });
 
   router.delete('/setlists/:id', requireAuth, (req, res) => {
     const id = requireSetlistId(req.params.id);
-    const result = Setlist.delete(id, req.user.id);
-    if (!result.changes) throw new AppError('Setlist not found', 404);
+    requireChanged(Setlist.delete(id, req.user.id), 'Setlist not found');
     res.json({ success: true });
   });
 
@@ -74,9 +71,7 @@ function createSetlistsRouter() {
     assertValid(validateNashville(nashville));
     const song = requireFound(Song.findById(songIdParsed), 'Song not found');
     if (song.status === STATUS.PENDING) throw new AppError('Cannot add a pending correction to a setlist', 400);
-    if (song.user_id !== req.user.id && song.visibility !== VISIBILITY.PUBLIC) {
-      throw new AppError('Cannot add a private song you don\'t own', 403);
-    }
+    if (!canViewSongVisibility(req.user, song)) throw new AppError('Cannot add a private song you don\'t own', 403);
     const result = Setlist.addSongEntry(id, songIdParsed, { targetKey: storedTargetKey(target_key), nashville });
     res.json({ entry_id: result.entry_id, position: result.position });
   });
@@ -85,22 +80,16 @@ function createSetlistsRouter() {
     const setlistId = requireSetlistId(req.params.setlistId);
     const entryId = requireId(req.params.entryId, 'Invalid entry ID');
     resolveSetlist(setlistId, req.user.id);
-    const entry = requireFound(Setlist.getEntryById(entryId, setlistId), 'Entry not found');
-    const { target_key, nashville, font, two_col, content_override } = req.body;
+    const { target_key, nashville, content_override } = req.body;
     assertValid(validateTargetKey(target_key));
     assertValid(validateNashville(nashville));
-    if (content_override != null && typeof content_override !== 'string') throw new AppError('Content override must be a string or null', 400);
-    if (content_override !== undefined && content_override !== null && content_override.length > LIMITS.MAX_CONTENT) {
-      throw new AppError(`Content override too large (max ${LIMITS.MAX_CONTENT / 1000}KB)`, 400);
-    }
-    Setlist.updateSongEntry(entryId, setlistId, entry, {
+    assertValid(validateContentOverride(content_override));
+    requireChanged(Setlist.updateSongEntry(entryId, setlistId, {
       targetKey: storedTargetKey(target_key),
       targetKeyProvided: 'target_key' in req.body,
       nashville,
-      font,
-      twoCol: two_col,
-      contentOverride: content_override
-    });
+      contentOverride: content_override,
+    }), 'Entry not found');
     res.json({ success: true });
   });
 
@@ -108,8 +97,7 @@ function createSetlistsRouter() {
     const setlistId = requireSetlistId(req.params.setlistId);
     const entryId = requireId(req.params.entryId, 'Invalid entry ID');
     resolveSetlist(setlistId, req.user.id);
-    const result = Setlist.deleteSongEntry(entryId, setlistId);
-    if (!result.changes) throw new AppError('Entry not found', 404);
+    requireChanged(Setlist.deleteSongEntry(entryId, setlistId), 'Entry not found');
     res.json({ success: true });
   });
 

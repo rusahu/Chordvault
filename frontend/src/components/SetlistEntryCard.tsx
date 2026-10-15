@@ -4,6 +4,7 @@ import { getSongKey } from '../lib/chords';
 import { entryContent, entrySemitones, entryStartKey } from '../lib/setlistKeys';
 import type { SetlistEntry } from '../types';
 import { VISIBILITY } from '../lib/constants';
+import { useI18n } from '../context/I18nContext';
 
 interface SetlistEntryCardProps {
   entry: SetlistEntry;
@@ -14,7 +15,6 @@ interface SetlistEntryCardProps {
   onStepKey: (entryId: number | string, idx: number, direction: 1 | -1) => void;
   onClick: (idx: number) => void;
   onEdit?: (idx: number) => void;
-  t: (key: string) => string;
   dragProps?: React.HTMLAttributes<HTMLDivElement>;
   handleProps?: React.HTMLAttributes<HTMLDivElement>;
   isDragging?: boolean;
@@ -29,11 +29,11 @@ export function SetlistEntryCard({
   onStepKey,
   onClick,
   onEdit,
-  t,
   dragProps,
   handleProps,
   isDragging,
 }: SetlistEntryCardProps) {
+  const { t } = useI18n();
   const content = entryContent(entry);
   const semitones = entrySemitones(content, entry.target_key);
   const keyDisplay = getSongKey(content, semitones);
@@ -58,7 +58,7 @@ export function SetlistEntryCard({
           mr={{ base: 0, xs: 16 }}
           onClick={(e) => e.stopPropagation()}
           {...handleProps}
-          title="Drag to reorder"
+          title={t('admin.dragToReorder')}
         >
           <IconGripVertical size={20} aria-hidden />
         </Box>
@@ -82,16 +82,16 @@ export function SetlistEntryCard({
       {(isEditable || onEdit) && (
         <Group className="setlist-entry-controls" gap={4} wrap="nowrap" justify="flex-end" w={{ base: '100%', xs: 'auto' }} onClick={(e) => e.stopPropagation()}>
           {onEdit && (
-            <Button variant="default" size="xs" className="btn btn-ghost btn-sm" leftSection={<IconPencil size={14} aria-hidden />} onClick={() => onEdit(idx)}>
+            <Button variant="default" size="xs" leftSection={<IconPencil size={14} aria-hidden />} onClick={() => onEdit(idx)}>
               {t('songView.edit')}
             </Button>
           )}
           {isEditable && (
             <>
-              <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={!canStep} onClick={() => onStepKey(entry.entry_id, idx, -1)}>
+              <Button variant="default" size="xs" disabled={!canStep} onClick={() => onStepKey(entry.entry_id, idx, -1)}>
                 &#9837;
               </Button>
-              <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={!canStep} onClick={() => onStepKey(entry.entry_id, idx, 1)}>
+              <Button variant="default" size="xs" disabled={!canStep} onClick={() => onStepKey(entry.entry_id, idx, 1)}>
                 &#9839;
               </Button>
             </>

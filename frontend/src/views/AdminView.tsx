@@ -7,7 +7,7 @@ import { modals } from '@mantine/modals';
 import { useState, useEffect, useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useBusyAction } from '../hooks/useBusyAction';
-import { notifyError } from '../lib/errors';
+import { confirmAction, notifyError } from '../lib/errors';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
@@ -17,7 +17,7 @@ import { useDemo } from '../context/DemoContext';
 import { languageName } from '../lib/languages';
 import { PageTitle } from '../components/PageTitle';
 import { AdminTags } from '../components/AdminTags';
-import { ROLES } from '../lib/constants';
+import { ROLES, manageUserError } from '../lib/constants';
 import { formatDbDate, formatSongCount } from '../lib/format';
 
 interface AdminViewProps {
@@ -83,27 +83,27 @@ export function AdminView({ navigate }: AdminViewProps) {
 
   const setRole = (userId: number, role: string) => {
     const action = role === ROLES.ADMIN ? t('admin.confirmPromote') : t('admin.confirmDemote');
-    modals.openConfirmModal({ children: action, onConfirm: () => runAction(async () => {
+    confirmAction(action, () => runAction(async () => {
       await apiCall('PUT', `/api/admin/users/${userId}/role`, { role });
       toast(role === ROLES.ADMIN ? t('admin.userPromoted') : t('admin.userDemoted'), 'success');
       await load();
-    }) });
+    }));
   };
 
   const setDisabled = (userId: number, disabled: boolean) => {
-    modals.openConfirmModal({ children: disabled ? t('admin.confirmDisable') : t('admin.confirmEnable'), onConfirm: () => runAction(async () => {
+    confirmAction(disabled ? t('admin.confirmDisable') : t('admin.confirmEnable'), () => runAction(async () => {
       await apiCall('PUT', `/api/admin/users/${userId}/disabled`, { disabled });
       toast(disabled ? t('admin.userDisabled') : t('admin.userEnabled'), 'success');
       await load();
-    }) });
+    }));
   };
 
   const deleteUser = (userId: number, username: string) => {
-    modals.openConfirmModal({ children: tReplace('admin.confirmDeleteUser', { username }), onConfirm: () => runAction(async () => {
+    confirmAction(tReplace('admin.confirmDeleteUser', { username }), () => runAction(async () => {
       await apiCall('DELETE', `/api/admin/users/${userId}`);
       toast(t('admin.userDeleted'), 'success');
       await load();
-    }) });
+    }));
   };
 
   const resetPassword = (userId: number, username: string) => modals.openContextModal({ modal: 'resetPassword', title: tReplace('admin.resetPasswordPrompt', { username }), innerProps: { onSubmit: (newPassword: string) => runAction(async () => {
@@ -112,11 +112,11 @@ export function AdminView({ navigate }: AdminViewProps) {
   }) } });
 
   const deleteSong = (songId: number, title: string) => {
-    modals.openConfirmModal({ children: tReplace('admin.confirmDeleteSong', { title }), onConfirm: () => runAction(async () => {
+    confirmAction(tReplace('admin.confirmDeleteSong', { title }), () => runAction(async () => {
       await apiCall('DELETE', `/api/admin/songs/${songId}`);
       toast(t('admin.songDeleted'), 'success');
       await load();
-    }) });
+    }));
   };
 
   if (!stats) return <Loading />;
@@ -156,15 +156,15 @@ export function AdminView({ navigate }: AdminViewProps) {
           <div className="muted-text" style={{ marginTop: 4 }}>
             {config.allowRegistration ? 'Anyone can create an account — no email verification, so open to spam. Use invite codes instead.' : 'Registration is closed. Use invite codes to add new users.'}
           </div>
-          {demoMode && <div className="muted-text" style={{ fontSize: 12, marginTop: 4 }}>Disabled in demo mode</div>}
+          {demoMode && <div className="muted-text" style={{ fontSize: 12, marginTop: 4 }}>{t('common.demoDisabled')}</div>}
         </div>
         <Stack gap={14}><Divider />
           <Group gap={12}>
-            <Button className="btn" onClick={generateInvite} disabled={demoMode || busy} title={demoMode ? 'Disabled in demo mode' : ''}>{t('admin.generateInvite')}</Button>
+            <Button onClick={generateInvite} disabled={demoMode || busy} title={demoMode ? t('common.demoDisabled') : ''}>{t('admin.generateInvite')}</Button>
             {inviteCode && (
               <Group gap={8}>
                 <Code fz={18} fw={600} py={6} px={14} bg="var(--accent-bg)" style={{ userSelect: 'all', letterSpacing: '0.08em' }}>{inviteCode}</Code>
-                <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => copyWithFeedback(inviteCode)}>{t('admin.copy')}</Button>
+                <Button variant="default" size="xs" onClick={() => copyWithFeedback(inviteCode)}>{t('admin.copy')}</Button>
               </Group>
             )}
           </Group>
@@ -176,7 +176,7 @@ export function AdminView({ navigate }: AdminViewProps) {
                 <Group key={inv.id} gap={8} mb={4}>
                   <code style={{ fontSize: 13 }}>{inv.code}</code>
                   <span className="muted-text" style={{ fontSize: 12 }}>{formatDbDate(inv.created_at)}</span>
-                  <Button variant="default" size="xs" className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: '2px 6px' }} onClick={() => deleteInvite(inv.id)} disabled={demoMode || busy}>&#10005;</Button>
+                  <Button variant="default" size="xs" style={{ fontSize: 11, padding: '2px 6px' }} onClick={() => deleteInvite(inv.id)} disabled={demoMode || busy}>&#10005;</Button>
                 </Group>
               ))}
             </Stack>
@@ -191,9 +191,8 @@ export function AdminView({ navigate }: AdminViewProps) {
       <CardGrid mb={28}>
         {users.map((u) => {
           const isSelf = u.id === currentId;
-          const isTargetOwner = u.role === ROLES.OWNER;
           const isTargetAdmin = u.role === ROLES.ADMIN;
-          const canManage = !isSelf && !isTargetOwner && (isOwner || !isTargetAdmin);
+          const canManage = !!user && !manageUserError(user, u);
 
           return (
             <Paper key={u.id} className="user-card" withBorder bg="var(--ui-card-bg)" radius="var(--radius)" py={16} px={20} shadow="sm">
@@ -211,12 +210,12 @@ export function AdminView({ navigate }: AdminViewProps) {
               {canManage && !demoMode && (
                 <Stack gap={10} mt={10}><Divider /><Group className="user-card-actions" gap={6}>
                   {isOwner && (isTargetAdmin
-                    ? <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, ROLES.USER); }}>{t('admin.demote')}</Button>
-                    : <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, ROLES.ADMIN); }}>{t('admin.promote')}</Button>
+                    ? <Button variant="default" size="xs" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, ROLES.USER); }}>{t('admin.demote')}</Button>
+                    : <Button variant="default" size="xs" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, ROLES.ADMIN); }}>{t('admin.promote')}</Button>
                   )}
-                  <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); resetPassword(u.id, u.username); }}>{t('admin.resetPassword')}</Button>
-                  <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setDisabled(u.id, !u.disabled); }}>{u.disabled ? t('admin.enable') : t('admin.disable')}</Button>
-                  <Button color="red" size="xs" className="btn btn-danger btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); deleteUser(u.id, u.username); }}>{t('admin.delete')}</Button>
+                  <Button variant="default" size="xs" disabled={busy} onClick={(e) => { e.stopPropagation(); resetPassword(u.id, u.username); }}>{t('admin.resetPassword')}</Button>
+                  <Button variant="default" size="xs" disabled={busy} onClick={(e) => { e.stopPropagation(); setDisabled(u.id, !u.disabled); }}>{u.disabled ? t('admin.enable') : t('admin.disable')}</Button>
+                  <Button color="red" size="xs" disabled={busy} onClick={(e) => { e.stopPropagation(); deleteUser(u.id, u.username); }}>{t('admin.delete')}</Button>
                 </Group></Stack>
               )}
             </Paper>
@@ -235,7 +234,7 @@ export function AdminView({ navigate }: AdminViewProps) {
                 title={s.title}
                 meta={<>{s.artist ? `${s.artist} · ` : ''}@{s.username} &middot; {formatDbDate(s.created_at)}</>}
                 onClick={() => navigate('song-view', { id: String(s.id) })}
-                actions={<Button color="red" size="xs" className="btn btn-danger btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); deleteSong(s.id, s.title); }}>{t('admin.delete')}</Button>}
+                actions={<Button color="red" size="xs" disabled={busy} onClick={(e) => { e.stopPropagation(); deleteSong(s.id, s.title); }}>{t('admin.delete')}</Button>}
               />
             ))}
           </CardGrid>
@@ -244,7 +243,7 @@ export function AdminView({ navigate }: AdminViewProps) {
 
       {corrections.length > 0 && (
         <>
-          <h3 className="admin-section-title">Pending Corrections ({corrections.length})</h3>
+          <h3 className="admin-section-title">{tReplace('admin.pendingCorrections', { count: corrections.length })}</h3>
           <CardGrid>
             {corrections.map((c) => (
               <ListCard

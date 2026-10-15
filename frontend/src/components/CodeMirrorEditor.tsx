@@ -13,10 +13,6 @@ interface CodeMirrorEditorProps {
 }
 
 const cvTheme = EditorView.theme({
-  '&': {
-    fontSize: '15px',
-    fontFamily: "'JetBrains Mono', 'Fira Code', 'SF Mono', monospace",
-  },
   '.cm-content': { padding: '12px 0', minHeight: '300px' },
   '.cm-focused': { outline: 'none' },
   '.cm-scroller': { overflow: 'auto' },

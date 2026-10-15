@@ -27,8 +27,8 @@ it('reports a failed load, clears the list and keeps the saved filters', async (
   const opts = options({ fetchPage });
   const hook = renderHook(() => usePaginatedSearch(opts));
   await waitFor(() => expect(hook.result.current.items).toEqual(['a']));
-  await act(() => hook.result.current.load({ q: 'other' }));
-  expect(hook.result.current.loadError).toBe('Search failed');
+  act(() => hook.result.current.refine({ q: 'other' }));
+  await waitFor(() => expect(hook.result.current.loadError).toBe('Search failed'));
   expect(hook.result.current.items).toEqual([]);
   expect(opts.persist).toHaveBeenCalledOnce();
 });
@@ -79,10 +79,38 @@ it('keeps the latest request when an earlier one finishes last', async () => {
   const opts = options({ fetchPage });
   const hook = renderHook(() => usePaginatedSearch(opts));
   await waitFor(() => expect(hook.result.current.items).toEqual(['initial']));
-  let slow!: Promise<void>;
-  act(() => { slow = hook.result.current.load({ tags: ['kids'] }); });
-  await act(() => hook.result.current.load({ tags: ['kids', 'christmas'] }));
-  await act(async () => { resolveSlow(result(['kids only'])); await slow; });
+  act(() => hook.result.current.refine({ tags: ['kids'] }));
+  act(() => hook.result.current.refine({ tags: ['kids', 'christmas'] }));
+  await waitFor(() => expect(hook.result.current.items).toEqual(['kids or christmas']));
+  await act(async () => { resolveSlow(result(['kids only'])); });
   expect(hook.result.current.items).toEqual(['kids or christmas']);
-  expect(opts.persist).toHaveBeenLastCalledWith({ tags: ['kids', 'christmas'] });
+  expect(opts.persist).toHaveBeenLastCalledWith({ q: 'grace', tags: ['kids', 'christmas'] });
+});
+
+it('searches, refines, pages and clears with the current filters', async () => {
+  const setQuery = vi.fn();
+  const opts = options({ filters: { q: 'grace', language: 'en' }, setQuery });
+  const hook = renderHook(() => usePaginatedSearch(opts));
+  await waitFor(() => expect(hook.result.current.loaded).toBe(true));
+  const scroll = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+  await act(async () => { hook.result.current.search(); });
+  expect(opts.fetchPage).toHaveBeenLastCalledWith({ q: 'grace', language: 'en', page: 1 });
+  await act(async () => { hook.result.current.refine({ language: 'zh' }); });
+  expect(opts.fetchPage).toHaveBeenLastCalledWith({ q: 'grace', language: 'zh', page: 1 });
+  await act(async () => { hook.result.current.goToPage(4); });
+  expect(opts.fetchPage).toHaveBeenLastCalledWith({ q: 'grace', language: 'en', page: 4 });
+  expect(scroll).toHaveBeenCalledWith(0, 0);
+  await act(async () => { hook.result.current.clear(); });
+  expect(setQuery).toHaveBeenCalledWith('');
+  expect(opts.fetchPage).toHaveBeenLastCalledWith({ q: '', language: 'en', page: 1 });
+});
+
+it('a disabled search only saves cleared or refined filters', async () => {
+  const opts = options({ enabled: false, filters: { q: 'grace', dateFrom: '2026-01-01' }, setQuery: vi.fn() });
+  const hook = renderHook(() => usePaginatedSearch(opts));
+  await waitFor(() => expect(hook.result.current.loaded).toBe(true));
+  act(() => { hook.result.current.clear(); hook.result.current.refine({ dateTo: '2026-02-01' }); hook.result.current.goToPage(2); hook.result.current.search(); });
+  expect(opts.fetchPage).not.toHaveBeenCalled();
+  expect(opts.persist).toHaveBeenCalledWith({ q: '', dateFrom: '2026-01-01' });
+  expect(opts.persist).toHaveBeenCalledWith({ q: 'grace', dateFrom: '2026-01-01', dateTo: '2026-02-01' });
 });

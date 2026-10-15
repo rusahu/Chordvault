@@ -3,6 +3,7 @@ import type { Setlist, SongListItem } from '../types';
 import type { CatalogSong, LibraryQuery, OfflineSnapshot, OfflineSong, OfflineState, RefreshTicket } from '../types/offline';
 import { splitTags } from './tagName';
 import { STATUS, VISIBILITY } from './constants';
+import { pageMeta, pageOffset } from '../../../shared/paging.mjs';
 
 type Database = Dexie & {
   songs: Table<OfflineSong, number>;
@@ -25,7 +26,7 @@ function identifiedRows(rows: unknown): rows is Record<string, unknown>[] {
   return Array.isArray(rows) && rows.every(row => record(row) && Number.isSafeInteger(row.id) && Number(row.id) > 0) &&
     new Set(rows.map(row => row.id)).size === rows.length;
 }
-export function validateSnapshot(value: unknown, accountId: number): asserts value is OfflineSnapshot {
+function validateSnapshot(value: unknown, accountId: number): asserts value is OfflineSnapshot {
   if (!record(value) || value.schemaVersion !== 1 || value.accountId !== accountId ||
       !identifiedRows(value.songs) || !identifiedRows(value.catalog) || !identifiedRows(value.setlists)) {
     throw new Error('Invalid offline library download');
@@ -45,11 +46,11 @@ export function validateSnapshot(value: unknown, accountId: number): asserts val
   }
 }
 
-function pageInfo(total: number, query: LibraryQuery) {
-  const limit = Math.max(1, Math.min(100, query.limit || 20));
-  const totalPages = Math.max(1, Math.ceil(total / limit));
-  const page = Math.min(totalPages, Math.max(1, query.page || 1));
-  return { total, page, limit, totalPages };
+/** One page of rows with the server's paging fields. */
+function page<T>(rows: T[], query: LibraryQuery) {
+  const meta = pageMeta(rows.length, query.page || 1, query.limit || 20);
+  const start = pageOffset(meta.page, meta.limit);
+  return { meta, rows: rows.slice(start, start + meta.limit) };
 }
 
 export function createOfflineLibrary(name = 'chordvault-offline') {
@@ -124,21 +125,17 @@ export function createOfflineLibrary(name = 'chordvault-offline') {
       return callback();
     });
   }
-  const getSong = (accountId: number, id: number) => read(accountId, async () => {
-    const song = await db.songs.get(id);
-    if (!song) throw unavailable();
-    return song;
-  });
+  async function need<T>(table: Table<T, number>, id: number) {
+    const row = await table.get(id);
+    if (!row) throw unavailable();
+    return row;
+  }
+  const getSong = (accountId: number, id: number) => read(accountId, () => need(db.songs, id));
   const getVersions = (accountId: number, id: number) => read(accountId, async () => {
-    const song = await db.songs.get(id);
-    if (!song) throw unavailable();
+    const song = await need(db.songs, id);
     return db.songs.where('familyId').equals(song.familyId).sortBy('created_at');
   });
-  const getSetlist = (accountId: number, id: number) => read(accountId, async () => {
-    const setlist = await db.setlists.get(id);
-    if (!setlist) throw unavailable();
-    return setlist;
-  });
+  const getSetlist = (accountId: number, id: number) => read(accountId, () => need(db.setlists, id));
   const querySongs = (accountId: number, query: LibraryQuery) => read(accountId, async () => {
     const terms = (query.q || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
     const pinyin = terms.join('');
@@ -153,7 +150,8 @@ export function createOfflineLibrary(name = 'chordvault-offline') {
       const fieldMatch = (forms: string[]) => terms.every(term => forms.some(form => form.includes(term)));
       const { title, artist, lyrics } = row.search;
       if (terms.length && !fieldMatch([...title, ...artist, ...lyrics]) && !row.search.pinyin.includes(pinyin)) return;
-      const score = terms.length ? (fieldMatch(title) ? 2 : fieldMatch(artist) ? 1 : 0) : 0;
+      // Same ranking as the server: title > artist > pinyin > lyrics only.
+      const score = terms.length ? (fieldMatch(title) ? 3 : fieldMatch(artist) ? 2 : row.search.pinyin.includes(pinyin) ? 1 : 0) : 0;
       const previous = groups.get(row.familyId);
       const familyUpdated = previous && previous.familyUpdated > row.updated_at ? previous.familyUpdated : row.updated_at;
       if (!previous || score > previous.score || (score === previous.score &&
@@ -162,12 +160,12 @@ export function createOfflineLibrary(name = 'chordvault-offline') {
       } else previous.familyUpdated = familyUpdated;
     });
     const results = [...groups.values()].sort((a, b) => b.score - a.score || b.familyUpdated.localeCompare(a.familyUpdated) || b.row.id - a.row.id);
-    const paging = pageInfo(results.length, query);
-    const songs: SongListItem[] = results.slice((paging.page - 1) * paging.limit, paging.page * paging.limit).map(({ row }) => {
+    const { meta, rows } = page(results, query);
+    const songs: SongListItem[] = rows.map(({ row }) => {
       const { search: _, familyId, ...metadata } = row;
       return { ...metadata, version_count: counts.get(familyId) || 1, key: row.key ?? null };
     });
-    return { ...paging, songs };
+    return { ...meta, songs };
   });
   const querySetlists = (accountId: number, query: LibraryQuery) => read(accountId, async () => {
     const q = (query.q || '').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -175,8 +173,8 @@ export function createOfflineLibrary(name = 'chordvault-offline') {
     const rows = (await db.setlists.toArray()).filter(s => (!q || (s.search ?? [s.name.toLowerCase()]).some(form => form.includes(q))) &&
       (!query.dateFrom || day(s) >= query.dateFrom) && (!query.dateTo || (!!day(s) && day(s) <= query.dateTo)))
       .sort((a, b) => (b.event_date || '').localeCompare(a.event_date || '') || (b.updated_at || '').localeCompare(a.updated_at || '') || Number(a.id) - Number(b.id));
-    const paging = pageInfo(rows.length, query);
-    return { ...paging, setlists: rows.slice((paging.page - 1) * paging.limit, paging.page * paging.limit).map(({ entries, search: _, ...s }) => ({ ...s, song_count: entries.length })) };
+    const { meta, rows: shown } = page(rows, query);
+    return { ...meta, setlists: shown.map(({ entries, search: _, ...s }) => ({ ...s, song_count: entries.length })) };
   });
   return { db, state, status, enable, invalidate, disable: (accountId: number, ticket?: RefreshTicket) => invalidate(accountId, true, ticket), beginRefresh,
     replaceDownload, markChecked, getSong, getVersions, getSetlist, querySongs, querySetlists };

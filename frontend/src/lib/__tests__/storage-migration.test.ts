@@ -25,8 +25,8 @@ describe('localStorage override migration', () => {
   });
 
   it('preserves the other override fields', () => {
-    expect(migrateOverride({ transpose: 2, nashville: true, font: 1, two_col: null }, content))
-      .toEqual({ target_key: 'A', nashville: true, font: 1, two_col: null });
+    expect(migrateOverride({ transpose: 2, nashville: true }, content))
+      .toEqual({ target_key: 'A', nashville: true });
   });
 
   it('falls back to as-written when the key cannot be derived', () => {

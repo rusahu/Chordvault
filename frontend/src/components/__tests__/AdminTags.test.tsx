@@ -69,7 +69,7 @@ it('disables every control in demo mode', async () => {
   render(<AdminTags />);
   expect(await screen.findByPlaceholderText('admin.newTag')).toBeDisabled();
   for (const button of screen.getAllByRole('button')) expect(button).toBeDisabled();
-  expect(screen.getByText('Disabled in demo mode')).toBeInTheDocument();
+  expect(screen.getByText('common.demoDisabled')).toBeInTheDocument();
 });
 
 it('keeps a rename on its tag when another row is removed meanwhile', async () => {

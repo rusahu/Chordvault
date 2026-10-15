@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActionIcon, Box, Button, Divider, Flex, Group, Paper, Stack, Text, TextInput } from '@mantine/core';
-import { modals } from '@mantine/modals';
 import { IconCheck, IconGripVertical, IconPencil, IconTrash, IconX } from '@tabler/icons-react';
 import { useApi } from '../hooks/useApi';
 import { useBusyAction } from '../hooks/useBusyAction';
@@ -8,7 +7,7 @@ import { useDragReorder } from '../hooks/useDragReorder';
 import { useDemo } from '../context/DemoContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
-import { notifyError } from '../lib/errors';
+import { confirmAction, notifyError } from '../lib/errors';
 import { DEFAULT_TAGS } from '../lib/constants';
 import { cleanTagName, tagLabel, tagNameError } from '../lib/tagName';
 import type { AdminTagList } from '../types';
@@ -65,16 +64,12 @@ export function AdminTags() {
 
   const remove = (name: string) => {
     const count = countOf(name);
-    modals.openConfirmModal({
-      children: count ? tReplace('admin.confirmRemoveTag', { name, count }) : tReplace('admin.confirmRemoveUnusedTag', { name }),
-      onConfirm: () => save(names.filter(other => other !== name)),
-    });
+    confirmAction(count ? tReplace('admin.confirmRemoveTag', { name, count }) : tReplace('admin.confirmRemoveUnusedTag', { name }),
+      () => save(names.filter(other => other !== name)));
   };
 
-  const reset = () => modals.openConfirmModal({
-    children: tReplace('admin.confirmResetTags', { count: DEFAULT_TAGS.length }),
-    onConfirm: () => run(() => apiCall<AdminTagList>('DELETE', '/api/admin/tags')),
-  });
+  const reset = () => confirmAction(tReplace('admin.confirmResetTags', { count: DEFAULT_TAGS.length }),
+    () => run(() => apiCall<AdminTagList>('DELETE', '/api/admin/tags')));
 
   if (!data) return null;
 
@@ -86,7 +81,7 @@ export function AdminTags() {
       </Group>
       <Paper withBorder bg="var(--surface)" radius="var(--radius)" py={16} px={20} mb={20}>
         <div className="muted-text">{t('admin.songTagsHelp')}</div>
-        {demoMode && <div className="muted-text" style={{ fontSize: 12, marginTop: 4 }}>Disabled in demo mode</div>}
+        {demoMode && <div className="muted-text" style={{ fontSize: 12, marginTop: 4 }}>{t('common.demoDisabled')}</div>}
         <Stack gap={0} mt={12}>
           {items.map((name, idx) => (
             <Box key={name}>
@@ -139,7 +134,7 @@ export function AdminTags() {
             onChange={e => { setNewName(e.currentTarget.value); setAddError(null); }}
             onKeyDown={e => { if (e.key === 'Enter') add(); }}
           />
-          <Button className="btn" onClick={add} disabled={disabled}>{t('admin.addTag')}</Button>
+          <Button onClick={add} disabled={disabled}>{t('admin.addTag')}</Button>
         </Group>
       </Paper>
     </>

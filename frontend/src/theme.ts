@@ -37,11 +37,11 @@ export const colorSchemeManager = localStorageColorSchemeManager({ key: 'cv_them
 
 const light = {
   bg: '#faf8f4', band: '#efece6', ctrl: '#e8e4dd', ctrlHover: '#ddd8d0', line: '#e1ddd5', lineStrong: '#cfcac1',
-  text: '#1d1b19', muted: '#6c6761', chord: '#8e3f3b', raise: '#fcfbf8', selected: '#1d1b19', selectedText: '#faf8f4',
+  text: '#1d1b19', muted: '#6c6761', chord: '#8e3f3b', raise: '#fcfbf8',
 };
 const dark = {
   bg: '#171615', band: '#211f1e', ctrl: '#2c2a28', ctrlHover: '#363331', line: '#302d2b', lineStrong: '#433f3b',
-  text: '#eeeae4', muted: '#a8a29b', chord: '#dda19b', raise: '#1c1b1a', selected: '#eeeae4', selectedText: '#171615',
+  text: '#eeeae4', muted: '#a8a29b', chord: '#dda19b', raise: '#1c1b1a',
 };
 
 function schemeVariables(c: typeof light): Record<string, string> {
@@ -66,8 +66,6 @@ function schemeVariables(c: typeof light): Record<string, string> {
     '--cv-ctrl-hover': c.ctrlHover,
     '--cv-line-strong': c.lineStrong,
     '--cv-raise': c.raise,
-    '--cv-selected': c.selected,
-    '--cv-selected-text': c.selectedText,
   };
 }
 

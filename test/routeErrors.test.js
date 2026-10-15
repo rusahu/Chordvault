@@ -141,3 +141,45 @@ test('admin disable accepts only a boolean', async t => {
     assert.equal(db.prepare('SELECT disabled FROM users WHERE id = ?').get(target.id).disabled, disabled ? 1 : 0);
   }
 });
+
+test('every song save checks the YouTube link and title length from the song text', async t => {
+  const request = await serve(t, mount);
+  const youtubeError = 'YouTube URL must be a valid youtube.com or youtu.be link';
+  const evil = '{title: Grace}\n{x_language: en}\n{x_youtube: https://evil.example/watch}\n[C]Grace';
+  const longTitle = `{title: ${'T'.repeat(201)}}\n{x_language: en}\n[C]Grace`;
+  const saves = [
+    ['/api/songs', { ...owner, method: 'POST' }],
+    [`/api/songs/${songId}`, { ...owner, method: 'PUT' }],
+    [`/api/songs/${songId}/version`, { ...other, method: 'POST' }],
+    [`/api/songs/${songId}/correction`, { ...other, method: 'POST' }],
+  ];
+  for (const [path, options] of saves) {
+    await expectError(request, path, { ...options, body: { content: evil } }, 400, youtubeError);
+    await expectError(request, path, { ...options, body: { content: longTitle } }, 400, 'Title too long (max 200 characters)');
+  }
+  const imported = await (await request('/api/songs/import', { ...admin, method: 'POST', body: { songs: [{ content: evil }, { content: '{title: Words}\njust words' }] } })).json();
+  assert.deepEqual(imported.errors, [{ index: 0, error: youtubeError }, { index: 1, error: SONG_ERRORS.noChords }]);
+  for (const link of ['https://m.youtube.com/watch?v=abc', 'https://music.youtube.com/watch?v=abc', 'https://youtu.be/abc']) {
+    const ok = await request('/api/songs', { ...owner, method: 'POST', body: { content: `{title: Link}\n{x_language: en}\n{x_youtube: ${link}}\n[C]Grace` } });
+    assert.equal(ok.status, 200, link);
+  }
+});
+
+test('admins can use any song they can view; others cannot use a private song', async t => {
+  const request = await serve(t, mount);
+  const privateId = Number(db.prepare("INSERT INTO songs (user_id,title,content,visibility) VALUES (?,'Hidden',?,'private')").run(owner.id, content).lastInsertRowid);
+  const adminSetlist = Number(db.prepare("INSERT INTO setlists (user_id,name) VALUES (?,'Admin set')").run(admin.id).lastInsertRowid);
+  const otherSetlist = Number(db.prepare("INSERT INTO setlists (user_id,name) VALUES (?,'Other set')").run(other.id).lastInsertRowid);
+  const correction = { content: '{title: Hidden}\n{x_language: en}\n[C]Grace' };
+  assert.equal((await request(`/api/setlists/${adminSetlist}/songs`, { ...admin, method: 'POST', body: { song_id: privateId } })).status, 200);
+  assert.equal((await request(`/api/songs/${privateId}/correction`, { ...admin, method: 'POST', body: correction })).status, 200);
+  assert.equal((await request(`/api/setlists/${otherSetlist}/songs`, { ...other, method: 'POST', body: { song_id: privateId } })).status, 403);
+  assert.equal((await request(`/api/songs/${privateId}/correction`, { ...other, method: 'POST', body: correction })).status, 403);
+});
+
+test('setlists reject an unknown visibility', async t => {
+  const request = await serve(t, mount);
+  const error = 'Visibility must be "public" or "private"';
+  await expectError(request, '/api/setlists', { ...owner, method: 'POST', body: { name: 'Odd', visibility: 'secret' } }, 400, error);
+  await expectError(request, `/api/setlists/${setlistId}`, { ...owner, method: 'PUT', body: { name: 'Odd', visibility: 'secret' } }, 400, error);
+});

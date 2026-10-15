@@ -1,4 +1,4 @@
-import { Alert, Button, Group } from '@mantine/core';
+import { Button, Group } from '@mantine/core';
 import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
 import { SearchField } from '../components/SearchField';
@@ -12,6 +12,7 @@ import { CardGrid } from '../components/CardGrid';
 import { Pagination } from '../components/Pagination';
 import { useSessionField } from '../hooks/useSearchSessionValue';
 import { searchKey } from '../lib/storage';
+import { LoadErrorAlert } from '../components/LoadErrorAlert';
 import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
 import type { LibraryQuery } from '../types/offline';
 import { PageTitle } from '../components/PageTitle';
@@ -26,33 +27,21 @@ export function MySongsView({ navigate }: MySongsViewProps) {
   const { querySongs } = useLibraryRead();
   const [query, setQuery, saveQuery] = useSessionField(searchKey('mysongs', 'query'));
   const fetchOwnSongs = useCallback((filters: LibraryQuery) => querySongs({ ...filters, q: filters.q?.trim(), own: true }), [querySongs]);
-  const { items: songs, page, totalPages, loaded, loadError, load } = usePaginatedSearch({
+  const { items: songs, page, totalPages, loaded, loadError, search, clear, goToPage } = usePaginatedSearch({
     pageKey: searchKey('mysongs', 'page'), listKey: 'songs', fetchPage: fetchOwnSongs,
-    filters: { q: query },
+    filters: { q: query }, setQuery,
     persist: ({ q = '' }) => saveQuery(q),
   });
 
-  const handleClear = () => {
-    setQuery('');
-    load({ q: '' });
-  };
-
-  const doSearch = () => load({ q: query });
-
-  const handlePageChange = (newPage: number) => {
-    load({ q: query }, newPage);
-    window.scrollTo(0, 0);
-  };
-
   return (
     <>
-      {loadError && <Alert color="red" mb="sm" role="alert">{loadError}</Alert>}
+      <LoadErrorAlert message={loadError} />
       <Group justify="space-between" mb="lg">
         <PageTitle className="view-title">{t('songs.mySongs')}</PageTitle>
       </Group>
       <SearchRow>
-        <SearchField label={t('songs.searchPlaceholder')} value={query} onChange={setQuery} onSearch={doSearch} onClear={handleClear} />
-        <Button variant="default" size="sm" onClick={doSearch}>{t('songs.search')}</Button>
+        <SearchField label={t('songs.searchPlaceholder')} value={query} onChange={setQuery} onSearch={search} onClear={clear} />
+        <Button variant="default" size="sm" onClick={search}>{t('songs.search')}</Button>
         <Button size="sm" w={{ base: '100%', xs: 'auto' }} leftSection={<IconPlus size={16} aria-hidden />} disabled={readOnly} onClick={() => navigate('song-edit')}>{t('songs.newSong')}</Button>
       </SearchRow>
       <CardGrid>
@@ -74,7 +63,7 @@ export function MySongsView({ navigate }: MySongsViewProps) {
           ))
         )}
       </CardGrid>
-      <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
+      <Pagination page={page} totalPages={totalPages} onPageChange={goToPage} />
     </>
   );
 }

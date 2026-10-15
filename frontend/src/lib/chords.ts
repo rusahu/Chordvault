@@ -323,11 +323,11 @@ export function renderChordPro(content: string, semitones = 0, nashville = false
     if (!song) throw new Error('parse failed');
     return `<div class="chord-sheet">${new ResponsiveHtmlFormatter().format(song)}</div>`;
   } catch {
-    return `<pre style="font-family:'JetBrains Mono',monospace;font-size:13px;white-space:pre-wrap;color:var(--text)">${escHtml(content)}</pre>`;
+    return `<pre style="font-family:var(--font-mono);font-size:13px;white-space:pre-wrap;color:var(--text)">${escHtml(content)}</pre>`;
   }
 }
 
-export function fixChordAccidentals(song: ChordSheetJS.Song): ChordSheetJS.Song {
+function fixChordAccidentals(song: ChordSheetJS.Song): ChordSheetJS.Song {
   return song.mapChordLyricsPairs((pair) => {
     if (SECTION_LABEL_RE.test(pair.chords)) return pair;
     const chords = normalizeChord(pair.chords);
@@ -341,7 +341,7 @@ export function fixChordAccidentals(song: ChordSheetJS.Song): ChordSheetJS.Song 
   });
 }
 
-export function convertToNashville(song: ChordSheetJS.Song, key: string): ChordSheetJS.Song {
+function convertToNashville(song: ChordSheetJS.Song, key: string): ChordSheetJS.Song {
   return song.mapChordLyricsPairs((pair) => {
     const chords = pair.chords.trim();
     if (!chords || SECTION_LABEL_RE.test(chords)) return pair;
@@ -373,8 +373,6 @@ export function songHasKey(content: string, semitones: number): boolean {
     return !!transposed.key;
   } catch { return false; }
 }
-
-export { escHtml } from './util';
 
 export function clampFontSize(val: number): number {
   return Math.max(-3, Math.min(5, val));
@@ -526,8 +524,8 @@ export function resolveEffectivePreferences(
   if (!entry) return global;
   return {
     nashville: entry._num != null ? !!entry._num : global.nashville,
-    twoCol: entry._twoCol != null ? entry._twoCol : (entry.two_col != null ? !!entry.two_col : global.twoCol),
-    fontSize: entry._font != null ? entry._font : (entry.font != null ? entry.font : global.fontSize),
+    twoCol: entry._twoCol ?? global.twoCol,
+    fontSize: entry._font ?? global.fontSize,
     hideYt: entry._hideYt != null ? entry._hideYt : global.hideYt,
   };
 }

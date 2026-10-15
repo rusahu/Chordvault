@@ -52,21 +52,10 @@
 .search-filters .tag-filter { flex: 1; min-width: 0; max-width: 420px; }
 
 /* -- General Utility Classes -- */
-.muted-hint {
-  color: var(--muted);
-  font-size: 13px;
-  margin-bottom: 12px;
-}
 .muted-text {
   color: var(--muted);
   font-size: 13px;
 }
-.flex-align-center {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 input[type="search"]::-webkit-search-cancel-button {
   -webkit-appearance: none;
   appearance: none;

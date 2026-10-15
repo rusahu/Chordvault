@@ -1,21 +1,14 @@
 import assert from 'node:assert/strict';
-import { chromium } from 'playwright';
-import { DEMO_ACCOUNT, signIn } from './lib/session.mjs';
+import { launchBrowser, newAppContext } from './lib/browser.mjs';
+import { scriptCredentials, signIn } from './lib/session.mjs';
 
 const base = process.env.CV_CHECK_BASE || 'http://localhost:3118';
 const songId = process.env.CV_CHECK_SONG_ID || '2';
-const account = await signIn(base, {
-  username: process.env.CV_CHECK_USER || DEMO_ACCOUNT.username,
-  password: process.env.CV_CHECK_PASSWORD || DEMO_ACCOUNT.password,
-});
-const browser = await chromium.launch({ ...(process.env.CV_CHECK_CHANNEL ? { channel: process.env.CV_CHECK_CHANNEL } : {}) });
+const account = await signIn(base, scriptCredentials());
+const browser = await launchBrowser();
 try {
   for (const theme of ['light', 'dark']) {
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
-    await context.addInitScript(({ account, theme }) => {
-      localStorage.setItem('cv_user', JSON.stringify(account));
-      localStorage.setItem('cv_theme', theme);
-    }, { account, theme });
+    const context = await newAppContext(browser, { account, storage: { cv_theme: theme }, viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
     const page = await context.newPage();
     page.setDefaultTimeout(15000);
     await page.goto(`${base}/#song/${songId}`);

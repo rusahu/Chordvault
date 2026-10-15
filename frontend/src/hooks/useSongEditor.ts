@@ -4,17 +4,6 @@ import { extractDirective, updateDirective, detectFormat } from '../lib/chords';
 import { splitTags } from '../lib/tagName';
 import { SONG_ERRORS } from '../../../shared/song-errors.mjs';
 
-export interface SongEditorState {
-  title: string;
-  artist: string;
-  content: string;
-  youtubeUrl: string;
-  bpm: string;
-  tags: string[];
-  language: string;
-  formatBadge: { text: string; ok: boolean } | null;
-}
-
 export function useSongEditor(initialContent: string = '') {
   const [content, setContent] = useState(initialContent);
   const [title, setTitle] = useState('');

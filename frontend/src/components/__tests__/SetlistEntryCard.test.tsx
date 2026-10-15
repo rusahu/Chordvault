@@ -2,6 +2,8 @@ import { render, fireEvent } from '@testing-library/react';
 import { SetlistEntryCard } from '../SetlistEntryCard';
 import type { SetlistEntry } from '../../types';
 
+vi.mock('../../context/I18nContext', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
+
 const ENTRY: SetlistEntry = {
   entry_id: 1,
   song_id: 9,
@@ -11,8 +13,6 @@ const ENTRY: SetlistEntry = {
   content_override: null,
   target_key: null,
   nashville: 0,
-  font: null,
-  two_col: null,
   bpm: null,
   youtube_url: null,
   language: 'en',
@@ -28,7 +28,6 @@ const meta = (entry: SetlistEntry) => {
       onRemove={vi.fn()}
       onStepKey={vi.fn()}
       onClick={vi.fn()}
-      t={(k) => k}
     />
   );
   return container.querySelector('.song-card-meta')!.textContent;
@@ -54,7 +53,7 @@ describe('SetlistEntryCard private badge', () => {
   it('announces private entries as text', () => {
     const { getByText } = render(
       <SetlistEntryCard entry={{ ...ENTRY, visibility: 'private' } as SetlistEntry} idx={0} isEditable isLocal={false}
-        onRemove={vi.fn()} onStepKey={vi.fn()} onClick={vi.fn()} t={(k) => k} />
+        onRemove={vi.fn()} onStepKey={vi.fn()} onClick={vi.fn()} />
     );
     expect(getByText('Private')).toBeInTheDocument();
   });
@@ -66,7 +65,7 @@ describe('SetlistEntryCard edit song', () => {
     const onClick = vi.fn();
     const { getByRole, queryByText } = render(
       <SetlistEntryCard entry={ENTRY} idx={3} isEditable={false} isLocal={false}
-        onRemove={vi.fn()} onStepKey={vi.fn()} onClick={onClick} onEdit={onEdit} t={(k) => k} />
+        onRemove={vi.fn()} onStepKey={vi.fn()} onClick={onClick} onEdit={onEdit} />
     );
     expect(queryByText('♭')).toBeNull();
     fireEvent.click(getByRole('button', { name: 'songView.edit' }));
@@ -77,7 +76,7 @@ describe('SetlistEntryCard edit song', () => {
   it('has no Edit button without onEdit', () => {
     const { queryByRole } = render(
       <SetlistEntryCard entry={ENTRY} idx={0} isEditable isLocal={false}
-        onRemove={vi.fn()} onStepKey={vi.fn()} onClick={vi.fn()} t={(k) => k} />
+        onRemove={vi.fn()} onStepKey={vi.fn()} onClick={vi.fn()} />
     );
     expect(queryByRole('button', { name: 'songView.edit' })).toBeNull();
   });

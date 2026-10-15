@@ -7,8 +7,6 @@ export interface SetlistEntry {
   content_override: string | null;
   target_key: string | null;
   nashville: number;
-  font: number | null;
-  two_col: number | null;
   bpm: number | null;
   youtube_url: string | null;
   language: string;

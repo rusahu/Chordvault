@@ -5,9 +5,8 @@ import { IconMusic } from '@tabler/icons-react';
 import { Switch, Button, TextInput, Group, Box } from '@mantine/core';
 import { useCopyNotification } from '../hooks/useCopyNotification';
 import { useForm } from '@mantine/form';
-import { modals } from '@mantine/modals';
 import { useState, useEffect, useCallback } from 'react';
-import { notifyError } from '../lib/errors';
+import { confirmAction, notifyError } from '../lib/errors';
 import { stepKey } from '../lib/keys';
 import { entryStartKey } from '../lib/setlistKeys';
 import { useAuth } from '../context/AuthContext';
@@ -99,13 +98,11 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
 
   const deleteSetlist = () => {
     if (isWriteLocked()) return;
-    modals.openConfirmModal({ children: t('setlist.confirmDelete'), onConfirm: async () => {
-      try {
-        await store.remove(id);
-        toast(t('setlist.deleted'), 'success');
-        navigate(isLocal && !user ? 'public-setlists' : 'setlists');
-      } catch (e) { notifyError(e); }
-    } });
+    confirmAction(t('setlist.confirmDelete'), async () => {
+      await store.remove(id);
+      toast(t('setlist.deleted'), 'success');
+      navigate(isLocal && !user ? 'public-setlists' : 'setlists');
+    });
   };
 
   const removeEntry = async (entryId: number | string, idx: number) => {
@@ -162,15 +159,15 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
     <>
       <Box mb="lg">
         <Group justify="space-between" mb="md">
-          <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => navigate(isEditable ? 'setlists' : 'public-setlists')}>&#8592; {t('songView.back')}</Button>
+          <Button variant="default" size="xs" onClick={() => navigate(isEditable ? 'setlists' : 'public-setlists')}>&#8592; {t('songView.back')}</Button>
           <Group gap="xs">
             {setlist.entries.length > 0 && (
-              <Button size="xs" className="btn btn-sm" onClick={() => play(0)}>{t('setlist.play')}</Button>
+              <Button size="xs" onClick={() => play(0)}>{t('setlist.play')}</Button>
             )}
             {!isLocal && setlist.visibility === VISIBILITY.PUBLIC && (
-              <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={copyShareLink}>{t('setlist.share')}</Button>
+              <Button variant="default" size="xs" onClick={copyShareLink}>{t('setlist.share')}</Button>
             )}
-            {isEditable && <Button color="red" size="xs" className="btn btn-danger btn-sm" onClick={deleteSetlist}>{t('admin.delete')}</Button>}
+            {isEditable && <Button color="red" size="xs" onClick={deleteSetlist}>{t('admin.delete')}</Button>}
           </Group>
         </Group>
         <div className="setlist-name-row">
@@ -193,7 +190,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
           ) : !isEditable ? (
             <>
               {setlist.username && <span style={{ fontSize: 13, color: 'var(--muted)' }}>By @{setlist.username}</span>}
-              {setlist.event_date && <span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 8 }}>Date: {setlist.event_date}</span>}
+              {setlist.event_date && <span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 8 }}>{t('setlist.date')}: {setlist.event_date}</span>}
             </>
           ) : (
             <>
@@ -222,7 +219,6 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
               dragProps={isEditable ? dragProps(idx) : undefined}
               handleProps={isEditable ? handleProps(idx) : undefined}
               isDragging={draggedIdx === idx}
-              t={t}
             />
           ))}
         </div>
@@ -230,7 +226,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
 
       {isEditable && (
         <div style={{ marginTop: 20, textAlign: 'center' }}>
-          <Button className="btn" onClick={() => setPickerOpen(true)}>{t('setlist.addSongs')}</Button>
+          <Button onClick={() => setPickerOpen(true)}>{t('setlist.addSongs')}</Button>
         </div>
       )}
 

@@ -16,9 +16,7 @@ function entryWith(targetKey) {
   return Setlist.addSongEntry(setlistId, songId, { targetKey, nashville: 0 }).entry_id;
 }
 
-function update(entryId, updates) {
-  Setlist.updateSongEntry(entryId, setlistId, Setlist.getEntryById(entryId, setlistId), updates);
-}
+const update = (entryId, updates) => Setlist.updateSongEntry(entryId, setlistId, updates);
 
 const keyOf = (entryId) => Setlist.getEntryById(entryId, setlistId).target_key;
 
@@ -66,4 +64,19 @@ test('the entry round-trips through getEntries as target_key', () => {
   const id = entryWith('Bb');
   const row = Setlist.getEntries(setlistId).find((e) => e.entry_id === id);
   assert.equal(row.target_key, 'Bb');
+});
+
+const overrideOf = (entryId) => Setlist.getEntryById(entryId, setlistId).content_override;
+
+test('an absent override is kept, null clears it, a string replaces it', () => {
+  const id = entryWith(null);
+  update(id, { contentOverride: '[C]mine' });
+  update(id, { targetKey: 'D', targetKeyProvided: true });
+  assert.equal(overrideOf(id), '[C]mine');
+  update(id, { contentOverride: null });
+  assert.equal(overrideOf(id), null);
+});
+
+test('updating an entry that is not in the setlist changes nothing', () => {
+  assert.equal(update(999999, { contentOverride: 'x' }).changes, 0);
 });

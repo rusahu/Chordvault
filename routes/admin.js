@@ -6,17 +6,17 @@ const Song = require('../lib/models/song');
 const Invite = require('../lib/models/invite');
 const { requireAuth, requireAdmin, createAccount, setPassword } = require('../lib/auth');
 const { validateObjectBody, requireId, assertValid, validateUserCredentials, validatePassword, validateBoolean, validateTagList } = require('../lib/validation');
-const { AppError, requireFound } = require('../lib/errors');
+const { AppError, requireFound, requireChanged } = require('../lib/errors');
 const { ROLES, SETTING_KEYS } = require('../lib/constants');
+const { manageUserError } = require('../shared/access.mjs');
 const Tags = require('../lib/models/tags');
 const { blockInDemo } = require('../lib/demo');
 
 function resolveAdminTarget(req) {
   const targetId = requireId(req.params.id, 'Invalid user ID');
   const target = requireFound(User.getFullById(targetId), 'User not found');
-  if (target.role === ROLES.OWNER) throw new AppError('Cannot modify the owner', 403);
-  if (target.role === ROLES.ADMIN && req.user.role !== ROLES.OWNER) throw new AppError('Only the owner can manage admins', 403);
-  if (targetId === req.user.id) throw new AppError('Cannot modify yourself', 403);
+  const refusal = manageUserError(req.user, target);
+  if (refusal) throw new AppError(refusal, 403);
   return { targetId, target };
 }
 
@@ -45,9 +45,7 @@ function createAdminRouter() {
     const { role } = req.body;
     const resolved = resolveAdminTarget(req);
 
-    if ((role === ROLES.ADMIN || resolved.target.role === ROLES.ADMIN) && req.user.role !== ROLES.OWNER) {
-      throw new AppError('Only the owner can promote or demote admins', 403);
-    }
+    if (role === ROLES.ADMIN && req.user.role !== ROLES.OWNER) throw new AppError('Only the owner can promote or demote admins', 403);
     if (role !== ROLES.USER && role !== ROLES.ADMIN) throw new AppError('Role must be "user" or "admin"', 400);
 
     User.updateRole(resolved.targetId, role);
@@ -83,8 +81,7 @@ function createAdminRouter() {
   });
 
   router.delete('/admin/songs/:id', (req, res) => {
-    const result = Song.delete(requireId(req.params.id, 'Invalid song ID'));
-    if (!result.changes) throw new AppError('Song not found', 404);
+    requireChanged(Song.delete(requireId(req.params.id, 'Invalid song ID')), 'Song not found');
     res.json({ success: true });
   });
 
@@ -100,8 +97,7 @@ function createAdminRouter() {
   });
 
   router.delete('/admin/invites/:id', blockInDemo, (req, res) => {
-    const result = Invite.deleteUnused(requireId(req.params.id, 'Invalid invite ID'));
-    if (!result.changes) throw new AppError('Invite not found or already used', 404);
+    requireChanged(Invite.deleteUnused(requireId(req.params.id, 'Invalid invite ID')), 'Invite not found or already used');
     res.json({ success: true });
   });
 

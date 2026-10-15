@@ -178,3 +178,27 @@ it('picks the newest, then highest id, version on equal score and orders familie
   expect((await library.querySongs(1, { q: 'amazing' })).songs.map(s => s.id)).toEqual([4]);
   expect((await library.querySongs(1, {})).songs.map(s => s.id)).toEqual([3, 4]);
 });
+
+it('pages like the server: a page past the end is empty and no rows means no pages', async () => {
+  await save();
+  const { songs, page, limit, total, totalPages } = await library.querySongs(1, { page: 5, limit: 1 });
+  expect({ ids: songs.map(s => s.id), page, limit, total, totalPages }).toEqual({ ids: [], page: 5, limit: 1, total: 2, totalPages: 2 });
+  expect(await library.querySetlists(1, { q: 'nothing matches', page: 1, limit: 20 })).toMatchObject({ setlists: [], total: 0, totalPages: 0 });
+});
+
+it('reports a song, its versions or a setlist missing from the download as unavailable', async () => {
+  await save();
+  for (const read of [library.getSong(1, 99), library.getVersions(1, 99), library.getSetlist(1, 99)]) {
+    await expect(read).rejects.toThrow('not available in your downloaded library');
+  }
+});
+
+it('ranks a pinyin hit above short words that only appear inside newer lyrics', async () => {
+  const data = snapshot();
+  const noise = { ...data.songs[0], id: 4, familyId: 4, title: 'Morning Praise', content: '[C]flexible', updated_at: '2026-01-09' };
+  data.songs.push(noise);
+  const { content: _, ...meta } = noise;
+  data.catalog.push({ ...meta, search: { title: ['morning praise'], artist: ['anonymous'], lyrics: ['flexible'], pinyin: 'morningpraiseanonymous' } });
+  await save(data);
+  expect((await library.querySongs(1, { q: 'xi le' })).songs.map(s => s.id)).toEqual([3, 4]);
+});

@@ -6,7 +6,7 @@ interface AboutViewProps {
 export function AboutView({ navigate }: AboutViewProps) {
   return (
     <Box maw={600} mx="auto">
-      <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => navigate('browse')} mb="md">&#8592; Back</Button>
+      <Button variant="default" size="xs" onClick={() => navigate('browse')} mb="md">&#8592; Back</Button>
       <Title order={1} size={36} c="var(--cv-brand)" ta="center">&#9833; ChordVault</Title>
       <Text ta="center" c="dimmed" mb="xl">Your chord sheet library</Text>
 
@@ -41,7 +41,7 @@ export function AboutView({ navigate }: AboutViewProps) {
       </Stack>
 
       <Group justify="center" mt="xl">
-        <Button className="btn" onClick={() => navigate('auth')}>Sign in</Button>
+        <Button onClick={() => navigate('auth')}>Sign in</Button>
       </Group>
     </Box>
   );

@@ -1,4 +1,4 @@
-import { Alert, Button, TextInput, Group } from '@mantine/core';
+import { Button, TextInput, Group } from '@mantine/core';
 import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
 import { SearchField } from '../components/SearchField';
@@ -14,8 +14,8 @@ import { SetlistCard } from '../components/SetlistCard';
 import { EmptyState } from '../components/EmptyState';
 import { CardGrid } from '../components/CardGrid';
 import { Pagination } from '../components/Pagination';
-import { useSessionField, useSessionToggle } from '../hooks/useSearchSessionValue';
-import { searchKey } from '../lib/storage';
+import { useSetlistSearchFilters } from '../hooks/useSearchSessionValue';
+import { LoadErrorAlert } from '../components/LoadErrorAlert';
 import { FilterToggle } from '../components/FilterToggle';
 import { DateRangeFilter, type DateRange } from '../components/DateRangeFilter';
 import { SetlistTabs } from '../components/SetlistTabs';
@@ -39,16 +39,10 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
 
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
-  const [query, setQuery, saveQuery] = useSessionField(searchKey('setlists', 'query'));
-  const [dateFrom, setDateFrom, saveDateFrom] = useSessionField(searchKey('setlists', 'date_from'));
-  const [dateTo, setDateTo, saveDateTo] = useSessionField(searchKey('setlists', 'date_to'));
-  const [showDates, toggleDates] = useSessionToggle(searchKey('setlists', 'show_dates'));
+  const { query, setQuery, dateFrom, dateTo, setDates, showDates, toggleDates, search: searchOptions } = useSetlistSearchFilters('setlists');
   const nameRef = useRef<HTMLInputElement>(null);
-  const { items: setlists, page, totalPages, loaded, loadError, load } = usePaginatedSearch({
-    pageKey: searchKey('setlists', 'page'), listKey: 'setlists', fetchPage: querySetlists,
-    filters: { q: query, dateFrom, dateTo },
-    persist: ({ q = '', dateFrom = '', dateTo = '' }) => { saveQuery(q); saveDateFrom(dateFrom); saveDateTo(dateTo); },
-    enabled: activeTab === 'cloud',
+  const { items: setlists, page, totalPages, loaded, loadError, search, refine, clear, goToPage } = usePaginatedSearch({
+    ...searchOptions, listKey: 'setlists', fetchPage: querySetlists, enabled: activeTab === 'cloud',
   });
 
   useEffect(() => { if (showNew && nameRef.current) nameRef.current.focus(); }, [showNew]);
@@ -64,33 +58,7 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
     } catch (e) { notifyError(e); }
   };
 
-  const handleClear = () => {
-    setQuery('');
-    if (activeTab === 'local') {
-      saveQuery('');
-    } else {
-      load({ q: '', dateFrom, dateTo });
-    }
-  };
-
-  const handleSearch = () => {
-    if (activeTab === 'cloud') {
-      load({ q: query, dateFrom, dateTo });
-    }
-  };
-
-  const handlePageChange = (newPage: number) => {
-    if (activeTab === 'cloud') {
-      load({ q: query, dateFrom, dateTo }, newPage);
-      window.scrollTo(0, 0);
-    }
-  };
-
-  const changeDates = (range: DateRange) => {
-    setDateFrom(range.dateFrom);
-    setDateTo(range.dateTo);
-    load({ q: query, ...range });
-  };
+  const changeDates = (range: DateRange) => { setDates(range); refine(range); };
 
   const localSetlistsToRender = query.trim()
     ? store.setlists.filter(sl => sl.name.toLowerCase().includes(query.toLowerCase()))
@@ -98,10 +66,10 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
 
   return (
     <>
-      {loadError && <Alert color="red" mb="sm" role="alert">{loadError}</Alert>}
+      <LoadErrorAlert message={loadError} />
       <Group justify="space-between" mb="lg">
         <PageTitle className="view-title">{t('setlist.title')}</PageTitle>
-        <Button disabled={readOnly} size="xs" className="btn btn-sm" leftSection={<IconPlus size={14} aria-hidden />} onClick={() => setShowNew(true)}>{t('setlist.newSetlist')}</Button>
+        <Button disabled={readOnly} size="xs" leftSection={<IconPlus size={14} aria-hidden />} onClick={() => setShowNew(true)}>{t('setlist.newSetlist')}</Button>
       </Group>
       <SetlistTabs value="mine" navigate={navigate} />
       {!user && (
@@ -121,17 +89,17 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') create(); }}
           />
-          <Button size="xs" className="btn btn-sm" onClick={create}>{t('setlist.create')}</Button>
-          <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => setShowNew(false)}>{t('songEdit.cancel')}</Button>
+          <Button size="xs" onClick={create}>{t('setlist.create')}</Button>
+          <Button variant="default" size="xs" onClick={() => setShowNew(false)}>{t('songEdit.cancel')}</Button>
         </SearchRow>
       )}
       <SearchRow>
-        <SearchField label={t('setlist.searchPlaceholder')} value={query} onSearch={handleSearch} onClear={handleClear}
+        <SearchField label={t('setlist.searchPlaceholder')} value={query} onSearch={search} onClear={clear}
           onChange={(val) => {
             setQuery(val);
-            if (activeTab === 'local') saveQuery(val);
+            if (activeTab === 'local') refine({ q: val });
           }} />
-        <Button variant="default" size="sm" onClick={handleSearch}>{t('songs.search')}</Button>
+        <Button variant="default" size="sm" onClick={search}>{t('songs.search')}</Button>
         {activeTab === 'cloud' && (
           <FilterToggle label="Filter by date" icon={<IconCalendar size={18} aria-hidden />} pressed={showDates} onToggle={toggleDates} />
         )}
@@ -169,7 +137,7 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
         )}
       </CardGrid>
       {activeTab === 'cloud' && (
-        <Pagination page={page} totalPages={totalPages} onPageChange={handlePageChange} />
+        <Pagination page={page} totalPages={totalPages} onPageChange={goToPage} />
       )}
     </>
   );

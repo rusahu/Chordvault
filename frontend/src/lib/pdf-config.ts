@@ -1,7 +1,7 @@
 import { PdfFormatter } from 'chordsheetjs/pdf';
 import type { jsPDF } from 'jspdf';
 
-export type PdfConfig = NonNullable<ConstructorParameters<typeof PdfFormatter>[0]>;
+type PdfConfig = NonNullable<ConstructorParameters<typeof PdfFormatter>[0]>;
 
 type FontSpec = { name?: string; size?: number; color?: string | number };
 type StyledItem = { style?: FontSpec };

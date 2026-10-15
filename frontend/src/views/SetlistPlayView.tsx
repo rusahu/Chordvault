@@ -29,17 +29,15 @@ import { songEditFromSetlist } from '../lib/songEditRoute';
 import { prepareSongForSave } from '../lib/songSubmit';
 import { notifyError } from '../lib/errors';
 import { usePdfExport } from '../hooks/usePdfExport';
-import type { Setlist } from '../types';
 
 interface SetlistPlayViewProps {
   setlistId: number | string;
   isLocal?: boolean;
-  initialSetlist?: Setlist;
   initialIndex?: number;
   navigate: (view: string, params?: Record<string, string>) => void;
 }
 
-export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, initialIndex, navigate }: SetlistPlayViewProps) {
+export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialIndex, navigate }: SetlistPlayViewProps) {
   const apiCall = useApi();
   const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -58,7 +56,6 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
   const { loadError, setlist, entry, index, total, prev, next, exit, updateEntry, isModified, saveOnline, saveLocal } = useSetlistPlayer({
     setlistId,
     isLocal: _isLocal,
-    initialSetlist,
     initialIndex,
     navigate,
     onNavigate: () => {
@@ -270,9 +267,9 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
             autoFocus
           />
           <div className="setlist-editor-actions">
-            <Button size="xs" className="btn btn-sm" onClick={saveEditorToSetlist}>{t('setlist.saveToSetlist')}</Button>
-            <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={saveEditorAsVersion}>{t('setlist.saveAsVersion')}</Button>
-            <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => setEditing(false)}>{t('songEdit.cancel')}</Button>
+            <Button size="xs" onClick={saveEditorToSetlist}>{t('setlist.saveToSetlist')}</Button>
+            <Button variant="default" size="xs" onClick={saveEditorAsVersion}>{t('setlist.saveAsVersion')}</Button>
+            <Button variant="default" size="xs" onClick={() => setEditing(false)}>{t('songEdit.cancel')}</Button>
           </div>
         </div>
       ) : (

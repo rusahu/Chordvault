@@ -1,7 +1,6 @@
-import { createRequire } from 'node:module';
+import { launchBrowser, newAppContext } from './lib/browser.mjs';
 import { signIn } from './lib/session.mjs';
 
-const { chromium } = createRequire(new URL('../frontend/package.json', import.meta.url))('playwright');
 const base = process.env.CV_CHECK_BASE || 'http://localhost:5173';
 const setlistId = process.env.CV_CHECK_SETLIST_ID;
 if (!setlistId) throw new Error('Set CV_CHECK_SETLIST_ID to a local setlist containing a long-line English song, a Chinese song and a long bilingual title.');
@@ -70,13 +69,12 @@ function inspect() {
   };
 }
 
-const browser = await chromium.launch({ channel: process.env.CV_CHECK_CHANNEL });
+const browser = await launchBrowser();
 let failures = 0;
 for (const scheme of ['light', 'dark']) {
   for (const vp of viewports) {
     for (const index of [0, 1, 2]) {
-      const context = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, isMobile: vp.mobile, hasTouch: vp.mobile });
-      await context.addInitScript((theme) => localStorage.setItem('cv_theme', theme), scheme);
+      const context = await newAppContext(browser, { storage: { cv_theme: scheme }, viewport: { width: vp.width, height: vp.height }, isMobile: vp.mobile, hasTouch: vp.mobile });
       const page = await context.newPage();
       await page.goto(`${base}/#setlist/${setlistId}/play/${index}`);
       await page.locator('.chord-sheet .lyrics:not(:empty)').first().waitFor();
@@ -174,8 +172,7 @@ if (user && password && songId) {
   const pages = [['songs', '', null], ['setlists', '', 'Setlists'], ['song', `#song/${songId}`, null], ['setlist', `#setlist/${setlistId}`, null]];
   for (const width of [360, 384, 412, 768]) {
     for (const [name, route, click] of pages) {
-      const context = await browser.newContext({ viewport: { width, height: 800 }, isMobile: true, hasTouch: true });
-      await context.addInitScript((acc) => localStorage.setItem('cv_user', JSON.stringify(acc)), account);
+      const context = await newAppContext(browser, { account, viewport: { width, height: 800 }, isMobile: true, hasTouch: true });
       const page = await context.newPage();
       await page.goto(`${base}/${route}`);
       if (click) await page.getByRole('button', { name: click, exact: true }).click();
@@ -225,8 +222,7 @@ if (user && password && songId) {
   // Editor action bar: pinned to the top after scrolling while the nav scrolls away, fits, 44px targets on touch.
   for (const width of [390, 768, 1280]) {
     const touch = width < 1024;
-    const context = await browser.newContext({ viewport: { width, height: 700 }, isMobile: touch, hasTouch: touch });
-    await context.addInitScript((acc) => localStorage.setItem('cv_user', JSON.stringify(acc)), account);
+    const context = await newAppContext(browser, { account, viewport: { width, height: 700 }, isMobile: touch, hasTouch: touch });
     const page = await context.newPage();
     await page.goto(`${base}/#song/${songId}`);
     await page.locator('.chord-sheet .lyrics:not(:empty)').first().waitFor();

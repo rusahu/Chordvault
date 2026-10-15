@@ -15,7 +15,6 @@ import type { Setlist, SetlistEntry } from '../types';
 interface UseSetlistPlayerOptions {
   setlistId: number | string;
   isLocal?: boolean;
-  initialSetlist?: Setlist;
   initialIndex?: number;
   navigate: (view: string, params?: Record<string, string>) => void;
   onNavigate?: () => void;
@@ -42,7 +41,7 @@ function applyStoredOverrides(setlistId: number | string, entries: SetlistEntry[
     const storedKey = raw && ('target_key' in raw || 'transpose' in raw);
     const targetKey = (storedKey ? ov!.target_key : en.target_key) ?? null;
     targetKeys[String(en.entry_id)] = targetKey;
-    return { ...en, target_key: targetKey, font: null, two_col: null, nashville: 0 };
+    return { ...en, target_key: targetKey, nashville: 0 };
   });
   return { entries: merged, targetKeys };
 }
@@ -50,7 +49,6 @@ function applyStoredOverrides(setlistId: number | string, entries: SetlistEntry[
 export function useSetlistPlayer({
   setlistId,
   isLocal,
-  initialSetlist,
   initialIndex,
   navigate,
   onNavigate,
@@ -62,42 +60,32 @@ export function useSetlistPlayer({
   const { user } = useAuth();
 
   const [loadError, setLoadError] = useState('');
-  const [setlist, setSetlist] = useState<Setlist | null>(initialSetlist || null);
+  const [setlist, setSetlist] = useState<Setlist | null>(null);
   const [index, setIndex] = useState(initialIndex || 0);
 
   const [savedTargetKeys, setSavedTargetKeys] = useState<Record<string, string | null>>({});
 
   useEffect(() => {
     if (isLocal) {
-      if (initialSetlist) {
-        const { entries, targetKeys } = applyStoredOverrides(initialSetlist.id, initialSetlist.entries);
-        setSetlist({
-          ...initialSetlist,
-          entries,
-          isLocal: true,
-        });
-        setSavedTargetKeys(targetKeys);
-      } else {
-        // Fallback: load local setlist from storage and fetch song contents
-        import('../lib/storage').then(({ getLocalSetlists }) => {
-          const sl = getLocalSetlists().find((s) => s.id === setlistId);
-          if (!sl) {
-            toast('Local setlist not found', 'error');
+      // Load the local setlist from storage and fetch song contents
+      import('../lib/storage').then(({ getLocalSetlists }) => {
+        const sl = getLocalSetlists().find((s) => s.id === setlistId);
+        if (!sl) {
+          toast('Local setlist not found', 'error');
+          navigate('setlists');
+          return;
+        }
+        enrichLocalSetlistSongs(sl.entries, getSong)
+          .then((entries) => {
+            const merged = applyStoredOverrides(sl.id, entries);
+            setSetlist(localSetlistToSetlist(sl, merged.entries));
+            setSavedTargetKeys(merged.targetKeys);
+          })
+          .catch((err) => {
+            notifyError(err);
             navigate('setlists');
-            return;
-          }
-          enrichLocalSetlistSongs(sl.entries, getSong)
-            .then((entries) => {
-              const merged = applyStoredOverrides(sl.id, entries);
-              setSetlist(localSetlistToSetlist(sl, merged.entries));
-              setSavedTargetKeys(merged.targetKeys);
-            })
-            .catch((err) => {
-              notifyError(err);
-              navigate('setlists');
-            });
-        });
-      }
+          });
+      });
       return;
     }
 
@@ -117,7 +105,7 @@ export function useSetlistPlayer({
     };
 
     loadSetlist();
-  }, [setlistId, getSong, getSetlistForViewer, isLocal, initialSetlist, navigate]);
+  }, [setlistId, getSong, getSetlistForViewer, isLocal, navigate]);
 
   const entry: SetlistEntry | null = setlist?.entries[index] || null;
   const total = setlist?.entries.length || 0;

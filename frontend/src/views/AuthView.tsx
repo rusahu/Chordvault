@@ -102,11 +102,11 @@ export function AuthView({ navigate }: AuthViewProps) {
         <TextInput mb={14} label={<>{t('auth.username')}</>} type="text" ref={userRef} id="auth-user" {...form.getInputProps('username')} placeholder={t('auth.usernamePlaceholder')} autoComplete="username" />
         <PasswordInput mb={14} label={<>{t('auth.password')}</>} type="password" {...form.getInputProps('password')} placeholder="••••••••" autoComplete={tab === 'login' ? 'current-password' : 'new-password'} />
         {config.turnstileSiteKey && tab !== 'login' && <Box ref={turnstileRef} mt={8} />}
-        <Button fullWidth className="btn btn-full" id="auth-submit" mt={8} type="submit" loading={submitting} disabled={submitting}>
+        <Button fullWidth id="auth-submit" mt={8} type="submit" loading={submitting} disabled={submitting}>
           {tab === 'invite' ? t('auth.createAccount') : (tab === 'login' || !showTabs ? t('auth.signIn') : t('auth.createAccount'))}
         </Button>
         {showInviteLink && (
-          <Button variant="default" fullWidth className="btn btn-ghost btn-full" mt={10} onClick={() => setTab('invite')}>{t('auth.haveInvite')}</Button>
+          <Button variant="default" fullWidth mt={10} onClick={() => setTab('invite')}>{t('auth.haveInvite')}</Button>
         )}
         {tab === 'invite' && (
           <Box ta="center" mt={12}>

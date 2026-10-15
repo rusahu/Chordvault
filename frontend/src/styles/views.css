@@ -166,7 +166,6 @@
   padding: 28px 48px 48px;
   border-radius: 0;
   border: none;
-  box-shadow: none;
   background: transparent;
 }
 
@@ -200,9 +199,6 @@
 
 /* -- Responsive --------------------------─ */
 @media (max-width: 900px) {
-  /* Hide side navigation zones on mobile and portrait tablets (Swipe handles it) */
-  .nav-zone { display: none; }
-
   #app { padding: 16px 12px 100px 12px; overflow-x: hidden; overflow-x: clip; }
   .transpose-bar { margin: 8px 0; padding: 6px 8px; gap: 4px; }
   }
@@ -221,12 +217,6 @@
   margin-top: 24px;
   margin-bottom: 12px;
 }
-.pagination-info {
-  font-family: var(--font-sans);
-  font-size: 14px;
-  color: var(--muted);
-}
-
 
 /* Mantine's md controls are 42px; touch screens need 44. */
 @media (pointer: coarse) {

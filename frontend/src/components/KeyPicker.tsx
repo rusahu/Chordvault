@@ -4,7 +4,6 @@ import { normalizeKey, ALL_KEYS, ALL_KEYS_MINOR } from '../lib/keys';
 interface KeyPickerProps {
   currentKey: string;
   onPickKey: (key: string) => void;
-  visible: boolean;
   isModified?: boolean;
   onSaveOnline?: () => void;
   onSaveLocal?: () => void;
@@ -13,13 +12,10 @@ interface KeyPickerProps {
 export function KeyPicker({
   currentKey,
   onPickKey,
-  visible,
   isModified,
   onSaveOnline,
   onSaveLocal
 }: KeyPickerProps) {
-  if (!visible) return null;
-
   const norm = normalizeKey(currentKey);
   const isMinor = norm && norm.endsWith('m') && norm.length > 1;
   const keys = isMinor ? ALL_KEYS_MINOR : ALL_KEYS;
@@ -46,12 +42,12 @@ export function KeyPicker({
           <Text size="sm">Save this key?</Text>
           <Group gap="xs">
             {onSaveOnline && (
-              <Button size="xs" className="btn btn-sm btn-save-online" onClick={onSaveOnline}>
+              <Button size="xs" onClick={onSaveOnline}>
                 SAVE (Online)
               </Button>
             )}
             {onSaveLocal && (
-              <Button variant="default" size="xs" className="btn btn-sm btn-ghost" onClick={onSaveLocal}>
+              <Button variant="default" size="xs" onClick={onSaveLocal}>
                 Save (Local)
               </Button>
             )}

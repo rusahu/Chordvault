@@ -1,6 +1,7 @@
 import { useOffline } from '../context/OfflineContext';
 import { ActionIcon, Button, Group, Menu, Stack, Text, Title } from '@mantine/core';
 import { IconArrowLeft, IconChevronDown, IconTrash } from '@tabler/icons-react';
+import { useI18n } from '../context/I18nContext';
 
 interface EditorActionBarProps {
   title: string;
@@ -10,10 +11,10 @@ interface EditorActionBarProps {
   onSave: () => void;
   onSaveAsVersion?: () => void;
   onDelete?: () => void;
-  t: (key: string) => string;
 }
 
-export function EditorActionBar({ title, dirty, onLeave, saveLabel, onSave, onSaveAsVersion, onDelete, t }: EditorActionBarProps) {
+export function EditorActionBar({ title, dirty, onLeave, saveLabel, onSave, onSaveAsVersion, onDelete }: EditorActionBarProps) {
+  const { t } = useI18n();
   const { readOnly } = useOffline();
   const hasMenu = !!(onSaveAsVersion || onDelete);
   return (

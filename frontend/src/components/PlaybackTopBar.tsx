@@ -6,6 +6,7 @@ import type { PlaybackLayout } from '../hooks/usePlaybackLayout';
 import type { PlaybackNav } from './PlaybackDock';
 import { SetlistDefaultsButton } from './SetlistDefaultsButton';
 import { Toolbar, type ToolbarProps } from './Toolbar';
+import { useI18n } from '../context/I18nContext';
 
 interface PlaybackTopBarProps {
   layout: PlaybackLayout;
@@ -31,11 +32,12 @@ function TitleBlock({ title, position, layout, bpm }: { title: string; position:
 }
 
 export function PlaybackTopBar({ layout, title, position, nav, onExit, toolbar, more, bpm, youtubeUrl, onEdit }: PlaybackTopBarProps) {
+  const { t } = useI18n();
   const roomy = useMediaQuery('(min-width: 1200px)', true, { getInitialValueInEffect: false });
   if (layout === 'desktop') {
     return (
       <Group component="header" className="playback-topbar" data-no-swipe gap="xs" wrap="nowrap" mih={72} px={20} bg="var(--cv-band)">
-        <Button variant="subtle" className="btn-exit" leftSection={<IconArrowLeft size={20} aria-hidden />} onClick={onExit}>Exit</Button>
+        <Button variant="subtle" className="btn-exit" leftSection={<IconArrowLeft size={20} aria-hidden />} onClick={onExit}>{t('setlist.exit')}</Button>
         <Divider orientation="vertical" my={14} />
         <ActionIcon size="input-md" aria-label="Previous Song" disabled={!nav.hasPrev} onClick={nav.onPrev}><IconChevronLeft size={22} aria-hidden /></ActionIcon>
         <TitleBlock title={title} position={position} layout={layout} bpm={bpm} />

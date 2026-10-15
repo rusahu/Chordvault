@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { Nav } from '../Nav';
 
+vi.mock('../../context/I18nContext', () => import('../../test/i18nMock'));
+
 const auth = vi.hoisted(() => ({ user: null as null | { id: number; username: string }, isAdmin: false }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ ...auth, logout: vi.fn() }) }));
 
