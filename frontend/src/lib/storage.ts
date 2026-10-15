@@ -32,13 +32,11 @@ interface SetlistOverride {
   target_key?: string | null;
   transpose?: number;          // legacy, read-only
   nashville?: boolean;
-  font?: number;
-  two_col?: number | null;
 }
 
 /**
  * Gets personal key/Nashville overrides for a specific setlist.
- * Format: { [entryId]: { target_key: string | null, nashville: boolean, font: number, two_col: boolean } }
+ * Format: { [entryId]: { target_key: string | null, nashville: boolean } }
  * May also contain legacy { transpose: number, ... } records; pass through
  * migrateOverride() before use.
  */

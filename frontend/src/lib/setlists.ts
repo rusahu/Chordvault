@@ -21,8 +21,6 @@ export function formatLocalEntry(e: LocalSetlistEntry, idx: number): SetlistEntr
     nashville: e.nashville || 0,
     content: '',
     content_override: null,
-    font: null,
-    two_col: null,
     bpm: null,
     youtube_url: null,
     language: 'en',
@@ -49,8 +47,6 @@ export function enrichLocalEntry(e: LocalSetlistEntry, song: Song | null, idx: n
     // migrateOverride applies to localStorage overrides.
     target_key: e.target_key !== undefined ? e.target_key : legacyTransposeToTargetKey(song.content, e.transpose),
     nashville: e.nashville ?? 0,
-    font: null,
-    two_col: null,
     bpm: song.bpm || null,
     youtube_url: song.youtube_url || null,
     language: song.language || 'en',

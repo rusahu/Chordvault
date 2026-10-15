@@ -13,8 +13,6 @@ const ENTRY: SetlistEntry = {
   content_override: null,
   target_key: null,
   nashville: 0,
-  font: null,
-  two_col: null,
   bpm: null,
   youtube_url: null,
   language: 'en',
