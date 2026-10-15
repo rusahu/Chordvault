@@ -10,11 +10,12 @@ export interface PaginatedSearchOptions<T, K extends string> {
   filters: LibraryQuery;
   fetchPage: (query: LibraryQuery) => Promise<LibraryPage<T, K>>;
   persist: (filters: LibraryQuery) => void;
+  setQuery?: (query: string) => void;
   enabled?: boolean;
 }
 
 /** List state shared by the search views. A new `fetchPage` reloads with the latest filters; typing never does. */
-export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filters, fetchPage, persist, enabled = true }: PaginatedSearchOptions<T, K>) {
+export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filters, fetchPage, persist, setQuery, enabled = true }: PaginatedSearchOptions<T, K>) {
   const [savedPage, savePage] = useSearchSessionValue(pageKey, '1');
   const [items, setItems] = useState<T[]>([]);
   const [page, setPage] = useState(() => searchPage(savedPage));
@@ -52,5 +53,19 @@ export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filt
   });
   useEffect(() => { loadCurrent(load, enabled); }, [load, enabled]);
 
-  return { items, page, totalPages, loaded, loadError, load };
+  // A disabled search (e.g. the local setlists tab) only remembers the filters.
+  const apply = (next: LibraryQuery) => {
+    if (enabled) void load(next);
+    else latestPersist.current(next);
+  };
+  const search = () => apply(filters);
+  const refine = (patch: LibraryQuery) => apply({ ...filters, ...patch });
+  const clear = () => { setQuery?.(''); refine({ q: '' }); };
+  const goToPage = (target: number) => {
+    if (!enabled) return;
+    void load(filters, target);
+    window.scrollTo(0, 0);
+  };
+
+  return { items, page, totalPages, loaded, loadError, search, refine, clear, goToPage };
 }
