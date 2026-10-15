@@ -22,6 +22,12 @@ async function assertTurnstile(token) {
   throw new AppError('Bot verification failed. Please try again.', 400);
 }
 
+function assertCanRegister(userCount) {
+  if (userCount === 0) return;
+  if (DEMO_MODE) throw new AppError('Disabled in demo mode', 403);
+  if (!isRegistrationAllowed()) throw new AppError('Registration is currently disabled', 403);
+}
+
 function createAuthRouter() {
   const router = express.Router();
   router.use(validateObjectBody);
@@ -33,16 +39,12 @@ function createAuthRouter() {
   });
 
   router.post('/register', async (req, res) => {
-    const userCount = User.count().count;
-    if (DEMO_MODE && userCount > 0) throw new AppError('Disabled in demo mode', 403);
-    if (!isRegistrationAllowed() && userCount > 0) throw new AppError('Registration is currently disabled', 403);
-
+    assertCanRegister(User.count().count);
     const { username, password, turnstile_token } = req.body;
     await assertTurnstile(turnstile_token);
     assertValid(validateUserCredentials(username, password));
-    const role = userCount === 0 ? ROLES.OWNER : ROLES.USER;
-    const result = await createAccount(username, password, (name, hash) => User.create(name, hash, role));
-    res.json(sessionResponse({ id: result.lastInsertRowid, username: username.trim(), role }));
+    const { id, role } = await createAccount(username, password, (name, hash) => User.register(name, hash, assertCanRegister));
+    res.json(sessionResponse({ id, username: username.trim(), role }));
   });
 
   router.post('/login', async (req, res) => {
