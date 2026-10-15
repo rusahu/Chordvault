@@ -7,7 +7,7 @@ import { modals } from '@mantine/modals';
 import { useState, useEffect, useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useBusyAction } from '../hooks/useBusyAction';
-import { notifyError } from '../lib/errors';
+import { confirmAction, notifyError } from '../lib/errors';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
@@ -83,27 +83,27 @@ export function AdminView({ navigate }: AdminViewProps) {
 
   const setRole = (userId: number, role: string) => {
     const action = role === ROLES.ADMIN ? t('admin.confirmPromote') : t('admin.confirmDemote');
-    modals.openConfirmModal({ children: action, onConfirm: () => runAction(async () => {
+    confirmAction(action, () => runAction(async () => {
       await apiCall('PUT', `/api/admin/users/${userId}/role`, { role });
       toast(role === ROLES.ADMIN ? t('admin.userPromoted') : t('admin.userDemoted'), 'success');
       await load();
-    }) });
+    }));
   };
 
   const setDisabled = (userId: number, disabled: boolean) => {
-    modals.openConfirmModal({ children: disabled ? t('admin.confirmDisable') : t('admin.confirmEnable'), onConfirm: () => runAction(async () => {
+    confirmAction(disabled ? t('admin.confirmDisable') : t('admin.confirmEnable'), () => runAction(async () => {
       await apiCall('PUT', `/api/admin/users/${userId}/disabled`, { disabled });
       toast(disabled ? t('admin.userDisabled') : t('admin.userEnabled'), 'success');
       await load();
-    }) });
+    }));
   };
 
   const deleteUser = (userId: number, username: string) => {
-    modals.openConfirmModal({ children: tReplace('admin.confirmDeleteUser', { username }), onConfirm: () => runAction(async () => {
+    confirmAction(tReplace('admin.confirmDeleteUser', { username }), () => runAction(async () => {
       await apiCall('DELETE', `/api/admin/users/${userId}`);
       toast(t('admin.userDeleted'), 'success');
       await load();
-    }) });
+    }));
   };
 
   const resetPassword = (userId: number, username: string) => modals.openContextModal({ modal: 'resetPassword', title: tReplace('admin.resetPasswordPrompt', { username }), innerProps: { onSubmit: (newPassword: string) => runAction(async () => {
@@ -112,11 +112,11 @@ export function AdminView({ navigate }: AdminViewProps) {
   }) } });
 
   const deleteSong = (songId: number, title: string) => {
-    modals.openConfirmModal({ children: tReplace('admin.confirmDeleteSong', { title }), onConfirm: () => runAction(async () => {
+    confirmAction(tReplace('admin.confirmDeleteSong', { title }), () => runAction(async () => {
       await apiCall('DELETE', `/api/admin/songs/${songId}`);
       toast(t('admin.songDeleted'), 'success');
       await load();
-    }) });
+    }));
   };
 
   if (!stats) return <Loading />;

@@ -5,9 +5,8 @@ import { IconMusic } from '@tabler/icons-react';
 import { Switch, Button, TextInput, Group, Box } from '@mantine/core';
 import { useCopyNotification } from '../hooks/useCopyNotification';
 import { useForm } from '@mantine/form';
-import { modals } from '@mantine/modals';
 import { useState, useEffect, useCallback } from 'react';
-import { notifyError } from '../lib/errors';
+import { confirmAction, notifyError } from '../lib/errors';
 import { stepKey } from '../lib/keys';
 import { entryStartKey } from '../lib/setlistKeys';
 import { useAuth } from '../context/AuthContext';
@@ -99,13 +98,11 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
 
   const deleteSetlist = () => {
     if (isWriteLocked()) return;
-    modals.openConfirmModal({ children: t('setlist.confirmDelete'), onConfirm: async () => {
-      try {
-        await store.remove(id);
-        toast(t('setlist.deleted'), 'success');
-        navigate(isLocal && !user ? 'public-setlists' : 'setlists');
-      } catch (e) { notifyError(e); }
-    } });
+    confirmAction(t('setlist.confirmDelete'), async () => {
+      await store.remove(id);
+      toast(t('setlist.deleted'), 'success');
+      navigate(isLocal && !user ? 'public-setlists' : 'setlists');
+    });
   };
 
   const removeEntry = async (entryId: number | string, idx: number) => {

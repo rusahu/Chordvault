@@ -1,13 +1,12 @@
 import { useOffline, useOfflineActivity } from '../context/OfflineContext';
 import { useDisclosure } from '@mantine/hooks';
 import { Badge, Tabs, Switch, Button, TextInput, useComputedColorScheme, SimpleGrid, Stack, Group, Text, Box, Input } from '@mantine/core';
-import { modals } from '@mantine/modals';
 import { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
-import { notifyError } from '../lib/errors';
+import { confirmAction, notifyError } from '../lib/errors';
 import { useSongEditor } from '../hooks/useSongEditor';
 import { TagPicker } from '../components/TagPicker';
 import { LanguagePicker } from '../components/LanguagePicker';
@@ -103,17 +102,14 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
     } catch (e) { notifyError(e); }
   };
 
-  const deleteSong = async () => {
+  const deleteSong = () => {
     if (!song) return;
-modals.openConfirmModal({ children: t('songEdit.confirmDelete'), onConfirm: async () => {
-    try {
+    confirmAction(t('songEdit.confirmDelete'), async () => {
       await apiCall('DELETE', `/api/songs/${song.id}`);
       toast(t('songEdit.deleted'));
       leave('my-songs');
-    } catch (e) { notifyError(e); }
-
-} });
-};
+    });
+  };
 
   const cancel = () => {
     if (song) leave('song-view', { id: String(song.id) });

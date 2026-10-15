@@ -3,7 +3,6 @@ import { useOffline } from '../context/OfflineContext';
 import { useDisclosure } from '@mantine/hooks';
 import { Alert, Badge, Paper, Button, NativeSelect, Group, Box, Text } from '@mantine/core';
 import { IconLock } from '@tabler/icons-react';
-import { modals } from '@mantine/modals';
 import { useState, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
@@ -24,7 +23,7 @@ import { TagBadges } from '../components/TagBadges';
 import { PageTitle } from '../components/PageTitle';
 import { VISIBILITY } from '../lib/constants';
 import { formatDbDate, versionLabel } from '../lib/format';
-import { errorMessage, notifyError } from '../lib/errors';
+import { errorMessage, confirmAction } from '../lib/errors';
 import { usePdfExport } from '../hooks/usePdfExport';
 
 interface SongViewProps {
@@ -107,29 +106,18 @@ export function SongView({ songId, navigate }: SongViewProps) {
 
 
 
-  const approveCorrection = async (id: number) => {
-    modals.openConfirmModal({ children: 'Apply this correction? The original song content will be updated.', onConfirm: async () => {
-    try {
-      await apiCall('PUT', `/api/corrections/${id}/approve`);
-      toast('Correction approved', 'success');
-      setSong(null);
-      const data = await getSong(songId);
-      setSong(data);
-    } catch (e) { notifyError(e); }
+  const approveCorrection = (id: number) => confirmAction('Apply this correction? The original song content will be updated.', async () => {
+    await apiCall('PUT', `/api/corrections/${id}/approve`);
+    toast('Correction approved', 'success');
+    setSong(null);
+    setSong(await getSong(songId));
+  });
 
-} });
-};
-
-  const rejectCorrection = async (id: number) => {
-    modals.openConfirmModal({ children: 'Reject and delete this correction?', onConfirm: async () => {
-    try {
-      await apiCall('DELETE', `/api/corrections/${id}`);
-      toast('Correction rejected', 'success');
-      setCorrections((prev) => prev.filter((c) => c.id !== id));
-    } catch (e) { notifyError(e); }
-
-} });
-};
+  const rejectCorrection = (id: number) => confirmAction('Reject and delete this correction?', async () => {
+    await apiCall('DELETE', `/api/corrections/${id}`);
+    toast('Correction rejected', 'success');
+    setCorrections((prev) => prev.filter((c) => c.id !== id));
+  });
 
   if (loadError) return <Alert title="Song unavailable" color="red">{loadError}<Button mt="sm" display="block" onClick={() => navigate('browse')}>Back to songs</Button></Alert>;
   if (!song) return <Loading />;
