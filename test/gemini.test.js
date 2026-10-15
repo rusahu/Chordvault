@@ -223,3 +223,10 @@ test('callGemini wraps a network failure', async () => {
     restore();
   }
 });
+
+test('imageTurn puts the prompt before the decoded image', () => {
+  const { imageTurn } = require('../lib/gemini');
+  assert.deepEqual(imageTurn('Read', 'data:image/png;base64,QUJD'), {
+    parts: [{ text: 'Read' }, { inline_data: { mime_type: 'image/png', data: 'QUJD' } }],
+  });
+});

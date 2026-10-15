@@ -34,3 +34,8 @@ test('CJK query still matches (no regression)', () => {
 test('English query still matches its title, not the pinyin song', () => {
   assert.deepEqual(titles('amazing'), ['Amazing Grace']);
 });
+
+test('pinyinKey drops spaces and lowercases', () => {
+  const { pinyinKey } = require('../lib/searchUtils');
+  assert.equal(pinyinKey(' Zhu Mi  Shi '), 'zhumishi');
+});
