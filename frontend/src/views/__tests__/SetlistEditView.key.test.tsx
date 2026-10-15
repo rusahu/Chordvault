@@ -10,8 +10,8 @@ vi.mock('../../lib/notifications', () => ({ showStatusNotification: vi.fn() }));
 vi.mock('../../hooks/useLocalSetlists', () => ({
   useLocalSetlists: () => ({
     getOne: vi.fn(), addEntry: vi.fn(), updateEntry: vi.fn(), removeEntry: vi.fn(),
-    moveEntry: vi.fn(), reorderEntries: vi.fn(), rename: vi.fn(), create: vi.fn(),
-    remove: vi.fn(), refresh: vi.fn(), setlists: [],
+    reorderEntries: vi.fn(), rename: vi.fn(), create: vi.fn(),
+    remove: vi.fn(), setlists: [],
   }),
 }));
 

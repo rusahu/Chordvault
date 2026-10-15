@@ -8,81 +8,49 @@ export function useLocalSetlists() {
   const isWriteLocked = useWriteLock();
   const [setlists, setSetlists] = useState<LocalSetlist[]>(() => getLocalSetlists());
 
-  const refresh = useCallback(() => {
-    setSetlists(getLocalSetlists());
+  const write = useCallback((all: LocalSetlist[]) => {
+    saveLocalSetlists(all);
+    setSetlists(all);
   }, []);
+
+  /** Applies `change` to one stored setlist and saves it; a `false` from `change` writes nothing. */
+  const mutate = useCallback((id: string, change: (sl: LocalSetlist) => boolean | void) => {
+    if (isWriteLocked()) return false;
+    const all = getLocalSetlists();
+    const sl = all.find((s) => s.id === id);
+    if (!sl || change(sl) === false) return false;
+    write([...all]);
+    return true;
+  }, [isWriteLocked, write]);
 
   const create = useCallback((name: string): LocalSetlist | null => {
     if (isWriteLocked()) return null;
     const all = getLocalSetlists();
     if (all.length >= MAX_LOCAL_SETLISTS) return null;
     const sl: LocalSetlist = { id: 'local_' + Date.now(), name, entries: [] };
-    all.push(sl);
-    saveLocalSetlists(all);
-    setSetlists(all);
+    write([...all, sl]);
     return sl;
-  }, [isWriteLocked]);
+  }, [isWriteLocked, write]);
 
   const remove = useCallback((id: string) => {
-    if (isWriteLocked()) return ;
-    const all = getLocalSetlists().filter((s) => s.id !== id);
-    saveLocalSetlists(all);
-    setSetlists(all);
-  }, [isWriteLocked]);
+    if (!isWriteLocked()) write(getLocalSetlists().filter((s) => s.id !== id));
+  }, [isWriteLocked, write]);
 
-  const rename = useCallback((id: string, name: string) => {
-    if (isWriteLocked()) return ;
-    const all = getLocalSetlists();
-    const sl = all.find((s) => s.id === id);
-    if (sl) { sl.name = name; saveLocalSetlists(all); setSetlists([...all]); }
-  }, [isWriteLocked]);
+  const getOne = useCallback((id: string): LocalSetlist | undefined => getLocalSetlists().find((s) => s.id === id), []);
 
-  const getOne = useCallback((id: string): LocalSetlist | undefined => {
-    return getLocalSetlists().find((s) => s.id === id);
-  }, []);
+  const rename = useCallback((id: string, name: string) => mutate(id, (sl) => { sl.name = name; }), [mutate]);
 
-  const addEntry = useCallback((id: string, entry: LocalSetlistEntry): boolean => {
-    if (isWriteLocked()) return false;
-    const all = getLocalSetlists();
-    const sl = all.find((s) => s.id === id);
-    if (!sl || sl.entries.length >= MAX_LOCAL_ENTRIES) return false;
+  const addEntry = useCallback((id: string, entry: LocalSetlistEntry) => mutate(id, (sl) => {
+    if (sl.entries.length >= MAX_LOCAL_ENTRIES) return false;
     sl.entries.push(entry);
-    saveLocalSetlists(all);
-    setSetlists([...all]);
-    return true;
-  }, [isWriteLocked]);
+  }), [mutate]);
 
-  const removeEntry = useCallback((id: string, idx: number) => {
-    if (isWriteLocked()) return ;
-    const all = getLocalSetlists();
-    const sl = all.find((s) => s.id === id);
-    if (sl) { sl.entries.splice(idx, 1); saveLocalSetlists(all); setSetlists([...all]); }
-  }, [isWriteLocked]);
+  const removeEntry = useCallback((id: string, idx: number) => mutate(id, (sl) => { sl.entries.splice(idx, 1); }), [mutate]);
 
-  const moveEntry = useCallback((id: string, idx: number, dir: number) => {
-    if (isWriteLocked()) return ;
-    const all = getLocalSetlists();
-    const sl = all.find((s) => s.id === id);
-    if (!sl) return;
-    const newIdx = idx + dir;
-    if (newIdx < 0 || newIdx >= sl.entries.length) return;
-    const tmp = sl.entries[idx];
-    sl.entries[idx] = sl.entries[newIdx];
-    sl.entries[newIdx] = tmp;
-    saveLocalSetlists(all);
-    setSetlists([...all]);
-  }, [isWriteLocked]);
-
-  const updateEntry = useCallback((id: string, idx: number, updates: Partial<LocalSetlistEntry>) => {
-    if (isWriteLocked()) return ;
-    const all = getLocalSetlists();
-    const sl = all.find((s) => s.id === id);
-    if (sl && sl.entries[idx]) {
-      Object.assign(sl.entries[idx], updates);
-      saveLocalSetlists(all);
-      setSetlists([...all]);
-    }
-  }, [isWriteLocked]);
+  const updateEntry = useCallback((id: string, idx: number, updates: Partial<LocalSetlistEntry>) => mutate(id, (sl) => {
+    if (!sl.entries[idx]) return false;
+    Object.assign(sl.entries[idx], updates);
+  }), [mutate]);
 
   /**
    * Reorders a local setlist by permuting the STORED records.
@@ -96,22 +64,14 @@ export function useLocalSetlists() {
    * Returns false when nothing was written, so the caller can tell the user and
    * resync instead of leaving the view showing an order storage never took.
    */
-  const reorderEntries = useCallback((id: string, order: number[]): boolean => {
-    if (isWriteLocked()) return false;
-    const all = getLocalSetlists();
-    const sl = all.find((s) => s.id === id);
-    if (!sl) return false;
+  const reorderEntries = useCallback((id: string, order: number[]) => mutate(id, (sl) => {
     const isPermutation =
       order.length === sl.entries.length &&
       new Set(order).size === order.length &&
       order.every((i) => i >= 0 && i < sl.entries.length);
     if (!isPermutation) return false;
     sl.entries = order.map((i) => sl.entries[i]);
-    saveLocalSetlists(all);
-    setSetlists([...all]);
-    return true;
-  }, [isWriteLocked]);
+  }), [mutate]);
 
-  return { setlists, refresh, create, remove, rename, getOne, addEntry, removeEntry, moveEntry, updateEntry, reorderEntries };
+  return { setlists, create, remove, rename, getOne, addEntry, removeEntry, updateEntry, reorderEntries };
 }
-
