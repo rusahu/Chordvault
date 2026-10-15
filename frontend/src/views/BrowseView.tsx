@@ -13,6 +13,8 @@ import { Pagination } from '../components/Pagination';
 import { LANGUAGES } from '../lib/languages';
 import { useSearchSessionValue } from '../hooks/useSearchSessionValue';
 import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
+import { TagFilter } from '../components/TagFilter';
+import { splitTags } from '../lib/tagName';
 
 interface BrowseViewProps {
   navigate: (view: string, params?: Record<string, string>) => void;
@@ -27,27 +29,31 @@ export function BrowseView({ navigate }: BrowseViewProps) {
   const [query, setQuery] = useState(savedQuery);
   const [savedLangFilter, saveLangFilter] = useSearchSessionValue('cv_browse_lang');
   const [langFilter, setLangFilter] = useState(savedLangFilter);
+  const [savedTagFilter, saveTagFilter] = useSearchSessionValue('cv_browse_tags');
+  const [tagFilter, setTagFilter] = useState(() => splitTags(savedTagFilter));
+  const filters = { q: query, language: langFilter, tags: tagFilter };
+  const hasFilters = Boolean(langFilter || tagFilter.length);
   const [savedShowFilters, saveShowFilters] = useSearchSessionValue('cv_browse_show_filters', 'false');
   const showFilters = savedShowFilters === 'true';
   const { items: songs, page, totalPages, loaded, loadError, load } = usePaginatedSearch({
     pageKey: 'cv_browse_page', listKey: 'songs', fetchPage: querySongs,
-    filters: { q: query, language: langFilter },
-    persist: ({ q = '', language = '' }) => { saveQuery(q); saveLangFilter(language); },
+    filters,
+    persist: ({ q = '', language = '', tags = [] }) => { saveQuery(q); saveLangFilter(language); saveTagFilter(tags.join(',')); },
   });
 
   const handleClear = () => {
     setQuery('');
-    load({ q: '', language: langFilter });
+    load({ ...filters, q: '' });
   };
 
-  const doSearch = () => load({ q: query, language: langFilter });
+  const doSearch = () => load(filters);
 
   const handlePageChange = (newPage: number) => {
-    load({ q: query, language: langFilter }, newPage);
+    load(filters, newPage);
     window.scrollTo(0, 0);
   };
 
-  const showHero = !user && !query && !langFilter && !loadError && loaded && songs.length === 0 && page === 1;
+  const showHero = !user && !query && !hasFilters && !loadError && loaded && songs.length === 0 && page === 1;
 
   return (
     <>
@@ -69,7 +75,7 @@ export function BrowseView({ navigate }: BrowseViewProps) {
             <Button variant="default" size="sm" onClick={doSearch}>{t('songs.search')}</Button>
             <ActionIcon
               size="input-sm"
-              variant={showFilters || langFilter ? 'filled' : 'default'}
+              variant={showFilters || hasFilters ? 'filled' : 'default'}
               aria-label="Filters"
               aria-pressed={showFilters}
               title="Filters"
@@ -88,14 +94,16 @@ export function BrowseView({ navigate }: BrowseViewProps) {
             <div className="search-filters">
               <NativeSelect
                 className="language-filter"
+                aria-label={t('songs.language')}
                 value={langFilter}
-                onChange={(e) => { setLangFilter(e.target.value); load({ q: query, language: e.target.value }); }}
+                onChange={(e) => { setLangFilter(e.target.value); load({ ...filters, language: e.target.value }); }}
               >
                 <option value="">All languages</option>
                 {LANGUAGES.map(l => (
                   <option key={l.code} value={l.code}>{l.name}</option>
                 ))}
               </NativeSelect>
+              <TagFilter value={tagFilter} onChange={next => { setTagFilter(next); load({ ...filters, tags: next }); }} />
             </div>
           )}
           <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12}>

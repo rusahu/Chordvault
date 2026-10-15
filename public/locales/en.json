@@ -28,6 +28,9 @@
   "songs.search": "Search",
   "songs.searchPlaceholder": "Search title or artist...",
   "songs.noPublicSongs": "No public songs found",
+  "songs.language": "Language",
+  "songs.tags": "Tags",
+  "songs.allTags": "All tags",
 
   "songView.back": "Back",
   "songView.edit": "Edit",

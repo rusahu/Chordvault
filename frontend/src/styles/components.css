@@ -49,6 +49,7 @@
   margin-top: -12px;
 }
 .search-filters .language-filter { max-width: 220px; }
+.search-filters .tag-filter { flex: 1; min-width: 0; max-width: 420px; }
 
 /* -- General Utility Classes -- */
 .muted-hint {

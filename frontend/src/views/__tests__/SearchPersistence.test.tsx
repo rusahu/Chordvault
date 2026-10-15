@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowseView } from '../BrowseView';
 import { MySongsView } from '../MySongsView';
 import { SetlistsView } from '../SetlistsView';
@@ -107,7 +108,7 @@ it('preserves raw language and immediate filter visibility', async () => {
   await waitFor(() => expect(api).toHaveBeenCalledWith('GET', '/api/songs/public?language=zh&page=1&limit=20'));
   fireEvent.click(screen.getByRole('button', { name: 'Filters' }));
   expect(sessionStorage.getItem('cv_browse_show_filters')).toBe('true');
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'en' } });
+  fireEvent.change(screen.getByRole('combobox', { name: 'songs.language' }), { target: { value: 'en' } });
   await waitFor(() => expect(sessionStorage.getItem('cv_browse_lang')).toBe('en'));
 });
 
@@ -121,4 +122,31 @@ it('rechecks the stored account on focus without replacing an unchanged user', a
   localStorage.removeItem('cv_user');
   fireEvent.focus(window);
   expect(await screen.findByText('signed out')).toBeInTheDocument();
+});
+
+it('browse restores the saved tag filter and sends it', async () => {
+  sessionStorage.setItem('cv_browse_tags', 'christmas,kids');
+  sessionStorage.setItem('cv_browse_show_filters', 'true');
+  render(<AuthProvider><BrowseView navigate={navigate} /></AuthProvider>);
+  await waitFor(() => expect(api).toHaveBeenCalledWith('GET', '/api/songs/public?tags=christmas%2Ckids&page=1&limit=20'));
+  expect(screen.getByRole('combobox', { name: 'songs.tags' }).parentElement).toHaveTextContent('christmaskids');
+});
+
+it('browse saves a picked tag and keeps it when the language changes', async () => {
+  sessionStorage.setItem('cv_browse_show_filters', 'true');
+  render(<AuthProvider><BrowseView navigate={navigate} /></AuthProvider>);
+  await userEvent.type(screen.getByRole('combobox', { name: 'songs.tags' }), 'kids');
+  await userEvent.click(await screen.findByRole('option', { name: 'kids' }));
+  await waitFor(() => expect(sessionStorage.getItem('cv_browse_tags')).toBe('kids'));
+  fireEvent.change(screen.getByRole('combobox', { name: 'songs.language' }), { target: { value: 'zh' } });
+  await waitFor(() => expect(api).toHaveBeenLastCalledWith('GET', '/api/songs/public?language=zh&tags=kids&page=1&limit=20'));
+});
+
+it('signed out, a saved tag alone keeps the hero hidden and the Filters button filled', async () => {
+  localStorage.removeItem('cv_user');
+  sessionStorage.setItem('cv_browse_tags', 'kids');
+  render(<AuthProvider><BrowseView navigate={navigate} /></AuthProvider>);
+  await waitFor(() => expect(api).toHaveBeenCalledWith('GET', '/api/songs/public?tags=kids&page=1&limit=20'));
+  expect(screen.getByRole('searchbox')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Filters' })).toHaveAttribute('data-variant', 'filled');
 });
