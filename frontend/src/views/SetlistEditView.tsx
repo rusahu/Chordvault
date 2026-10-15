@@ -10,7 +10,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
 import { ApiError } from '../lib/api';
 import { stepKey } from '../lib/keys';
-import { getSongKey } from '../lib/chords';
+import { entryStartKey } from '../lib/setlistKeys';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
@@ -222,8 +222,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
   const handleStepEntryKey = async (entryId: number | string, idx: number, direction: 1 | -1) => {
     if (isWriteLocked() || !setlist) return;
     const entry = reorderedEntries[idx];
-    const content = entry.content_override || entry.content;
-    const current = entry.target_key || getSongKey(content, 0);
+    const current = entryStartKey(entry);
     if (!current) return;
     const newKey = stepKey(current, direction);
 

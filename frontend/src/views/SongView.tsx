@@ -85,11 +85,6 @@ export function SongView({ songId, navigate }: SongViewProps) {
     resetChordNashville(false);
   }, [songId, resetChordKey, resetChordNashville]);
 
-  const renderedHtml = useMemo(
-    () => renderChordPro(content, chord.transpose, chord.nashville),
-    [content, chord.transpose, chord.nashville]
-  );
-
   const shortcuts = useMemo(() => ({
     'ArrowUp': (e: KeyboardEvent) => { e.preventDefault(); chord.stepCurrentKey(1); },
     'ArrowDown': (e: KeyboardEvent) => { e.preventDefault(); chord.stepCurrentKey(-1); },
@@ -229,7 +224,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
       />
 
       <ChordSheet
-        html={renderedHtml}
+        html={chord.renderedHtml}
         twoCol={twoColState.twoCol}
         fontSize={fontScale.fontSize}
       />

@@ -1,7 +1,7 @@
 import { Badge, Box, Button, VisuallyHidden, CloseButton, Flex, Group } from '@mantine/core';
 import { IconGripVertical, IconLock, IconPencil } from '@tabler/icons-react';
 import { getSongKey } from '../lib/chords';
-import { entrySemitones } from '../lib/setlistKeys';
+import { entryContent, entrySemitones, entryStartKey } from '../lib/setlistKeys';
 import type { SetlistEntry } from '../types';
 import { VISIBILITY } from '../lib/constants';
 
@@ -34,10 +34,10 @@ export function SetlistEntryCard({
   handleProps,
   isDragging,
 }: SetlistEntryCardProps) {
-  const content = entry.content_override || entry.content;
+  const content = entryContent(entry);
   const semitones = entrySemitones(content, entry.target_key);
   const keyDisplay = getSongKey(content, semitones);
-  const canStep = !!(entry.target_key || getSongKey(content, 0));
+  const canStep = !!entryStartKey(entry);
 
   return (
     <Flex

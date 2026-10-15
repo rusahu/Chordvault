@@ -21,10 +21,10 @@ import { PlaybackMoreMenu } from '../components/PlaybackMoreMenu';
 import { SettingsPanel } from '../components/SettingsPanel';
 import { EmptyState } from '../components/EmptyState';
 import { Loading } from '../components/Loading';
-import { renderChordPro, getSongKey, clampFontSize, songHasKey, resolveEffectivePreferences, autoFit } from '../lib/chords';
+import { renderChordPro, getSongKey, clampFontSize, songHasKey, autoFit } from '../lib/chords';
 import { useSetlistPreferences } from '../hooks/useSetlistPreferences';
 import { stepKey } from '../lib/keys';
-import { entrySemitones } from '../lib/setlistKeys';
+import { entryContent, entrySemitones, entryStartKey } from '../lib/setlistKeys';
 import { songEditFromSetlist } from '../lib/songEditRoute';
 import { prepareSongForSave } from '../lib/songSubmit';
 import type { Setlist } from '../types';
@@ -65,7 +65,7 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
     },
   });
 
-  const content = entry ? (entry.content_override || entry.content) : '';
+  const content = entry ? entryContent(entry) : '';
 
   const { user } = useAuth();
   const isOwner = setlist?.user_id && user && setlist.user_id === user.id;
@@ -97,10 +97,10 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
   // Key stepping
   const stepEntryKey = useCallback((direction: 1 | -1) => {
     if (!entry) return;
-    const current = entry.target_key || getSongKey(content, 0);
+    const current = entryStartKey(entry);
     if (!current) return;
     updateEntry({ target_key: stepKey(current, direction) });
-  }, [entry, content, updateEntry]);
+  }, [entry, updateEntry]);
 
   // Per-song overrides
   const toggleEntryNum = useCallback((checked: boolean) => {
@@ -113,27 +113,15 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
 
   const toggleEntryTwoCol = useCallback(() => {
     if (!entry) return;
-    const prefs = resolveEffectivePreferences(entry, {
-      nashville: slNashville,
-      twoCol: twoColState.twoCol,
-      fontSize: fontScale.fontSize,
-      hideYt: slHideYt,
-    });
-    const nextVal = !prefs.twoCol;
+    const nextVal = !effTwoCol;
     updateEntry({ _twoCol: nextVal === (!!twoColState.twoCol) ? null : nextVal });
-  }, [entry, slNashville, twoColState.twoCol, fontScale.fontSize, slHideYt, updateEntry]);
+  }, [entry, effTwoCol, twoColState.twoCol, updateEntry]);
 
   const changeEntryFont = useCallback((delta: number) => {
     if (!entry) return;
-    const prefs = resolveEffectivePreferences(entry, {
-      nashville: slNashville,
-      twoCol: twoColState.twoCol,
-      fontSize: fontScale.fontSize,
-      hideYt: slHideYt,
-    });
-    const nextVal = clampFontSize(prefs.fontSize + delta);
+    const nextVal = clampFontSize(effFont + delta);
     updateEntry({ _font: nextVal === fontScale.fontSize ? null : nextVal });
-  }, [entry, slNashville, twoColState.twoCol, fontScale.fontSize, slHideYt, updateEntry]);
+  }, [entry, effFont, fontScale.fontSize, updateEntry]);
 
   // Key picker
   const pickKey = useCallback((targetKey: string) => {
@@ -144,7 +132,7 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
   // Inline editor
   const openEditor = useCallback(() => {
     if (readOnly || !entry || setlist?.isLocal) return;
-    setEditContent(entry.content_override || entry.content);
+    setEditContent(entryContent(entry));
     setEditing(true);
   }, [entry, setlist, readOnly]);
 

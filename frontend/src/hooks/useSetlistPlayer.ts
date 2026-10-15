@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { showStatusNotification as toast } from '../lib/notifications';
 import { getSetlistOverrides, saveSetlistOverride, migrateOverride } from '../lib/storage';
 import { enrichLocalSetlistSongs } from '../lib/setlists';
+import { entryContent } from '../lib/setlistKeys';
 import type { Setlist, SetlistEntry } from '../types';
 import { VISIBILITY } from '../lib/constants';
 
@@ -34,7 +35,7 @@ function applyStoredOverrides(setlistId: number | string, entries: SetlistEntry[
   const targetKeys: Record<string, string | null> = {};
   const merged = entries.map((en) => {
     const raw = overrides[String(en.entry_id)];
-    const ov = raw ? migrateOverride(raw, en.content_override || en.content) : undefined;
+    const ov = raw ? migrateOverride(raw, entryContent(en)) : undefined;
     if (raw && raw.transpose !== undefined) {
       saveSetlistOverride(setlistId, en.entry_id, ov!);
     }
