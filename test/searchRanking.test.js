@@ -20,8 +20,9 @@ const titles = (q) => Song.listPublic({ q }).map((r) => r.title);
 
 test('title match ranks above artist match ranks above lyric-only match (not by recency)', () => {
   // 'Old Song' (added below, also lyric-only) is inserted at module load before any
-  // test body runs, so it's already present here too — same rank tier as 'Old Rugged Cross'.
-  assert.deepEqual(titles('amazing'), ['Amazing Grace', 'Grace Alone', 'Old Rugged Cross', 'Old Song']);
+  // test body runs, so it's already present here too — same rank tier and time as
+  // 'Old Rugged Cross', so the higher id comes first.
+  assert.deepEqual(titles('amazing'), ['Amazing Grace', 'Grace Alone', 'Old Song', 'Old Rugged Cross']);
 });
 
 // CJK ranking also applies on the short-query (<3 char) LIKE path
