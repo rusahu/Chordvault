@@ -71,7 +71,7 @@ describe('local setlist reorder', () => {
 
     expect(titles()).toEqual(['Alpha', 'Bravo']);
     expect(stored()[0].transpose).toBe(2);
-    expect(mockToast).toHaveBeenCalledWith('setlist.reorderFailed', 'error');
+    await waitFor(() => expect(mockToast).toHaveBeenCalledWith('setlist.reorderFailed', 'error'));
     await waitFor(() => expect(screen.queryByText('Charlie')).toBeNull());
   });
 

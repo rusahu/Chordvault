@@ -5,11 +5,11 @@ import { SearchField } from '../components/SearchField';
 import { SearchRow } from '../components/SearchRow';
 import { IconCalendar, IconPlus, IconMusic } from '@tabler/icons-react';
 import { useState, useEffect, useRef } from 'react';
-import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
-import { useLocalSetlists } from '../hooks/useLocalSetlists';
+import { notifyError } from '../lib/errors';
+import { useSetlistStore } from '../hooks/useSetlistStore';
 import { SetlistCard } from '../components/SetlistCard';
 import { EmptyState } from '../components/EmptyState';
 import { CardGrid } from '../components/CardGrid';
@@ -22,7 +22,7 @@ import { SetlistTabs } from '../components/SetlistTabs';
 import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
 import { PageTitle } from '../components/PageTitle';
 import { setlistPlayParams } from '../lib/routes';
-import { MAX_SETLIST_NAME_LENGTH, MAX_LOCAL_SETLISTS } from '../lib/constants';
+import { MAX_SETLIST_NAME_LENGTH } from '../lib/constants';
 import { localSetlistToListItem } from '../lib/setlists';
 
 interface SetlistsViewProps {
@@ -30,14 +30,12 @@ interface SetlistsViewProps {
 }
 
 export function SetlistsView({ navigate }: SetlistsViewProps) {
-  const apiCall = useApi();
   const { user } = useAuth();
   const { t } = useI18n();
   const { readOnly } = useOffline();
   const { querySetlists } = useLibraryRead();
-  const ls = useLocalSetlists();
-
   const activeTab = user ? 'cloud' : 'local';
+  const store = useSetlistStore(activeTab === 'local');
 
   const [showNew, setShowNew] = useState(false);
   const [newName, setNewName] = useState('');
@@ -59,19 +57,11 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
     if (readOnly) return;
     if (!newName.trim()) { toast(t('setlist.nameRequired'), 'error'); return; }
     if (newName.length > MAX_SETLIST_NAME_LENGTH) { toast('Name too long', 'error'); return; }
-
-    if (activeTab === 'local') {
-      const sl = ls.create(newName.trim());
-      if (!sl) { toast(`Max ${MAX_LOCAL_SETLISTS} setlists`, 'error'); return; }
+    try {
+      const id = await store.create(newName.trim());
       toast(t('setlist.created'), 'success');
-      navigate('setlist-edit', { id: sl.id });
-    } else {
-      try {
-        const result = await apiCall<{ id: number }>('POST', '/api/setlists', { name: newName.trim() });
-        toast(t('setlist.created'), 'success');
-        navigate('setlist-edit', { id: String(result.id) });
-      } catch (e) { toast((e as Error).message, 'error'); }
-    }
+      navigate('setlist-edit', { id });
+    } catch (e) { notifyError(e); }
   };
 
   const handleClear = () => {
@@ -103,8 +93,8 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
   };
 
   const localSetlistsToRender = query.trim()
-    ? ls.setlists.filter(sl => sl.name.toLowerCase().includes(query.toLowerCase()))
-    : ls.setlists;
+    ? store.setlists.filter(sl => sl.name.toLowerCase().includes(query.toLowerCase()))
+    : store.setlists;
 
   return (
     <>

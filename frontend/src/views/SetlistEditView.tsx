@@ -7,14 +7,13 @@ import { useCopyNotification } from '../hooks/useCopyNotification';
 import { useForm } from '@mantine/form';
 import { modals } from '@mantine/modals';
 import { useState, useEffect, useCallback } from 'react';
-import { useApi } from '../hooks/useApi';
 import { notifyError } from '../lib/errors';
 import { stepKey } from '../lib/keys';
 import { entryStartKey } from '../lib/setlistKeys';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
-import { useLocalSetlists } from '../hooks/useLocalSetlists';
+import { useSetlistStore } from '../hooks/useSetlistStore';
 import { formatLocalEntry, localSetlistToSetlist } from '../lib/setlists';
 import { SongPicker } from '../components/SongPicker';
 import { Loading } from '../components/Loading';
@@ -32,24 +31,16 @@ interface SetlistEditViewProps {
 }
 
 export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
-  const apiCall = useApi();
   const { getSetlistForViewer } = useLibraryRead();
   const { readOnly } = useOffline();
   const isWriteLocked = useWriteLock();
   const { user } = useAuth();
   const { t } = useI18n();
   const copyWithFeedback = useCopyNotification(t('setlist.linkCopied') || 'Link copied to clipboard');
-  const {
-    getOne,
-    rename,
-    remove,
-    removeEntry: lsRemoveEntry,
-    addEntry: lsAddEntry,
-    updateEntry: lsUpdateEntry,
-    reorderEntries: lsReorderEntries,
-  } = useLocalSetlists();
-
   const isLocal = isLocalSetlistId(setlistId);
+  const store = useSetlistStore(isLocal);
+  const { getOne } = store;
+  const id = String(setlistId);
   const [setlist, setSetlist] = useState<Setlist | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const metadata = useForm({ initialValues: { name: '', visibility: false, event_date: '' } });
@@ -87,145 +78,67 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
     setlist?.entries || [],
     async (newEntries) => {
       if (isWriteLocked() || !setlist) return;
-
-      // Update React state first
       setSetlist((prev) => prev ? { ...prev, entries: newEntries } : null);
-
-      if (isLocal) {
-        // A reorder changes order only. useDragReorder permutes the very
-        // objects it was given, so their positions in the pre-drag list are the
-        // permutation to apply to the stored records — which are then written
-        // back untouched, keeping fields this view never loads.
-        const saved = lsReorderEntries(String(setlistId), newEntries.map((e) => setlist.entries.indexOf(e)));
-        if (!saved) {
-          toast(t('setlist.reorderFailed'), 'error');
-          load();
-        }
-      } else {
-        try {
-          await apiCall('PUT', `/api/setlists/${setlistId}/reorder`, {
-            entry_ids: newEntries.map((e) => e.entry_id),
-          });
-        } catch (e) {
-          toast((e as Error).message, 'error');
-          load();
-        }
+      try {
+        await store.reorder(id, newEntries, setlist.entries);
+      } catch (e) {
+        notifyError(e);
+        load();
       }
     }
   );
 
   const saveMeta = async (values = metadata.values) => {
     if (isWriteLocked() || !setlist) return;
-    const nameInput = values.name.trim();
-    if (!nameInput) return;
-
-    if (isLocal) {
-      if (nameInput.length > MAX_SETLIST_NAME_LENGTH) return;
-      rename(String(setlistId), nameInput);
-      setSetlist((prev) => prev ? { ...prev, name: nameInput } : prev);
-    } else {
-      const vis = values.visibility ? VISIBILITY.PUBLIC : VISIBILITY.PRIVATE;
-      const date = values.event_date;
-      try {
-        await apiCall('PUT', `/api/setlists/${setlistId}`, { name: nameInput, visibility: vis, event_date: date });
-        setSetlist((prev) => prev ? { ...prev, name: nameInput, visibility: vis, event_date: date } : prev);
-      } catch (e) { toast((e as Error).message, 'error'); }
-    }
+    const name = values.name.trim();
+    if (!name || (isLocal && name.length > MAX_SETLIST_NAME_LENGTH)) return;
+    const meta = { name, visibility: values.visibility ? VISIBILITY.PUBLIC : VISIBILITY.PRIVATE, event_date: values.event_date };
+    try {
+      await store.saveMeta(id, meta);
+      setSetlist((prev) => prev && (isLocal ? { ...prev, name } : { ...prev, ...meta }));
+    } catch (e) { notifyError(e); }
   };
 
-  const deleteSetlist = async () => {
+  const deleteSetlist = () => {
     if (isWriteLocked()) return;
     modals.openConfirmModal({ children: t('setlist.confirmDelete'), onConfirm: async () => {
-
-    if (isLocal) {
-      remove(String(setlistId));
-      toast(t('setlist.deleted'), 'success');
-      location.hash = '';
-      navigate(user ? 'setlists' : 'public-setlists');
-    } else {
       try {
-        await apiCall('DELETE', `/api/setlists/${setlistId}`);
+        await store.remove(id);
         toast(t('setlist.deleted'), 'success');
         location.hash = '';
-        navigate('setlists');
-      } catch (e) { toast((e as Error).message, 'error'); }
-    }
-
-} });
-};
-
-  // Reordering is handled by useDragReorder hook
+        navigate(isLocal && !user ? 'public-setlists' : 'setlists');
+      } catch (e) { notifyError(e); }
+    } });
+  };
 
   const removeEntry = async (entryId: number | string, idx: number) => {
     if (isWriteLocked()) return;
-    if (isLocal) {
-      lsRemoveEntry(String(setlistId), idx);
-      setSetlist((prev) => prev ? { ...prev, entries: prev.entries.filter((_, i) => i !== idx) } : prev);
+    try {
+      await store.removeEntry(id, entryId, idx);
+      setSetlist((prev) => prev && { ...prev, entries: prev.entries.filter((e, i) => (isLocal ? i !== idx : e.entry_id !== entryId)) });
       toast(t('setlist.songRemoved'), 'success');
-    } else {
-      try {
-        await apiCall('DELETE', `/api/setlists/${setlistId}/entries/${entryId}`);
-        setSetlist((prev) => prev ? { ...prev, entries: prev.entries.filter((e) => e.entry_id !== entryId) } : prev);
-        toast(t('setlist.songRemoved'), 'success');
-      } catch (e) { toast((e as Error).message, 'error'); }
-    }
+    } catch (e) { notifyError(e); }
   };
 
   const addSong = async (song: SongListItem) => {
     if (isWriteLocked()) return;
-    if (isLocal) {
-      const added = lsAddEntry(String(setlistId), {
-        song_id: song.id,
-        title: song.title,
-        artist: song.artist || '',
-        target_key: null,
-        nashville: 0
-      });
-      if (added) {
-        toast(t('setlist.songAdded'), 'success');
-        setPickerOpen(false);
-        load();
-      } else {
-        toast('Failed to add song', 'error');
-      }
-    } else {
-      try {
-        await apiCall('POST', `/api/setlists/${setlistId}/songs`, { song_id: song.id });
-        toast(t('setlist.songAdded'), 'success');
-        setPickerOpen(false);
-        load();
-      } catch (e) { toast((e as Error).message, 'error'); }
-    }
+    try {
+      await store.addSong(id, song);
+      toast(t('setlist.songAdded'), 'success');
+      setPickerOpen(false);
+      load();
+    } catch (e) { notifyError(e); }
   };
 
   const handleStepEntryKey = async (entryId: number | string, idx: number, direction: 1 | -1) => {
     if (isWriteLocked() || !setlist) return;
-    const entry = reorderedEntries[idx];
-    const current = entryStartKey(entry);
+    const current = entryStartKey(reorderedEntries[idx]);
     if (!current) return;
     const newKey = stepKey(current, direction);
-
-    if (isLocal) {
-      lsUpdateEntry(String(setlistId), idx, { target_key: newKey });
-      setSetlist((prev) => {
-        if (!prev) return null;
-        const entries = [...prev.entries];
-        entries[idx] = { ...entries[idx], target_key: newKey };
-        return { ...prev, entries };
-      });
-    } else {
-      try {
-        await apiCall('PUT', `/api/setlists/${setlistId}/entries/${entryId}`, { target_key: newKey });
-        setSetlist((prev) => {
-          if (!prev) return null;
-          const entries = [...prev.entries];
-          entries[idx] = { ...entries[idx], target_key: newKey };
-          return { ...prev, entries };
-        });
-      } catch (e) {
-        toast((e as Error).message, 'error');
-      }
-    }
+    try {
+      await store.setEntryKey(id, entryId, idx, newKey);
+      setSetlist((prev) => prev && { ...prev, entries: prev.entries.map((e, i) => (i === idx ? { ...e, target_key: newKey } : e)) });
+    } catch (e) { notifyError(e); }
   };
 
   const play = (idx: number) => {
