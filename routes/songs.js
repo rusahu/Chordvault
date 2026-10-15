@@ -10,6 +10,7 @@ const Song = require('../lib/models/song');
 const User = require('../lib/models/user');
 const Tags = require('../lib/models/tags');
 const { canViewSongVisibility } = require('../lib/songAccess');
+const { splitTags } = require('../shared/tags.mjs');
 
 function extractDirective(content, name) {
   const re = new RegExp(`\\{${name}:\\s*([^}]*)\\}`, 'i');
@@ -18,8 +19,7 @@ function extractDirective(content, name) {
 }
 
 function extractMetadata(content) {
-  const tags = extractDirective(content, 'x_tags');
-  const cleanedTags = tags ? String(tags).split(',').map(t => t.trim().toLowerCase()).filter(Boolean).join(',') : null;
+  const cleanedTags = splitTags(extractDirective(content, 'x_tags')).join(',') || null;
   const bpmStr = extractDirective(content, 'tempo');
   const bpm = bpmStr ? parseInt(bpmStr, 10) : null;
   return {
