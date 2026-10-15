@@ -12,22 +12,15 @@ const Tags = require('../lib/models/tags');
 const { canViewSongVisibility, familyRootId } = require('../lib/songAccess');
 const { splitTags } = require('../shared/tags.mjs');
 const { normalizeVisibility } = require('../shared/access.mjs');
-
-function extractDirective(content, name) {
-  const re = new RegExp(`\\{${name}:\\s*([^}]*)\\}`, 'i');
-  const m = content.match(re);
-  return m ? m[1].trim() : null;
-}
+const { extractDirective, parseBpm } = require('../shared/chordpro.mjs');
 
 function extractMetadata(content) {
   const cleanedTags = splitTags(extractDirective(content, 'x_tags')).join(',') || null;
-  const bpmStr = extractDirective(content, 'tempo');
-  const bpm = bpmStr ? parseInt(bpmStr, 10) : null;
   return {
     title: extractDirective(content, 'title') || '',
     artist: extractDirective(content, 'artist') || '',
     key: extractDirective(content, 'key') || '',
-    bpm: (bpm && bpm >= 1 && bpm <= 300) ? bpm : null,
+    bpm: parseBpm(extractDirective(content, 'tempo'), LIMITS.MIN_BPM, LIMITS.MAX_BPM),
     youtube_url: extractDirective(content, 'x_youtube') || null,
     tags: cleanedTags,
     language: extractDirective(content, 'x_language') || '',
