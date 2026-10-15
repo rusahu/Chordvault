@@ -15,6 +15,7 @@ import { languageName } from '../lib/languages';
 import { PageTitle } from '../components/PageTitle';
 import { AdminTags } from '../components/AdminTags';
 import { ROLES } from '../lib/constants';
+import { formatDbDate } from '../lib/format';
 
 interface AdminViewProps {
   navigate: (view: string, params?: Record<string, string>) => void;
@@ -181,7 +182,7 @@ export function AdminView({ navigate }: AdminViewProps) {
               {pending.map((inv) => (
                 <Group key={inv.id} gap={8} mb={4}>
                   <code style={{ fontSize: 13 }}>{inv.code}</code>
-                  <span className="muted-text" style={{ fontSize: 12 }}>{new Date(inv.created_at).toLocaleDateString()}</span>
+                  <span className="muted-text" style={{ fontSize: 12 }}>{formatDbDate(inv.created_at)}</span>
                   <Button variant="default" size="xs" className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: '2px 6px' }} onClick={() => deleteInvite(inv.id)} disabled={demoMode || busy}>&#10005;</Button>
                 </Group>
               ))}
@@ -206,7 +207,7 @@ export function AdminView({ navigate }: AdminViewProps) {
               <Group className="user-card-top" justify="space-between" gap={12}>
                 <Box flex="1 1 180px" miw={0}>
                   <div className="song-card-title">@{u.username}{isSelf && <span className="muted-text"> {t('admin.you')}</span>}</div>
-                  <div className="song-card-meta">{u.song_count} {u.song_count !== 1 ? t('admin.songPlural') : t('admin.song')} &middot; {t('admin.joined')} {new Date(u.created_at).toLocaleDateString()}</div>
+                  <div className="song-card-meta">{u.song_count} {u.song_count !== 1 ? t('admin.songPlural') : t('admin.song')} &middot; {t('admin.joined')} {formatDbDate(u.created_at)}</div>
                 </Box>
                 <Group gap={6}>
                   {u.role === ROLES.OWNER && <Badge>owner</Badge>}
@@ -239,7 +240,7 @@ export function AdminView({ navigate }: AdminViewProps) {
                 key={s.id}
                 className="mantine-focus-auto"
                 title={s.title}
-                meta={<>{s.artist ? `${s.artist} · ` : ''}@{s.username} &middot; {new Date(s.created_at).toLocaleDateString()}</>}
+                meta={<>{s.artist ? `${s.artist} · ` : ''}@{s.username} &middot; {formatDbDate(s.created_at)}</>}
                 onClick={() => navigate('song-view', { id: String(s.id) })}
                 actions={<Button color="red" size="xs" className="btn btn-danger btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); deleteSong(s.id, s.title); }}>{t('admin.delete')}</Button>}
               />
@@ -257,7 +258,7 @@ export function AdminView({ navigate }: AdminViewProps) {
                 key={c.id}
                 className="mantine-focus-auto"
                 title={c.title}
-                meta={<>by @{c.submitter} &middot; {new Date(c.created_at).toLocaleDateString()}</>}
+                meta={<>by @{c.submitter} &middot; {formatDbDate(c.created_at)}</>}
                 onClick={() => navigate('song-view', { id: String(c.parent_id) })}
                 actions={<Badge color="yellow">pending</Badge>}
               />

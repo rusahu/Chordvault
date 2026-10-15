@@ -2,6 +2,7 @@ import { Button } from '@mantine/core';
 import type { SetlistListItem } from '../types';
 import { useI18n } from '../context/I18nContext';
 import { ListCard } from './ListCard';
+import { formatDbDate } from '../lib/format';
 
 interface SetlistCardProps {
   setlist: SetlistListItem;
@@ -12,7 +13,7 @@ interface SetlistCardProps {
 
 export function SetlistCard({ setlist, onClick, onPlay, showUsername }: SetlistCardProps) {
   const { t } = useI18n();
-  const date = setlist.event_date || (setlist.updated_at ? new Date(setlist.updated_at).toLocaleDateString() : '');
+  const date = setlist.event_date || formatDbDate(setlist.updated_at);
 
   return (
     <ListCard

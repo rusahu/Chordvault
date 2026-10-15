@@ -23,6 +23,7 @@ import type { Song, SongVersion, Correction } from '../types';
 import { TagBadges } from '../components/TagBadges';
 import { PageTitle } from '../components/PageTitle';
 import { VISIBILITY } from '../lib/constants';
+import { formatDbDate } from '../lib/format';
 
 interface SongViewProps {
   songId: number;
@@ -247,7 +248,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
           {corrections.map((c) => (
             <Paper withBorder key={c.id} className="correction-card" bg="var(--ui-card-bg)" radius={12} p={16} mb={12} shadow="sm">
               <Group justify="space-between" gap={8} mb={12} c="dimmed" fz={13}>
-                <span>@{c.username} &middot; {new Date(c.created_at).toLocaleDateString()}</span>
+                <span>@{c.username} &middot; {formatDbDate(c.created_at)}</span>
                 <Group gap={8}>
                   <Button size="xs" className="btn btn-sm" disabled={readOnly} onClick={() => approveCorrection(c.id)}>Approve</Button>
                   <Button color="red" size="xs" className="btn btn-danger btn-sm" disabled={readOnly} onClick={() => rejectCorrection(c.id)}>Reject</Button>
