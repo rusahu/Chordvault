@@ -30,7 +30,7 @@ describe('ImportModal', () => {
   it('returns focus to its opener and resets the selected files after reopening', async () => {
     function Harness() {
       const [opened, setOpened] = useState(false);
-      return <><button onClick={() => setOpened(true)}>Open import</button><ImportModal opened={opened} onClose={() => setOpened(false)} onDone={vi.fn()} /></>;
+      return <><button onClick={() => setOpened(true)}>Open import</button><ImportModal opened={opened} onClose={() => setOpened(false)} /></>;
     }
     render(<Harness />);
     const opener = screen.getByRole('button', { name: 'Open import' });
@@ -48,7 +48,7 @@ describe('ImportModal', () => {
   });
 
   it('imports selected files and shows a summary', async () => {
-    render(<ImportModal opened onClose={() => {}} onDone={() => {}} />);
+    render(<ImportModal opened onClose={() => {}} />);
     const input = screen.getByLabelText('ChordPro file upload') as HTMLInputElement;
     await userEvent.upload(input, [file('A.cho', '[G]a'), file('B.cho', '[G]a')]);
     await userEvent.click(screen.getByTestId('import-start'));
@@ -63,7 +63,7 @@ describe('ImportModal', () => {
     const bytes = new Uint8Array(2 + text.length * 2);
     bytes.set([0xff, 0xfe]);
     for (let i = 0; i < text.length; i++) new DataView(bytes.buffer).setUint16(2 + i * 2, text.charCodeAt(i), true);
-    render(<ImportModal opened onClose={() => {}} onDone={() => {}} />);
+    render(<ImportModal opened onClose={() => {}} />);
     await userEvent.upload(screen.getByLabelText('ChordPro file upload'), [new File([bytes], 'U.cho', { type: 'text/plain' })]);
     await userEvent.click(screen.getByTestId('import-start'));
     await waitFor(() => expect(vi.mocked(importSongs)).toHaveBeenCalled());
@@ -72,7 +72,7 @@ describe('ImportModal', () => {
 
   it('Escape dismisses only the bulk confirmation and performs no import', async () => {
     const onClose = vi.fn();
-    render(<ImportModal opened onClose={onClose} onDone={vi.fn()} />);
+    render(<ImportModal opened onClose={onClose} />);
     await userEvent.upload(screen.getByLabelText('ChordPro file upload'), [file('A.cho', '[G]a'), file('B.cho', '[G]b'), file('C.cho', '[G]c')]);
     await userEvent.click(screen.getByTestId('import-start'));
     expect(await screen.findByText('You selected 3 files. Import all of them?')).toBeInTheDocument();
@@ -85,7 +85,7 @@ describe('ImportModal', () => {
 
   it('Cancel performs no import and a pending import cannot be repeated or dismissed', async () => {
     const onClose = vi.fn();
-    render(<ImportModal opened onClose={onClose} onDone={vi.fn()} />);
+    render(<ImportModal opened onClose={onClose} />);
     await userEvent.upload(screen.getByLabelText('ChordPro file upload'), [file('A.cho', '[G]a'), file('B.cho', '[G]b'), file('C.cho', '[G]c')]);
     await userEvent.click(screen.getByTestId('import-start'));
     await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
@@ -106,7 +106,7 @@ describe('ImportModal', () => {
 });
 
 it('clearing the selected files disables import and allows selecting them again', async () => {
-  render(<ImportModal opened onClose={vi.fn()} onDone={vi.fn()} />);
+  render(<ImportModal opened onClose={vi.fn()} />);
   const chosen = file('Again.cho', '[C]Again');
   await userEvent.upload(screen.getByLabelText('ChordPro file upload'), chosen);
   await userEvent.click(screen.getByRole('button', { name: 'Clear selected files' }));
@@ -118,7 +118,7 @@ it('clearing the selected files disables import and allows selecting them again'
 it('truncates a demo selection to the existing import limit', async () => {
   demo.enabled = true;
   vi.mocked(importSongs).mockClear();
-  render(<ImportModal opened onClose={vi.fn()} onDone={vi.fn()} />);
+  render(<ImportModal opened onClose={vi.fn()} />);
   await userEvent.upload(screen.getByLabelText('ChordPro file upload'), Array.from({ length: 25 }, (_, i) => file(`${i}.cho`, `[G]Song ${i}`)));
   await userEvent.click(screen.getByTestId('import-start'));
   await waitFor(() => expect(importSongs).toHaveBeenCalledTimes(1));

@@ -26,7 +26,7 @@ function identifiedRows(rows: unknown): rows is Record<string, unknown>[] {
   return Array.isArray(rows) && rows.every(row => record(row) && Number.isSafeInteger(row.id) && Number(row.id) > 0) &&
     new Set(rows.map(row => row.id)).size === rows.length;
 }
-export function validateSnapshot(value: unknown, accountId: number): asserts value is OfflineSnapshot {
+function validateSnapshot(value: unknown, accountId: number): asserts value is OfflineSnapshot {
   if (!record(value) || value.schemaVersion !== 1 || value.accountId !== accountId ||
       !identifiedRows(value.songs) || !identifiedRows(value.catalog) || !identifiedRows(value.setlists)) {
     throw new Error('Invalid offline library download');

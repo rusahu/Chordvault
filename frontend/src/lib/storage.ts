@@ -28,7 +28,7 @@ export function saveLocalSetlists(arr: LocalSetlist[]): void {
   localStorage.setItem(LOCAL_SETLISTS_KEY, JSON.stringify(arr));
 }
 
-export interface SetlistOverride {
+interface SetlistOverride {
   target_key?: string | null;
   transpose?: number;          // legacy, read-only
   nashville?: boolean;

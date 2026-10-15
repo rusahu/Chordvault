@@ -56,7 +56,7 @@ export function KeyGroup({ currentKey, onPickKey, isModified, onSaveOnline, onSa
           </Button>
         </Popover.Target>
         <Popover.Dropdown>
-          <KeyPicker currentKey={currentKey} onPickKey={onPickKey} visible={opened} isModified={isModified}
+          <KeyPicker currentKey={currentKey} onPickKey={onPickKey} isModified={isModified}
             onSaveOnline={closeAfter(onSaveOnline)} onSaveLocal={closeAfter(onSaveLocal)} />
         </Popover.Dropdown>
       </Popover>

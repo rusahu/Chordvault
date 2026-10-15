@@ -4,6 +4,7 @@ import { getSongKey } from '../lib/chords';
 import { entryContent, entrySemitones, entryStartKey } from '../lib/setlistKeys';
 import type { SetlistEntry } from '../types';
 import { VISIBILITY } from '../lib/constants';
+import { useI18n } from '../context/I18nContext';
 
 interface SetlistEntryCardProps {
   entry: SetlistEntry;
@@ -14,7 +15,6 @@ interface SetlistEntryCardProps {
   onStepKey: (entryId: number | string, idx: number, direction: 1 | -1) => void;
   onClick: (idx: number) => void;
   onEdit?: (idx: number) => void;
-  t: (key: string) => string;
   dragProps?: React.HTMLAttributes<HTMLDivElement>;
   handleProps?: React.HTMLAttributes<HTMLDivElement>;
   isDragging?: boolean;
@@ -29,11 +29,11 @@ export function SetlistEntryCard({
   onStepKey,
   onClick,
   onEdit,
-  t,
   dragProps,
   handleProps,
   isDragging,
 }: SetlistEntryCardProps) {
+  const { t } = useI18n();
   const content = entryContent(entry);
   const semitones = entrySemitones(content, entry.target_key);
   const keyDisplay = getSongKey(content, semitones);

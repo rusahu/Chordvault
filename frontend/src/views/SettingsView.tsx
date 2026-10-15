@@ -177,7 +177,7 @@ export function SettingsView() {
             </Group>
             <StatusText status={exportStatus.status} />
           </Stack>
-          <ImportModal opened={showImport} onClose={closeImport} onDone={() => {}} />
+          <ImportModal opened={showImport} onClose={closeImport} />
         </SettingsSection>
 
         <SettingsSection title="OCR: API Key">

@@ -8,12 +8,11 @@ import { normalizeKey, getTransposeDelta } from '../lib/keys';
 
 interface EditorPreviewProps {
   content: string;
-  debounceMs?: number;
   forceRender?: number;
 }
 
-export function EditorPreview({ content, debounceMs = 300, forceRender }: EditorPreviewProps) {
-  const [debouncedContent, , { flush }] = useDebouncedValue(content, debounceMs);
+export function EditorPreview({ content, forceRender }: EditorPreviewProps) {
+  const [debouncedContent, , { flush }] = useDebouncedValue(content, 300);
   const [targetKey, setTargetKey] = useState<string | null>(null);
   const [nashville, setNashville] = useState(false);
   const [keyPickerVisible, keyPicker] = useDisclosure(false);
@@ -63,7 +62,7 @@ export function EditorPreview({ content, debounceMs = 300, forceRender }: Editor
           <Popover.Target><Button variant="default" size="xs" onClick={keyPicker.toggle}>
             Key: {currentKey}
           </Button></Popover.Target>
-          <Popover.Dropdown><KeyPicker currentKey={currentKey} onPickKey={handlePickKey} visible={keyPickerVisible} /></Popover.Dropdown>
+          <Popover.Dropdown><KeyPicker currentKey={currentKey} onPickKey={handlePickKey} /></Popover.Dropdown>
           </Popover>
         )}
         <Button

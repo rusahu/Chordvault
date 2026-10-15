@@ -144,7 +144,6 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
         onSave={isOwner ? save : saveAsVersion}
         onSaveAsVersion={isOwner && songId ? saveAsVersion : undefined}
         onDelete={song && isOwner ? deleteSong : undefined}
-        t={t}
       />
       <Stack gap="sm">
         <SimpleGrid cols={{ base: 1, xs: 2 }} spacing="sm">

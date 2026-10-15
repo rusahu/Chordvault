@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { EditorActionBar } from '../EditorActionBar';
 
-const t = (k: string) => k;
-const base = { title: 'Edit song', dirty: false, onLeave: vi.fn(), saveLabel: 'Save', onSave: vi.fn(), t };
+vi.mock('../../context/I18nContext', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
+
+const base = { title: 'Edit song', dirty: false, onLeave: vi.fn(), saveLabel: 'Save', onSave: vi.fn() };
 
 describe('EditorActionBar', () => {
   it('leaves through Back or Cancel and saves through the primary button', () => {

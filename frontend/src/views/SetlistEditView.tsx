@@ -219,7 +219,6 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
               dragProps={isEditable ? dragProps(idx) : undefined}
               handleProps={isEditable ? handleProps(idx) : undefined}
               isDragging={draggedIdx === idx}
-              t={t}
             />
           ))}
         </div>

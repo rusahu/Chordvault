@@ -16,7 +16,7 @@ import { ChordSheet } from '../components/ChordSheet';
 import { Toolbar } from '../components/Toolbar';
 import { Loading } from '../components/Loading';
 import { AddToSetlistModal } from '../components/AddToSetlistModal';
-import { renderChordPro, songHasKey, autoFit } from '../lib/chords';
+import { renderChordPro, autoFit } from '../lib/chords';
 import { LanguageBadge } from '../components/LanguageBadge';
 import type { Song, SongVersion, Correction } from '../types';
 import { TagBadges } from '../components/TagBadges';
@@ -179,7 +179,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
       <Toolbar
         currentKey={chord.currentKey}
         nashville={chord.nashville}
-        nashvilleDisabled={!songHasKey(content, chord.transpose)}
+        nashvilleDisabled={!chord.hasKey}
         onNashvilleChange={chord.toggleNashville}
         twoCol={twoColState.twoCol}
         onTwoColToggle={twoColState.toggleTwoCol}

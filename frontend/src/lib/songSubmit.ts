@@ -3,7 +3,7 @@ import { parseBpm } from '../../../shared/chordpro.mjs';
 import { SONG_ERRORS } from '../../../shared/song-errors.mjs';
 import { MAX_CONTENT_LENGTH, MIN_BPM, MAX_BPM } from './constants';
 
-export type PreparedSong = { content: string; format: string } | { error: string };
+type PreparedSong = { content: string; format: string } | { error: string };
 
 /** The editor's save checks and conversion, shared by every "save a song" path. */
 export function prepareSongForSave(raw: string, { requireLanguage = true } = {}): PreparedSong {

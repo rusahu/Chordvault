@@ -327,7 +327,7 @@ export function renderChordPro(content: string, semitones = 0, nashville = false
   }
 }
 
-export function fixChordAccidentals(song: ChordSheetJS.Song): ChordSheetJS.Song {
+function fixChordAccidentals(song: ChordSheetJS.Song): ChordSheetJS.Song {
   return song.mapChordLyricsPairs((pair) => {
     if (SECTION_LABEL_RE.test(pair.chords)) return pair;
     const chords = normalizeChord(pair.chords);
@@ -341,7 +341,7 @@ export function fixChordAccidentals(song: ChordSheetJS.Song): ChordSheetJS.Song 
   });
 }
 
-export function convertToNashville(song: ChordSheetJS.Song, key: string): ChordSheetJS.Song {
+function convertToNashville(song: ChordSheetJS.Song, key: string): ChordSheetJS.Song {
   return song.mapChordLyricsPairs((pair) => {
     const chords = pair.chords.trim();
     if (!chords || SECTION_LABEL_RE.test(chords)) return pair;
@@ -373,8 +373,6 @@ export function songHasKey(content: string, semitones: number): boolean {
     return !!transposed.key;
   } catch { return false; }
 }
-
-export { escHtml } from './util';
 
 export function clampFontSize(val: number): number {
   return Math.max(-3, Math.min(5, val));
