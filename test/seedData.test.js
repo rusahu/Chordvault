@@ -10,7 +10,7 @@ const { DEMO_ACCOUNT } = require('../scripts/lib/session.mjs');
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cv-seed-'));
 fs.mkdirSync(path.join(dir, 'data'));
-const { NODE_TEST_CONTEXT, ...env } = process.env;
+const { NODE_TEST_CONTEXT: _testContext, ...env } = process.env;
 execFileSync(process.execPath, [path.join(__dirname, '../scripts/seed-data.mjs')], {
   cwd: dir, env: { ...env, DB_PATH: path.join(dir, 'data/chordvault.db') }, stdio: 'pipe',
 });
