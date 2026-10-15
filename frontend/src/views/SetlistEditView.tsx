@@ -52,7 +52,6 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
       if (!sl) { navigate(user ? 'setlists' : 'public-setlists'); return; }
       setMetadata({ name: sl.name, visibility: false, event_date: '' });
       setSetlist(localSetlistToSetlist(sl, sl.entries.map(formatLocalEntry)));
-      location.hash = setlistHash(setlistId);
       return;
     }
 
@@ -60,7 +59,6 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
       const sl = await getSetlistForViewer(Number(setlistId));
       setMetadata({ name: sl.name, visibility: sl.visibility === VISIBILITY.PUBLIC, event_date: sl.event_date || '' });
       setSetlist(sl);
-      location.hash = setlistHash(setlistId);
     } catch (e) {
       notifyError(e);
       navigate(user ? 'setlists' : 'public-setlists');
@@ -105,7 +103,6 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
       try {
         await store.remove(id);
         toast(t('setlist.deleted'), 'success');
-        location.hash = '';
         navigate(isLocal && !user ? 'public-setlists' : 'setlists');
       } catch (e) { notifyError(e); }
     } });

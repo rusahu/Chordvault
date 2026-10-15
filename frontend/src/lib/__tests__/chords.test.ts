@@ -265,6 +265,30 @@ describe('renderChordPro sections', () => {
     expect(html).toContain('class="paragraph chorus"');
     expect(html).toContain('class="label">Chorus</h3>');
   });
+
+  it('shows the label written on a section directive', () => {
+    const html = renderChordPro('{start_of_verse: Verse 2}\n[G]Lyrics\n{end_of_verse}\n\n{start_of_chorus: Reff}\n[C]Lyrics\n{end_of_chorus}');
+    expect(html).toContain('<div class="paragraph verse"><div class="row"><h3 class="label">Verse 2</h3>');
+    expect(html).toContain('<div class="paragraph chorus"><div class="row"><h3 class="label">Reff</h3>');
+  });
+
+  it('prefers the directive label over its type', () => {
+    expect(renderChordPro('{start_of_verse: Pre-Chorus}\n[G]Lyrics\n{end_of_verse}')).toContain('class="label">Pre-Chorus</h3>');
+  });
+
+  it('names an unlabelled section from its type in words', () => {
+    expect(renderChordPro('{start_of_pre_chorus}\n[G]Lyrics\n{end_of_pre_chorus}')).toContain('class="label">Pre Chorus</h3>');
+  });
+
+  it('escapes a directive label', () => {
+    expect(renderChordPro('{start_of_verse: <b>1</b>}\n[G]Lyrics\n{end_of_verse}')).toContain('class="label">&lt;b&gt;1&lt;/b&gt;</h3>');
+  });
+
+  it('recognizes "Pre Chorus :" with a space as a heading', () => {
+    const html = renderChordPro('Pre Chorus :\n[G]Lyrics');
+    expect(html).toContain('class="paragraph prechorus"');
+    expect(html).toContain('class="label">Pre Chorus</h3>');
+  });
 });
 
 describe('renderChordPro number notation', () => {

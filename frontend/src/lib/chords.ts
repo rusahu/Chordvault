@@ -17,7 +17,7 @@ const DIRECTIVE_RE = /^\{([a-z_]+):\s*([^}]*)\}$/i;
 const DIRECTIVE_LINE_RE = /^\{[a-z_]+:.*\}$/i;
 const DIRECTIVE_ORDER = ['title', 'artist', 'key', 'tempo', 'capo', 'x_youtube', 'x_tags', 'x_language'];
 
-const SECTION_NAMES = 'Verse|Chorus|Bridge|Intro|Outro|Interlude|Pre-?Chorus|Ending|Tag|Coda|Break|Solo|Instrumental|Refrain';
+const SECTION_NAMES = 'Verse|Chorus|Bridge|Intro|Outro|Interlude|Pre[- ]?Chorus|Ending|Tag|Coda|Break|Solo|Instrumental|Refrain';
 // Matches a section label with or without surrounding brackets and a trailing colon,
 // e.g. "Chorus", "Verse 2", "[Bridge]", "Pre-Chorus:".
 const SECTION_LABEL_RE = new RegExp(`^\\[?(?:${SECTION_NAMES})\\s*\\d*:?\\]?$`, 'i');
@@ -201,71 +201,58 @@ function commentText(l: ChordSheetJS.Line): string | null {
     (firstItem && 'lyrics' in firstItem ? (firstItem as any).lyrics : '')) || '';
 }
 
+const UNTYPED = ['none', 'indeterminate'];
+
+/** The cleaned label of a line that holds only a section label (a comment, a lyric or a bracket chord), else null. */
+function lineLabel(l: ChordSheetJS.Line | undefined): string | null {
+  if (!l) return null;
+  let text = commentText(l)?.trim();
+  if (text === undefined) {
+    const first = l.items[0];
+    if (!first || !('lyrics' in first)) return null;
+    const lyrics = (first.lyrics || '').trim();
+    const chords = (first.chords || '').trim();
+    // Only one of them should be present for a pure label line
+    if (!lyrics === !chords) return null;
+    text = lyrics || chords;
+  }
+  return SECTION_LABEL_RE.test(text) ? text.replace(/[[\]:]/g, '').trim() : null;
+}
+
+/** CSS class for a written label: "Pre Chorus" and "Pre-Chorus" become prechorus, "Verse 1" becomes verse. */
+const labelType = (label: string) => label.toLowerCase().replace(/[^a-z]/g, '');
+
+/** Heading for a section directive with no label: pre_chorus becomes "Pre Chorus". */
+const typeHeading = (type: string) => type.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+const labelRow = (label: string) => `<div class="row"><h3 class="label">${escHtml(label)}</h3></div>`;
+
 class ResponsiveHtmlFormatter {
   format(song: ChordSheetJS.Song): string {
     return song.paragraphs.map(p => this.renderParagraph(p)).join('');
   }
 
   private renderParagraph(p: ChordSheetJS.Paragraph): string {
+    const content = p.lines.map(l => this.renderLine(l)).join('');
+    // Promote an untyped paragraph whose first line is a label (helps CSS match)
+    const firstLabel = UNTYPED.includes(p.type) ? lineLabel(p.lines[0]) : null;
+    const type = firstLabel ? labelType(firstLabel) : p.type;
 
-    let content = p.lines.map(l => this.renderLine(l)).join('');
-    let detectedType = p.type;
-
-    // Promote paragraph type if the first line is a label (helps CSS match)
-    if (detectedType === 'none' || detectedType === 'indeterminate') {
-      const firstLine = p.lines[0];
-      const firstItem = firstLine?.items[0];
-      if (firstItem && 'lyrics' in firstItem) {
-        const lyrics = (firstItem.lyrics || '').trim();
-        const chords = (firstItem.chords || '').trim();
-        // Check lyrics for label or chords for bracketed label
-        const potentialLabel = lyrics || chords;
-        if (!lyrics !== !chords && SECTION_LABEL_RE.test(potentialLabel)) {
-          detectedType = potentialLabel.replace(/[[\]:]/g, '').split(/\s+/)[0].toLowerCase().replace('-', '');
-        }
-      }
-    }
-
-    // Only add automatic label if:
-    // 1. Type is known (not none/indeterminate)
-    // 2. We haven't already rendered a label badge in this paragraph
-    // 3. The paragraph actually has content (prevents empty "Indeterminate" badges for metadata)
+    // The paragraph must have content, which prevents empty badges for metadata
     const hasRenderableContent = p.lines.some(l =>
       l.items.some(it => ('lyrics' in it && it.lyrics?.trim()) || ('chords' in it && it.chords?.trim()))
     );
+    const heading = !UNTYPED.includes(type) && !content.includes('class="label"') && hasRenderableContent
+      ? labelRow(p.label || typeHeading(type)) : '';
 
-    if (detectedType !== 'none' && detectedType !== 'indeterminate' &&
-        !content.includes('class="label"') && hasRenderableContent) {
-      const typeLabel = detectedType.charAt(0).toUpperCase() + detectedType.slice(1);
-      content = `<div class="row"><h3 class="label">${escHtml(typeLabel)}</h3></div>` + content;
-    }
-
-    return `<div class="paragraph ${detectedType}">${content}</div>`;
+    return `<div class="paragraph ${type}">${heading}${content}</div>`;
   }
 
   private renderLine(l: ChordSheetJS.Line): string {
-
+    const label = lineLabel(l);
+    if (label !== null) return labelRow(label);
     const comment = commentText(l);
-    if (comment !== null) {
-      if (SECTION_LABEL_RE.test(comment.trim())) {
-        const cleanLabel = comment.trim().replace(/[[\]:]/g, '');
-        return `<div class="row"><h3 class="label">${escHtml(cleanLabel)}</h3></div>`;
-      }
-      return `<div class="comment">${escHtml(comment)}</div>`;
-    }
-
-    // Check for section labels on normal lyric lines or bracketed chords
-    const firstItem = l.items[0];
-    if (firstItem && 'lyrics' in firstItem) {
-      const it = firstItem as ChordSheetJS.ChordLyricsPair;
-      const lyrics = (it.lyrics || '').trim();
-      const chords = (it.chords || '').trim();
-      // Only one of them should be present for a pure label line
-      if (!lyrics !== !chords && SECTION_LABEL_RE.test(lyrics || chords)) {
-        const cleanLabel = (lyrics || chords).replace(/[[\]:]/g, '');
-        return `<div class="row"><h3 class="label">${escHtml(cleanLabel)}</h3></div>`;
-      }
-    }
+    if (comment !== null) return `<div class="comment">${escHtml(comment)}</div>`;
 
     const content = l.items.map(it => this.renderItem(it as ChordSheetJS.ChordLyricsPair)).join('');
     return `<div class="row">${content}</div>`;

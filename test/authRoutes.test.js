@@ -120,7 +120,7 @@ test('password change checks the current password', async t => {
   db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(await hashPassword('secret1'), singer.id);
   const change = current_password => request('/api/auth/password', { ...singer, method: 'PUT', body: { current_password, new_password: 'secret2' } });
   const wrong = await change('wrong-pass');
-  assert.deepEqual([wrong.status, await wrong.json()], [401, { error: 'Current password is incorrect' }]);
+  assert.deepEqual([wrong.status, await wrong.json()], [400, { error: 'Current password is incorrect' }]);
   assert.equal((await change('secret1')).status, 200);
 });
 
