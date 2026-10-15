@@ -7,6 +7,7 @@ import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
+import { notifyError } from '../lib/errors';
 import { useSongEditor } from '../hooks/useSongEditor';
 import { TagPicker } from '../components/TagPicker';
 import { LanguagePicker } from '../components/LanguagePicker';
@@ -64,7 +65,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
           setInitialContent(c);
           setSaved({ content: c, visibility: normalizeVisibility(s.visibility) });
         })
-        .catch((e) => { toast(e.message, 'error'); navigate('my-songs'); });
+        .catch((e) => { notifyError(e); navigate('my-songs'); });
     }
   }, [songId, apiCall, navigate, setInitialContent]);
 
@@ -99,7 +100,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
         toast(t('songEdit.created'), 'success');
         navigate('song-view', { id: String(result.id) });
       }
-    } catch (e) { toast((e as Error).message, 'error'); }
+    } catch (e) { notifyError(e); }
   };
 
   const deleteSong = async () => {
@@ -109,7 +110,7 @@ modals.openConfirmModal({ children: t('songEdit.confirmDelete'), onConfirm: asyn
       await apiCall('DELETE', `/api/songs/${song.id}`);
       toast(t('songEdit.deleted'));
       leave('my-songs');
-    } catch (e) { toast((e as Error).message, 'error'); }
+    } catch (e) { notifyError(e); }
 
 } });
 };
@@ -133,7 +134,7 @@ modals.openConfirmModal({ children: t('songEdit.confirmDelete'), onConfirm: asyn
       });
       toast('Version created successfully', 'success');
       leave('song-view', { id: String(result.id) });
-    } catch (e) { toast((e as Error).message, 'error'); }
+    } catch (e) { notifyError(e); }
   };
 
   const dirty = state.content !== saved.content || visibility !== saved.visibility;

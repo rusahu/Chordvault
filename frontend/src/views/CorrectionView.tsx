@@ -3,6 +3,7 @@ import { Button, useComputedColorScheme, Group, Title, Text, Paper } from '@mant
 import { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { showStatusNotification as toast } from '../lib/notifications';
+import { notifyError } from '../lib/errors';
 import { CodeMirrorEditor } from '../components/CodeMirrorEditor';
 import { useI18n } from '../context/I18nContext';
 import { prepareSongForSave } from '../lib/songSubmit';
@@ -24,7 +25,7 @@ export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
   useEffect(() => {
     apiCall<Song>('GET', `/api/songs/${songId}`)
       .then((s) => setContent(s.content))
-      .catch((e) => { toast(e.message, 'error'); navigate('browse'); });
+      .catch((e) => { notifyError(e); navigate('browse'); });
   }, [songId, apiCall, navigate]);
 
   const submit = async () => {
@@ -35,7 +36,7 @@ export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
       await apiCall('POST', `/api/songs/${songId}/correction`, { content: prepared.content });
       toast('Correction submitted for review', 'success');
       navigate('song-view', { id: String(songId) });
-    } catch (e) { toast((e as Error).message, 'error'); }
+    } catch (e) { notifyError(e); }
   };
 
   return (
