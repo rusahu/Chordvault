@@ -27,3 +27,24 @@ test('scripts sign in with the shared demo account', () => {
   assert.deepEqual(require('../scripts/lib/session.mjs').DEMO_ACCOUNT, require('../shared/public-constants.json').DEMO_ACCOUNT);
   assert.deepEqual(require('../shared/public-constants.json').DEMO_ACCOUNT, { username: 'demo', password: 'demopass123' });
 });
+
+const { manageUserError } = require('../shared/access.mjs');
+
+const owner = { id: 1, role: 'owner' };
+const admin = { id: 2, role: 'admin' };
+const otherAdmin = { id: 3, role: 'admin' };
+const member = { id: 4, role: 'user' };
+
+test('the owner manages admins and users but not themself', () => {
+  assert.equal(manageUserError(owner, admin), null);
+  assert.equal(manageUserError(owner, member), null);
+  assert.equal(manageUserError(owner, owner), 'Cannot modify the owner');
+});
+
+test('admins manage users only', () => {
+  assert.equal(manageUserError(admin, member), null);
+  assert.equal(manageUserError(admin, otherAdmin), 'Only the owner can manage admins');
+  assert.equal(manageUserError(admin, admin), 'Only the owner can manage admins');
+  assert.equal(manageUserError(admin, owner), 'Cannot modify the owner');
+  assert.equal(manageUserError(member, member), 'Cannot modify yourself');
+});

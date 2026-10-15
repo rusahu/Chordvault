@@ -24,8 +24,9 @@ function readLegacyOcrText(text) {
 function createSettingsRouter() {
   const router = express.Router();
   router.use(validateObjectBody);
+  router.use(['/settings', '/ocr'], requireAuth);
 
-  router.put('/settings/gemini-key', requireAuth, (req, res) => {
+  router.put('/settings/gemini-key', (req, res) => {
     const { api_key } = req.body;
     assertValid(validateGeminiApiKey(api_key));
     const encrypted = encryptApiKey(api_key);
@@ -33,40 +34,40 @@ function createSettingsRouter() {
     res.json({ success: true });
   });
 
-  router.delete('/settings/gemini-key', requireAuth, (req, res) => {
+  router.delete('/settings/gemini-key', (req, res) => {
     User.updateGeminiApiKey(req.user.id, null);
     res.json({ success: true });
   });
 
-  router.get('/settings/gemini-key', requireAuth, (req, res) => {
+  router.get('/settings/gemini-key', (req, res) => {
     const user = User.getFullById(req.user.id);
     res.json({ hasKey: !!user?.gemini_api_key });
   });
 
-  router.get('/settings/ocr-prompt', requireAuth, (req, res) => {
+  router.get('/settings/ocr-prompt', (req, res) => {
     const user = User.getFullById(req.user.id);
     res.json({ prompt: user?.gemini_prompt || null, defaultPrompt: DEFAULT_OCR_PROMPT });
   });
 
-  router.put('/settings/ocr-prompt', requireAuth, (req, res) => {
+  router.put('/settings/ocr-prompt', (req, res) => {
     const { prompt } = req.body;
     assertValid(validateOcrPrompt(prompt));
     User.updateGeminiPrompt(req.user.id, prompt.trim());
     res.json({ success: true });
   });
 
-  router.delete('/settings/ocr-prompt', requireAuth, (req, res) => {
+  router.delete('/settings/ocr-prompt', (req, res) => {
     User.updateGeminiPrompt(req.user.id, null);
     res.json({ success: true });
   });
 
-  router.get('/settings/languages', requireAuth, (req, res) => {
+  router.get('/settings/languages', (req, res) => {
     const user = User.getFullById(req.user.id);
     const languages = user?.preferred_languages ? user.preferred_languages.split(',').filter(Boolean) : [];
     res.json({ languages });
   });
 
-  router.put('/settings/languages', requireAuth, (req, res) => {
+  router.put('/settings/languages', (req, res) => {
     const languages = req.body.languages ?? [];
     assertValid(validatePreferredLanguages(languages));
     const value = languages.length > 0 ? languages.join(',') : null;
@@ -74,7 +75,7 @@ function createSettingsRouter() {
     res.json({ success: true });
   });
 
-  router.get('/settings/ocr-model', requireAuth, (req, res) => {
+  router.get('/settings/ocr-model', (req, res) => {
     const user = User.getFullById(req.user.id);
     res.json({
       model: resolveGeminiModel(user?.gemini_model),
@@ -82,23 +83,23 @@ function createSettingsRouter() {
     });
   });
 
-  router.put('/settings/ocr-model', requireAuth, (req, res) => {
+  router.put('/settings/ocr-model', (req, res) => {
     const { model } = req.body;
     if (!model || !isValidGeminiModel(model)) throw new AppError('Invalid model', 400);
     User.updateGeminiModel(req.user.id, model);
     res.json({ success: true });
   });
 
-  router.post('/ocr/gemini', requireAuth, async (req, res) => {
+  router.post('/ocr/gemini', async (req, res) => {
     const { image, model: requestModel } = req.body;
     assertValid(validateOcrImage(image));
-    const { user, apiKey } = loadGeminiCredentials(req.user.id);
+    const { user, apiKey, model } = loadGeminiCredentials(req.user.id, requestModel);
 
     const isJsonMode = !user.gemini_prompt;
 
     const text = await callGemini({
       apiKey,
-      model: resolveGeminiModel(requestModel, user.gemini_model),
+      model,
       contents: [imageTurn(user.gemini_prompt || DEFAULT_OCR_PROMPT, image)],
       schema: isJsonMode ? OCR_JSON_SCHEMA : undefined,
       subject: 'image',
@@ -127,10 +128,10 @@ function createSettingsRouter() {
   });
 
   // Refinement endpoint — multi-turn conversation with image context
-  router.post('/ocr/gemini/refine', requireAuth, async (req, res) => {
+  router.post('/ocr/gemini/refine', async (req, res) => {
     const { image, history, message, model: requestModel } = req.body;
     assertValid(validateRefineInput({ image, history, message }));
-    const { user, apiKey } = loadGeminiCredentials(req.user.id);
+    const { user, apiKey, model } = loadGeminiCredentials(req.user.id, requestModel);
 
     // Refine always uses text-based prompt for context (even if initial extraction used JSON mode)
     const contents = [{ role: 'user', ...imageTurn(user.gemini_prompt || OCR_REFINE_PROMPT, image) }];
@@ -146,7 +147,7 @@ function createSettingsRouter() {
 
     const text = await callGemini({
       apiKey,
-      model: resolveGeminiModel(requestModel, user.gemini_model),
+      model,
       contents,
       retryHint: 'Try rephrasing your correction.',
     });

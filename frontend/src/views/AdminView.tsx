@@ -17,7 +17,7 @@ import { useDemo } from '../context/DemoContext';
 import { languageName } from '../lib/languages';
 import { PageTitle } from '../components/PageTitle';
 import { AdminTags } from '../components/AdminTags';
-import { ROLES } from '../lib/constants';
+import { ROLES, manageUserError } from '../lib/constants';
 import { formatDbDate, formatSongCount } from '../lib/format';
 
 interface AdminViewProps {
@@ -191,9 +191,8 @@ export function AdminView({ navigate }: AdminViewProps) {
       <CardGrid mb={28}>
         {users.map((u) => {
           const isSelf = u.id === currentId;
-          const isTargetOwner = u.role === ROLES.OWNER;
           const isTargetAdmin = u.role === ROLES.ADMIN;
-          const canManage = !isSelf && !isTargetOwner && (isOwner || !isTargetAdmin);
+          const canManage = !!user && !manageUserError(user, u);
 
           return (
             <Paper key={u.id} className="user-card" withBorder bg="var(--ui-card-bg)" radius="var(--radius)" py={16} px={20} shadow="sm">
