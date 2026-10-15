@@ -1,9 +1,8 @@
 const express = require('express');
-const bcrypt = require('bcryptjs');
 const { isRegistrationAllowed } = require('../lib/db');
 const User = require('../lib/models/user');
 const Invite = require('../lib/models/invite');
-const { requireAuth, hashPassword, sessionResponse, createAccount } = require('../lib/auth');
+const { requireAuth, hashPassword, checkPassword, sessionResponse, createAccount } = require('../lib/auth');
 const { validateObjectBody, assertValid, validateUserCredentials, validatePassword } = require('../lib/validation');
 const { ROLES, LIMITS } = require('../lib/constants');
 const { AppError } = require('../lib/errors');
@@ -51,7 +50,8 @@ function createAuthRouter() {
     if (typeof username !== 'string' || typeof password !== 'string') throw new AppError('Username and password required', 400);
     if (password.length > LIMITS.PASSWORD_MAX) throw new AppError('Invalid username or password', 401);
     const user = User.findByUsername(username.trim());
-    if (!user || !(await bcrypt.compare(password, user.password_hash))) throw new AppError('Invalid username or password', 401);
+    const valid = await checkPassword(password, user?.password_hash);
+    if (!user || !valid) throw new AppError('Invalid username or password', 401);
     if (user.disabled) throw new AppError('Account is disabled. Contact an administrator.', 403);
     res.json(sessionResponse(user));
   });
@@ -74,7 +74,7 @@ function createAuthRouter() {
     assertValid(validatePassword(new_password, 'New password'));
     const user = User.getFullById(req.user.id);
     if (!user) throw new AppError('User not found', 404);
-    if (!(await bcrypt.compare(current_password, user.password_hash))) throw new AppError('Current password is incorrect', 401);
+    if (!(await checkPassword(current_password, user.password_hash))) throw new AppError('Current password is incorrect', 401);
     const hash = await hashPassword(new_password);
     User.updatePassword(req.user.id, hash);
     res.json({ success: true });
