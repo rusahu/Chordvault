@@ -4,6 +4,7 @@ import { SetlistPlayView } from '../SetlistPlayView';
 import { useSetlistPlayer } from '../../hooks/useSetlistPlayer';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { showStatusNotification } from '../../lib/notifications';
+import { SONG_ERRORS } from '../../../../shared/song-errors.mjs';
 
 // ─── Mocks ──────────────────────────────────────────────────────────
 
@@ -130,7 +131,7 @@ describe('SetlistPlayView inline editor save as version', () => {
 
   it('rejects an invalid tempo without saving', () => {
     renderEditor('{title: Song}\n{tempo: 120bpm}\n[C]a');
-    expect(showStatusNotification).toHaveBeenCalledWith('BPM must be between 1 and 300', 'error');
+    expect(showStatusNotification).toHaveBeenCalledWith(SONG_ERRORS.bpmRange, 'error');
     expect(apiCall).not.toHaveBeenCalled();
   });
 });

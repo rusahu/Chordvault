@@ -5768,7 +5768,7 @@ exports[`API responses match the recorded contract 2`] = `
     "call": "POST /api/songs as alice",
     "status": 400,
     "body": {
-      "error": "No chords detected. Add chords (e.g. [C], [G]) before saving."
+      "error": "No chords detected. Add chords in [brackets] before the syllable, e.g. [G]Amazing [C]grace"
     }
   },
   {

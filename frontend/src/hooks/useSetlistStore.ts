@@ -5,9 +5,9 @@ import { useI18n } from '../context/I18nContext';
 import { MAX_LOCAL_SETLISTS } from '../lib/constants';
 import type { SetlistEntry } from '../types';
 
-export interface SongRef { id: number; title: string; artist?: string | null }
-export interface KeyPick { targetKey: string | null; nashville: boolean }
-export interface SetlistMeta { name: string; visibility: string; event_date: string }
+interface SongRef { id: number; title: string; artist?: string | null }
+interface KeyPick { targetKey: string | null; nashville: boolean }
+interface SetlistMeta { name: string; visibility: string; event_date: string }
 
 /** One write API for browser-local and server setlists. Local refusals reject with the message the views show. */
 export function useSetlistStore(local: boolean) {

@@ -86,7 +86,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
   };
 
   const save = async () => {
-    const prepared = prepareSongForSave(state.content, t);
+    const prepared = prepareSongForSave(state.content);
     if ('error' in prepared) { toast(prepared.error, 'error'); return; }
     const body = { content: prepared.content, format_detected: prepared.format, visibility };
 
@@ -125,7 +125,7 @@ modals.openConfirmModal({ children: t('songEdit.confirmDelete'), onConfirm: asyn
   const saveAsVersion = async () => {
     const targetId = songId || (song?.id);
     if (!targetId) return;
-    const prepared = prepareSongForSave(state.content, t);
+    const prepared = prepareSongForSave(state.content);
     if ('error' in prepared) { toast(prepared.error, 'error'); return; }
 
     try {

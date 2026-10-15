@@ -21,6 +21,7 @@ const content = '{title: Grace}\n[C]Grace';
 const songId = Number(db.prepare("INSERT INTO songs (user_id,title,content) VALUES (?,'Grace',?)").run(owner.id, content).lastInsertRowid);
 const correctionId = Number(db.prepare("INSERT INTO songs (user_id,title,content,status,parent_id) VALUES (?,'Grace',?,'pending',?)").run(other.id, content, songId).lastInsertRowid);
 const setlistId = Number(db.prepare("INSERT INTO setlists (user_id,name) VALUES (?,'Sunday')").run(owner.id).lastInsertRowid);
+const { SONG_ERRORS } = require('../shared/song-errors.mjs');
 
 async function expectError(request, path, options, status, error) {
   const response = await request(path, options);
@@ -122,7 +123,7 @@ test('versions and corrections require a title and a known language', async t =>
   const noTitle = '[C]Grace';
   const badLanguage = '{title: Grace}\n{x_language: zz}\n[C]Grace';
   for (const path of [`/api/songs/${songId}/version`, `/api/songs/${songId}/correction`]) {
-    await expectError(request, path, { ...other, method: 'POST', body: { content: noTitle } }, 400, 'Title is required. Add {title: Song Name} to your content.');
+    await expectError(request, path, { ...other, method: 'POST', body: { content: noTitle } }, 400, SONG_ERRORS.titleRequired);
     await expectError(request, path, { ...other, method: 'POST', body: { content: badLanguage } }, 400, 'Invalid language code');
   }
 });

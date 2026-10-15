@@ -5,7 +5,6 @@ import { useApi } from '../hooks/useApi';
 import { showStatusNotification as toast } from '../lib/notifications';
 import { notifyError } from '../lib/errors';
 import { CodeMirrorEditor } from '../components/CodeMirrorEditor';
-import { useI18n } from '../context/I18nContext';
 import { prepareSongForSave } from '../lib/songSubmit';
 import type { Song } from '../types';
 
@@ -16,7 +15,6 @@ interface CorrectionViewProps {
 
 export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
   const apiCall = useApi();
-  const { t } = useI18n();
   const { readOnly } = useOffline();
   useOfflineActivity(true);
   const theme = useComputedColorScheme('dark');
@@ -30,7 +28,7 @@ export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
 
   const submit = async () => {
     if (readOnly) return;
-    const prepared = prepareSongForSave(content, t, { requireLanguage: false });
+    const prepared = prepareSongForSave(content, { requireLanguage: false });
     if ('error' in prepared) { toast(prepared.error, 'error'); return; }
     try {
       await apiCall('POST', `/api/songs/${songId}/correction`, { content: prepared.content });

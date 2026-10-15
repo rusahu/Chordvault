@@ -16,10 +16,8 @@ DATA_GID=$(stat -c '%g' "$DATA_DIR")
 echo "ChordVault: data dir owned by UID=$DATA_UID GID=$DATA_GID"
 
 # ── Seed demo data (if requested) ───────────────────────────────────────
-if [ "$DEMO_MODE" = "true" ] && [ ! -f "$DATA_DIR/chordvault.db" ]; then
-  echo "Demo mode: seeding database..."
+if [ "$DEMO_MODE" = "true" ]; then
   node scripts/seed-data.mjs
-  echo "Demo mode: seeding complete"
 fi
 
 # ── Drop privileges and exec Node ───────────────────────────────────────
