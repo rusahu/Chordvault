@@ -142,7 +142,7 @@ export function useSetlistPlayer({
       }));
       if (!silent) toast('Key saved to cloud', 'success');
     } catch (e) {
-      if (!silent) toast((e as Error).message, 'error');
+      if (!silent) notifyError(e);
     }
   }, [setlist, entry, apiCall, user, readOnly]);
 
