@@ -1,7 +1,7 @@
 const express = require('express');
 const yazl = require('yazl');
 const { requireAuth, requireAdmin, optionalAuth, isAdminRole, canManageSong, viewerId } = require('../lib/auth');
-const { STATUS, VISIBILITY, LIMITS } = require('../lib/constants');
+const { STATUS, LIMITS } = require('../lib/constants');
 const { validateListQuery, validateObjectBody, requireId, assertValid, validateSongInput, validateVisibility, validateSongMetadata, parsePaginationParams, songListOptions } = require('../lib/validation');
 const { AppError, requireFound } = require('../lib/errors');
 const { DEMO_MODE } = require('../lib/demo');
@@ -182,7 +182,7 @@ function createSongsRouter() {
     const original = findSong(req.params.id);
     if (original.status !== STATUS.ACTIVE) throw new AppError('Song not found', 404);
 
-    if (!canManageSong(req.user, original.user_id) && original.visibility !== VISIBILITY.PUBLIC) throw new AppError('Not authorized', 403);
+    if (!canViewSongVisibility(req.user, original)) throw new AppError('Not authorized', 403);
 
     const { content } = req.body;
     const { meta } = requireSongSave({ content });
@@ -200,7 +200,7 @@ function createSongsRouter() {
   router.post('/songs/:id/correction', requireAuth, (req, res) => {
     const original = findSong(req.params.id);
     if (original.status === STATUS.PENDING) throw new AppError('Cannot correct a pending correction', 400);
-    if (original.visibility === VISIBILITY.PRIVATE && req.user.id !== original.user_id) throw new AppError('Cannot submit corrections on private songs', 403);
+    if (!canViewSongVisibility(req.user, original)) throw new AppError('Cannot submit corrections on private songs', 403);
     const { content } = req.body;
     const { meta } = requireSongSave({ content });
     const parentId = familyRootId(original);

@@ -164,3 +164,15 @@ test('every song save checks the YouTube link and title length from the song tex
     assert.equal(ok.status, 200, link);
   }
 });
+
+test('admins can use any song they can view; others cannot use a private song', async t => {
+  const request = await serve(t, mount);
+  const privateId = Number(db.prepare("INSERT INTO songs (user_id,title,content,visibility) VALUES (?,'Hidden',?,'private')").run(owner.id, content).lastInsertRowid);
+  const adminSetlist = Number(db.prepare("INSERT INTO setlists (user_id,name) VALUES (?,'Admin set')").run(admin.id).lastInsertRowid);
+  const otherSetlist = Number(db.prepare("INSERT INTO setlists (user_id,name) VALUES (?,'Other set')").run(other.id).lastInsertRowid);
+  const correction = { content: '{title: Hidden}\n{x_language: en}\n[C]Grace' };
+  assert.equal((await request(`/api/setlists/${adminSetlist}/songs`, { ...admin, method: 'POST', body: { song_id: privateId } })).status, 200);
+  assert.equal((await request(`/api/songs/${privateId}/correction`, { ...admin, method: 'POST', body: correction })).status, 200);
+  assert.equal((await request(`/api/setlists/${otherSetlist}/songs`, { ...other, method: 'POST', body: { song_id: privateId } })).status, 403);
+  assert.equal((await request(`/api/songs/${privateId}/correction`, { ...other, method: 'POST', body: correction })).status, 403);
+});

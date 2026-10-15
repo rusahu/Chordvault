@@ -1,11 +1,11 @@
 const express = require('express');
 const { requireAuth, optionalAuth } = require('../lib/auth');
-const { STATUS, VISIBILITY, LIMITS } = require('../lib/constants');
+const { STATUS, LIMITS } = require('../lib/constants');
 const { validateListQuery, validateObjectBody, parseId, requireId, assertValid, validateSetlistInput, validateTargetKey, canonicalTargetKey, validateNashville, setlistListOptions } = require('../lib/validation');
 const { AppError, requireFound } = require('../lib/errors');
 const Setlist = require('../lib/models/setlist');
 const Song = require('../lib/models/song');
-const { maskSetlistEntry } = require('../lib/songAccess');
+const { maskSetlistEntry, canViewSongVisibility } = require('../lib/songAccess');
 const { normalizeVisibility } = require('../shared/access.mjs');
 
 const requireSetlistId = raw => requireId(raw, 'Invalid setlist ID');
@@ -74,9 +74,7 @@ function createSetlistsRouter() {
     assertValid(validateNashville(nashville));
     const song = requireFound(Song.findById(songIdParsed), 'Song not found');
     if (song.status === STATUS.PENDING) throw new AppError('Cannot add a pending correction to a setlist', 400);
-    if (song.user_id !== req.user.id && song.visibility !== VISIBILITY.PUBLIC) {
-      throw new AppError('Cannot add a private song you don\'t own', 403);
-    }
+    if (!canViewSongVisibility(req.user, song)) throw new AppError('Cannot add a private song you don\'t own', 403);
     const result = Setlist.addSongEntry(id, songIdParsed, { targetKey: storedTargetKey(target_key), nashville });
     res.json({ entry_id: result.entry_id, position: result.position });
   });
