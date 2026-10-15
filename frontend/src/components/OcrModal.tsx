@@ -1,4 +1,4 @@
-import { Progress, Modal, Button, FileInput, NativeSelect, TextInput, Textarea, Stack, Group, Text, Paper, Image } from '@mantine/core';
+import { Progress, Modal, Button, FileInput, TextInput, Textarea, Stack, Group, Text, Paper, Image } from '@mantine/core';
 import { useTimeout } from '@mantine/hooks';
 import { IconFileText } from '@tabler/icons-react';
 import { useState, useRef, useEffect } from 'react';
@@ -8,6 +8,8 @@ import { errorMessage } from '../lib/errors';
 import { useStackedModalProps } from '../hooks/useStackedModalProps';
 import { useActiveRef } from '../hooks/useActiveRef';
 import { DEFAULT_GEMINI_MODEL } from '../lib/constants';
+import { ModelSelect } from './ModelSelect';
+import { getOcrModels, type OcrModels } from '../lib/settingsApi';
 
 interface OcrModalProps {
   opened: boolean;
@@ -56,10 +58,10 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
 
   // Model selection
   const [selectedModel, setSelectedModel] = useState(DEFAULT_GEMINI_MODEL);
-  const [models, setModels] = useState<{ id: string; label: string }[]>([]);
+  const [models, setModels] = useState<OcrModels['models']>([]);
 
   useEffect(() => {
-    api<{ model: string; models: { id: string; label: string }[] }>('GET', '/api/settings/ocr-model')
+    getOcrModels(api)
       .then(data => { if (active.current) { setSelectedModel(data.model); setModels(data.models); } })
       .catch(() => {});
   }, [api, active]);
@@ -183,9 +185,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
             </Paper>
           )}
           {models.length > 0 && (
-            <NativeSelect label="Model" value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={processing}>
-              {models.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-            </NativeSelect>
+            <ModelSelect label="Model" models={models} value={selectedModel} onChange={setSelectedModel} disabled={processing} />
           )}
           <Button onClick={process} loading={processing} disabled={processing} fullWidth size="md">
             {processing ? 'Processing...' : '\u2728 Extract text'}
@@ -216,9 +216,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
           />
           {detectedLang && <Text c="dimmed" fz={13}>Detected language: <strong>{detectedLang}</strong></Text>}
           {models.length > 0 && (
-            <NativeSelect aria-label="Correction model" value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={refining} size="xs">
-              {models.map(m => <option key={m.id} value={m.id}>{m.label}</option>)}
-            </NativeSelect>
+            <ModelSelect aria-label="Correction model" models={models} value={selectedModel} onChange={setSelectedModel} disabled={refining} size="xs" />
           )}
           <Group gap={6} wrap="nowrap" align="flex-start">
             <TextInput aria-label="Describe what to fix..." flex={1} miw={0}

@@ -185,3 +185,10 @@ it('pages like the server: a page past the end is empty and no rows means no pag
   expect({ ids: songs.map(s => s.id), page, limit, total, totalPages }).toEqual({ ids: [], page: 5, limit: 1, total: 2, totalPages: 2 });
   expect(await library.querySetlists(1, { q: 'nothing matches', page: 1, limit: 20 })).toMatchObject({ setlists: [], total: 0, totalPages: 0 });
 });
+
+it('reports a song, its versions or a setlist missing from the download as unavailable', async () => {
+  await save();
+  for (const read of [library.getSong(1, 99), library.getVersions(1, 99), library.getSetlist(1, 99)]) {
+    await expect(read).rejects.toThrow('not available in your downloaded library');
+  }
+});

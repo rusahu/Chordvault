@@ -1,12 +1,12 @@
 import type { User } from '../types';
-import { ApiError } from './api';
+import { ApiError, authHeaders } from './api';
 import { offlineLibrary } from './offlineLibrary';
 
 export async function downloadOfflineLibrary(user: User, library = offlineLibrary, signal?: AbortSignal) {
   const ticket = await library.beginRefresh(user.id);
   if (!ticket) return false;
   const current = await library.state();
-  const headers: Record<string, string> = { Authorization: `Bearer ${user.token}` };
+  const headers = authHeaders(user.token);
   if (current?.revision) headers['If-None-Match'] = current.revision;
   for (let attempt = 0; attempt < 2; attempt++) {
     const response = await fetch('/api/offline-library', { headers, signal, cache: 'no-store' });

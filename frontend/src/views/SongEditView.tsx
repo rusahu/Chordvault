@@ -19,6 +19,7 @@ import type { Song } from '../types';
 import { EditorActionBar } from '../components/EditorActionBar';
 import type { Destination } from '../lib/songEditRoute';
 import { VISIBILITY, MIN_BPM, MAX_BPM, normalizeVisibility, type Visibility } from '../lib/constants';
+import { getGeminiKeySaved, getLanguages } from '../lib/settingsApi';
 
 interface SongEditViewProps {
   songId?: number;
@@ -70,12 +71,8 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
 
   useEffect(() => {
     if (user) {
-      apiCall<{ hasKey: boolean }>('GET', '/api/settings/gemini-key')
-        .then((d) => setHasGeminiKey(d.hasKey))
-        .catch(() => {});
-      apiCall<{ languages: string[] }>('GET', '/api/settings/languages')
-        .then((d) => setPreferredLanguages(d.languages))
-        .catch(() => {});
+      getGeminiKeySaved(apiCall).then(setHasGeminiKey).catch(() => {});
+      getLanguages(apiCall).then(setPreferredLanguages).catch(() => {});
     }
   }, [apiCall, user]);
 

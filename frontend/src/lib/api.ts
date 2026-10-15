@@ -6,6 +6,22 @@ export class ApiError extends Error {
   }
 }
 
+export type ApiCaller = <T = unknown>(method: string, path: string, body?: unknown) => Promise<T>;
+
+export const authHeaders = (token?: string | null): Record<string, string> =>
+  token ? { Authorization: `Bearer ${token}` } : {};
+
+/** The server's `error` message when the body carries one, else `fallback`. */
+export async function responseError(res: Response, fallback: string): Promise<ApiError> {
+  try {
+    const data = await res.json();
+    if (data?.error) return new ApiError(data.error, res.status);
+  } catch {
+    /* non-JSON error body */
+  }
+  return new ApiError(fallback, res.status);
+}
+
 export async function api<T = unknown>(
   method: string,
   path: string,
@@ -13,23 +29,18 @@ export async function api<T = unknown>(
   token?: string | null,
   signal?: AbortSignal
 ): Promise<T> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
   const res = await fetch(path, {
     method,
     signal: signal ?? (method === 'GET' ? AbortSignal.timeout(8000) : undefined),
-    headers,
+    headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: body ? JSON.stringify(body) : undefined,
   });
-  let data: Record<string, unknown>;
+  if (!res.ok) throw await responseError(res, `Server error (${res.status})`);
   try {
-    data = await res.json();
+    return await res.json() as T;
   } catch {
-    if (!res.ok) throw new ApiError(`Server error (${res.status})`, res.status);
     throw new ApiError('Invalid response from server', res.status);
   }
-  if (!res.ok) throw new ApiError((data.error as string) || 'Request failed', res.status);
-  return data as T;
 }
 
 export interface ImportResult {
@@ -49,17 +60,8 @@ export function filenameFromDisposition(header: string | null, fallback: string)
 }
 
 export async function exportSongsBlob(token: string): Promise<{ blob: Blob; filename: string }> {
-  const res = await fetch('/api/songs/export', { headers: { Authorization: `Bearer ${token}` } });
-  if (!res.ok) {
-    let msg = `Export failed (${res.status})`;
-    try {
-      const data = await res.json();
-      if (data?.error) msg = data.error;
-    } catch {
-      /* non-JSON error body */
-    }
-    throw new ApiError(msg, res.status);
-  }
+  const res = await fetch('/api/songs/export', { headers: authHeaders(token) });
+  if (!res.ok) throw await responseError(res, `Export failed (${res.status})`);
   const blob = await res.blob();
   const filename = filenameFromDisposition(res.headers.get('Content-Disposition'), 'chordvault-export.zip');
   return { blob, filename };

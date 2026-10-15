@@ -29,8 +29,10 @@ export function useLibraryRead() {
           if (accountId && exists && await exists(accountId).catch(() => null)) await offlineLibrary.invalidate(accountId);
         });
     }
+    /** A single item: when the server no longer has it, drop a cached copy that still does. */
+    const readItem = <T>(path: string, cached: (account: number) => Promise<T>) => read(path, cached, cached);
     const getSetlist = (id: number, publicOnly = false) =>
-      read<Setlist>(`/api/setlists/${publicOnly ? 'public/' : ''}${id}`, account => offlineLibrary.getSetlist(account, id), account => offlineLibrary.getSetlist(account, id));
+      readItem<Setlist>(`/api/setlists/${publicOnly ? 'public/' : ''}${id}`, account => offlineLibrary.getSetlist(account, id));
     /** The viewer's own copy when signed in, else (or when it is not theirs) the public one. */
     const getSetlistForViewer = async (id: number) => {
       if (!accountId) return getSetlist(id, true);
@@ -42,7 +44,7 @@ export function useLibraryRead() {
       }
     };
     return {
-      getSong: (id: number) => read<Song>(`/api/songs/${id}`, account => offlineLibrary.getSong(account, id), account => offlineLibrary.getSong(account, id)),
+      getSong: (id: number) => readItem<Song>(`/api/songs/${id}`, account => offlineLibrary.getSong(account, id)),
       getVersions: (id: number) => read<SongVersion[]>(`/api/songs/${id}/versions`, account => offlineLibrary.getVersions(account, id), account => offlineLibrary.getSong(account, id)),
       getSetlistForViewer,
       querySongs: (query: LibraryQuery) => read<LibraryPage<SongListItem, 'songs'>>(`/api/songs${query.own ? '' : '/public'}${libraryQueryString(query)}`, account => offlineLibrary.querySongs(account, query)),

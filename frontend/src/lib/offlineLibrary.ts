@@ -125,21 +125,17 @@ export function createOfflineLibrary(name = 'chordvault-offline') {
       return callback();
     });
   }
-  const getSong = (accountId: number, id: number) => read(accountId, async () => {
-    const song = await db.songs.get(id);
-    if (!song) throw unavailable();
-    return song;
-  });
+  async function need<T>(table: Table<T, number>, id: number) {
+    const row = await table.get(id);
+    if (!row) throw unavailable();
+    return row;
+  }
+  const getSong = (accountId: number, id: number) => read(accountId, () => need(db.songs, id));
   const getVersions = (accountId: number, id: number) => read(accountId, async () => {
-    const song = await db.songs.get(id);
-    if (!song) throw unavailable();
+    const song = await need(db.songs, id);
     return db.songs.where('familyId').equals(song.familyId).sortBy('created_at');
   });
-  const getSetlist = (accountId: number, id: number) => read(accountId, async () => {
-    const setlist = await db.setlists.get(id);
-    if (!setlist) throw unavailable();
-    return setlist;
-  });
+  const getSetlist = (accountId: number, id: number) => read(accountId, () => need(db.setlists, id));
   const querySongs = (accountId: number, query: LibraryQuery) => read(accountId, async () => {
     const terms = (query.q || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
     const pinyin = terms.join('');

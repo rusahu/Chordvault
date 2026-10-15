@@ -4,6 +4,7 @@ import { useApi } from '../hooks/useApi';
 import { useBusyAction } from '../hooks/useBusyAction';
 import { useStatusMessage } from '../hooks/useStatusMessage';
 import { errorMessage } from '../lib/errors';
+import { getGeminiKeySaved } from '../lib/settingsApi';
 
 export function GeminiKeySettings() {
   const apiCall = useApi();
@@ -16,8 +17,7 @@ export function GeminiKeySettings() {
 
   const loadStatus = useCallback(async () => {
     try {
-      const data = await apiCall<{ hasKey: boolean }>('GET', '/api/settings/gemini-key');
-      setHasKey(data.hasKey);
+      setHasKey(await getGeminiKeySaved(apiCall));
     } catch {
       setHasKey(null);
       fail('Could not check key status');
