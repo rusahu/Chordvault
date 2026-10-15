@@ -16,7 +16,7 @@ import { Pagination } from '../components/Pagination';
 import { useSearchSessionValue } from '../hooks/useSearchSessionValue';
 import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
 import { PageTitle } from '../components/PageTitle';
-import { VISIBILITY } from '../lib/constants';
+import { VISIBILITY, MAX_SETLIST_NAME_LENGTH, MAX_LOCAL_SETLISTS } from '../lib/constants';
 
 interface SetlistsViewProps {
   navigate: (view: string, params?: Record<string, string>) => void;
@@ -56,11 +56,11 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
   const create = async () => {
     if (readOnly) return;
     if (!newName.trim()) { toast(t('setlist.nameRequired'), 'error'); return; }
-    if (newName.length > 200) { toast('Name too long', 'error'); return; }
+    if (newName.length > MAX_SETLIST_NAME_LENGTH) { toast('Name too long', 'error'); return; }
 
     if (activeTab === 'local') {
       const sl = ls.create(newName.trim());
-      if (!sl) { toast('Max 50 setlists', 'error'); return; }
+      if (!sl) { toast(`Max ${MAX_LOCAL_SETLISTS} setlists`, 'error'); return; }
       toast(t('setlist.created'), 'success');
       navigate('setlist-edit', { id: sl.id });
     } else {

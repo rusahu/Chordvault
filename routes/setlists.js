@@ -102,7 +102,7 @@ function createSetlistsRouter() {
     }
     if (content_override != null && typeof content_override !== 'string') throw new AppError('Content override must be a string or null', 400);
     if (content_override !== undefined && content_override !== null && content_override.length > LIMITS.MAX_CONTENT) {
-      throw new AppError('Content override too large (max 100KB)', 400);
+      throw new AppError(`Content override too large (max ${LIMITS.MAX_CONTENT / 1000}KB)`, 400);
     }
     Setlist.updateSongEntry(entryId, setlistId, entry, {
       targetKey: target_key == null ? null : canonicalTargetKey(target_key),

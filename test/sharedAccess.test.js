@@ -17,3 +17,8 @@ test('isAdminRole accepts owner and admin only', () => {
 test('normalizeVisibility keeps private and makes anything else public', () => {
   assert.deepEqual(['private', 'public', undefined, null, 'PRIVATE', 'secret'].map(normalizeVisibility), ['private', 'public', 'public', 'public', 'public', 'public']);
 });
+
+test('the password minimum is a shared limit', () => {
+  assert.equal(require('../shared/public-constants.json').limits.PASSWORD_MIN, 6);
+  assert.equal(constants.LIMITS.PASSWORD_MIN, 6);
+});

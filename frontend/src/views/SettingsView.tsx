@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext';
 import { exportSongsBlob } from '../lib/api';
 import { ImportModal } from '../components/ImportModal';
 import { GeminiKeySettings } from '../components/GeminiKeySettings';
-import { MAX_PREFERRED_LANGUAGES, MAX_OCR_PROMPT, DEFAULT_GEMINI_MODEL } from '../lib/constants';
+import { MAX_PREFERRED_LANGUAGES, MAX_OCR_PROMPT, MIN_PASSWORD_LENGTH, DEFAULT_GEMINI_MODEL } from '../lib/constants';
 import { PageTitle } from '../components/PageTitle';
 
 export function SettingsView() {
@@ -19,7 +19,7 @@ export function SettingsView() {
   const apiCall = useApi();
   const { demoMode } = useDemo();
   const { user, isAdmin } = useAuth();
-  const passwordForm = useForm({ initialValues: { currentPw: '', newPw: '', confirmPw: '' }, validate: { currentPw: value => value ? null : 'All fields are required', newPw: value => value.length >= 6 ? null : 'New password must be at least 6 characters', confirmPw: (value, values) => value === values.newPw ? null : 'New passwords do not match' } });
+  const passwordForm = useForm({ initialValues: { currentPw: '', newPw: '', confirmPw: '' }, validate: { currentPw: value => value ? null : 'All fields are required', newPw: value => value.length >= MIN_PASSWORD_LENGTH ? null : `New password must be at least ${MIN_PASSWORD_LENGTH} characters`, confirmPw: (value, values) => value === values.newPw ? null : 'New passwords do not match' } });
   const { currentPw, newPw, confirmPw } = passwordForm.values;
   const [changingPassword, setChangingPassword] = useState(false);
   const [pwMsg, setPwMsg] = useState<{ text: string; color: string } | null>(null);
@@ -69,7 +69,7 @@ export function SettingsView() {
     if (changingPassword) return;
     setPwMsg(null);
     if (!currentPw || !newPw || !confirmPw) { setPwMsg({ text: 'All fields are required', color: 'var(--danger)' }); return; }
-    if (newPw.length < 6) { setPwMsg({ text: 'New password must be at least 6 characters', color: 'var(--danger)' }); return; }
+    if (newPw.length < MIN_PASSWORD_LENGTH) { setPwMsg({ text: `New password must be at least ${MIN_PASSWORD_LENGTH} characters`, color: 'var(--danger)' }); return; }
     if (newPw !== confirmPw) { setPwMsg({ text: 'New passwords do not match', color: 'var(--danger)' }); return; }
     setChangingPassword(true);
     try {

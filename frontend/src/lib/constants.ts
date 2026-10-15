@@ -11,6 +11,7 @@ export const MAX_LOCAL_ENTRIES = 100;
 export const MAX_CONTENT_LENGTH = shared.limits.MAX_CONTENT;
 export const MAX_BPM = shared.limits.MAX_BPM;
 export const MIN_BPM = shared.limits.MIN_BPM;
+export const MIN_PASSWORD_LENGTH = shared.limits.PASSWORD_MIN;
 export const MAX_SETLIST_NAME_LENGTH = shared.limits.MAX_SETLIST_NAME;
 export const MAX_PREFERRED_LANGUAGES = shared.limits.MAX_PREFERRED_LANGUAGES;
 export const MAX_OCR_PROMPT = shared.limits.MAX_OCR_PROMPT;

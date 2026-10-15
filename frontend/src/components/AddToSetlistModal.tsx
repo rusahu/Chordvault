@@ -10,7 +10,7 @@ import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
 import { useLocalSetlists } from '../hooks/useLocalSetlists';
 import type { SetlistListItem } from '../types';
-import { VISIBILITY } from '../lib/constants';
+import { VISIBILITY, MAX_LOCAL_SETLISTS } from '../lib/constants';
 
 interface AddToSetlistModalProps {
   isOpen: boolean;
@@ -115,7 +115,7 @@ export function AddToSetlistModal({
     if (!user) {
       const sl = lsCreate(name.trim());
       if (!sl) {
-        toast('Max 50 setlists', 'error');
+        toast(`Max ${MAX_LOCAL_SETLISTS} setlists`, 'error');
         return;
       }
       lsAddEntry(sl.id, {

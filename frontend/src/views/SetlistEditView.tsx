@@ -23,7 +23,7 @@ import { SetlistEntryCard } from '../components/SetlistEntryCard';
 import type { Setlist, SongListItem } from '../types';
 import { useDragReorder } from '../hooks/useDragReorder';
 import { songEditFromSetlist } from '../lib/songEditRoute';
-import { VISIBILITY } from '../lib/constants';
+import { VISIBILITY, MAX_SETLIST_NAME_LENGTH } from '../lib/constants';
 
 interface SetlistEditViewProps {
   setlistId: number | string;
@@ -141,7 +141,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
     if (!nameInput) return;
 
     if (isLocal) {
-      if (nameInput.length > 200) return;
+      if (nameInput.length > MAX_SETLIST_NAME_LENGTH) return;
       rename(String(setlistId), nameInput);
       setSetlist((prev) => prev ? { ...prev, name: nameInput } : prev);
     } else {

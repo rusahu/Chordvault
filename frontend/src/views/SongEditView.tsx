@@ -17,7 +17,7 @@ import { detectFormat, toChordPro, ensureKeyDirective, extractDirective, updateD
 import type { Song } from '../types';
 import { EditorActionBar } from '../components/EditorActionBar';
 import type { Destination } from '../lib/songEditRoute';
-import { VISIBILITY, normalizeVisibility, type Visibility } from '../lib/constants';
+import { VISIBILITY, MAX_CONTENT_LENGTH, MIN_BPM, MAX_BPM, normalizeVisibility, type Visibility } from '../lib/constants';
 
 interface SongEditViewProps {
   songId?: number;
@@ -87,10 +87,10 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
     const { content } = state;
     if (!extractDirective(content, 'title')?.trim()) { toast(t('songEdit.titleRequired'), 'error'); return; }
     if (!content.trim()) { toast(t('songEdit.contentRequired'), 'error'); return; }
-    if (content.length > 100000) { toast(t('songEdit.contentTooLarge'), 'error'); return; }
+    if (content.length > MAX_CONTENT_LENGTH) { toast(t('songEdit.contentTooLarge'), 'error'); return; }
     const bpmVal = extractDirective(content, 'tempo');
-    if (bpmVal && (isNaN(parseInt(bpmVal, 10)) || parseInt(bpmVal, 10) < 1 || parseInt(bpmVal, 10) > 300)) {
-      toast('BPM must be between 1 and 300', 'error'); return;
+    if (bpmVal && (isNaN(parseInt(bpmVal, 10)) || parseInt(bpmVal, 10) < MIN_BPM || parseInt(bpmVal, 10) > MAX_BPM)) {
+      toast(`BPM must be between ${MIN_BPM} and ${MAX_BPM}`, 'error'); return;
     }
     const fmt = detectFormat(content);
     if (!fmt) { toast('No chords detected. Add chords in [brackets] before the syllable, e.g. [G]Amazing [C]grace', 'error'); return; }
@@ -178,7 +178,7 @@ modals.openConfirmModal({ children: t('songEdit.confirmDelete'), onConfirm: asyn
           <TextInput label={<>{t('songEdit.titleLabel')}</>} type="text" value={state.title} onChange={(e) => handleFieldChange('title', e.target.value, editor.setTitle)} placeholder={t('songEdit.titlePlaceholder')} />
           <TextInput label={<>{t('songEdit.artistLabel')}</>} type="text" value={state.artist} onChange={(e) => handleFieldChange('artist', e.target.value, editor.setArtist)} placeholder={t('songEdit.artistPlaceholder')} />
           <LanguagePicker value={state.language} onChange={handleLanguageChange} preferredLanguages={preferredLanguages} />
-          <TextInput label={<>BPM</>} type="number" value={state.bpm} onChange={(e) => handleFieldChange('tempo', e.target.value, editor.setBpm)} placeholder="e.g. 120" min="1" max="300" />
+          <TextInput label={<>BPM</>} type="number" value={state.bpm} onChange={(e) => handleFieldChange('tempo', e.target.value, editor.setBpm)} placeholder="e.g. 120" min={MIN_BPM} max={MAX_BPM} />
         </SimpleGrid>
         <TextInput label={<>YouTube URL</>} type="url" value={state.youtubeUrl} onChange={(e) => handleFieldChange('x_youtube', e.target.value, editor.setYoutubeUrl)} placeholder="https://youtube.com/watch?v=..." />
         <Input.Wrapper label="Tags" labelElement="div">

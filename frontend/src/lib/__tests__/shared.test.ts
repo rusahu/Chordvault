@@ -33,4 +33,8 @@ describe('shared browser definitions', () => {
     expect(constants.normalizeVisibility(undefined)).toBe(constants.VISIBILITY.PUBLIC);
     expect(constants.normalizeVisibility('private')).toBe(constants.VISIBILITY.PRIVATE);
   });
+  it('shares the password minimum with the server', () => {
+    expect(constants.MIN_PASSWORD_LENGTH).toBe(6);
+    expect(constants.MIN_PASSWORD_LENGTH).toBe(shared.limits.PASSWORD_MIN);
+  });
 });
