@@ -26,6 +26,7 @@ import { useSetlistPreferences } from '../hooks/useSetlistPreferences';
 import { stepKey } from '../lib/keys';
 import { entrySemitones } from '../lib/setlistKeys';
 import { songEditFromSetlist } from '../lib/songEditRoute';
+import { prepareSongForSave } from '../lib/songSubmit';
 import type { Setlist } from '../types';
 
 interface SetlistPlayViewProps {
@@ -159,10 +160,12 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
 
   const saveEditorAsVersion = async () => {
     if (!setlist || !entry) return;
+    const prepared = prepareSongForSave(editContent, t, { requireLanguage: false });
+    if ('error' in prepared) { toast(prepared.error, 'error'); return; }
     try {
-      await apiCall('POST', `/api/songs/${entry.song_id}/version`, { content: editContent });
-      await apiCall('PUT', `/api/setlists/${setlist.id}/entries/${entry.entry_id}`, { content_override: editContent });
-      updateEntry({ content_override: editContent });
+      await apiCall('POST', `/api/songs/${entry.song_id}/version`, { content: prepared.content });
+      await apiCall('PUT', `/api/setlists/${setlist.id}/entries/${entry.entry_id}`, { content_override: prepared.content });
+      updateEntry({ content_override: prepared.content });
       setEditing(false);
       toast(t('setlist.versionCreated'), 'success');
     } catch (e) { toast((e as Error).message, 'error'); }

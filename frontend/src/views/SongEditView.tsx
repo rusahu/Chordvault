@@ -13,11 +13,12 @@ import { LanguagePicker } from '../components/LanguagePicker';
 import { OcrModal } from '../components/OcrModal';
 import { CodeMirrorEditor } from '../components/CodeMirrorEditor';
 import { EditorPreview } from '../components/EditorPreview';
-import { detectFormat, toChordPro, ensureKeyDirective, extractDirective, updateDirective } from '../lib/chords';
+import { extractDirective, updateDirective } from '../lib/chords';
+import { prepareSongForSave } from '../lib/songSubmit';
 import type { Song } from '../types';
 import { EditorActionBar } from '../components/EditorActionBar';
 import type { Destination } from '../lib/songEditRoute';
-import { VISIBILITY, MAX_CONTENT_LENGTH, MIN_BPM, MAX_BPM, normalizeVisibility, type Visibility } from '../lib/constants';
+import { VISIBILITY, MIN_BPM, MAX_BPM, normalizeVisibility, type Visibility } from '../lib/constants';
 
 interface SongEditViewProps {
   songId?: number;
@@ -84,32 +85,17 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
   };
 
   const save = async () => {
-    const { content } = state;
-    if (!extractDirective(content, 'title')?.trim()) { toast(t('songEdit.titleRequired'), 'error'); return; }
-    if (!content.trim()) { toast(t('songEdit.contentRequired'), 'error'); return; }
-    if (content.length > MAX_CONTENT_LENGTH) { toast(t('songEdit.contentTooLarge'), 'error'); return; }
-    const bpmVal = extractDirective(content, 'tempo');
-    if (bpmVal && (isNaN(parseInt(bpmVal, 10)) || parseInt(bpmVal, 10) < MIN_BPM || parseInt(bpmVal, 10) > MAX_BPM)) {
-      toast(`BPM must be between ${MIN_BPM} and ${MAX_BPM}`, 'error'); return;
-    }
-    const fmt = detectFormat(content);
-    if (!fmt) { toast('No chords detected. Add chords in [brackets] before the syllable, e.g. [G]Amazing [C]grace', 'error'); return; }
-    if (!extractDirective(content, 'x_language')) { toast('Please select a language', 'error'); return; }
-
-    let finalContent = toChordPro(content);
-    finalContent = ensureKeyDirective(finalContent);
+    const prepared = prepareSongForSave(state.content, t);
+    if ('error' in prepared) { toast(prepared.error, 'error'); return; }
+    const body = { content: prepared.content, format_detected: prepared.format, visibility };
 
     try {
       if (song) {
-        await apiCall('PUT', `/api/songs/${song.id}`, {
-          content: finalContent, format_detected: fmt, visibility
-        });
+        await apiCall('PUT', `/api/songs/${song.id}`, body);
         toast(t('songEdit.saved'), 'success');
         leave('song-view', { id: String(song.id) });
       } else {
-        const result = await apiCall<{ id: number }>('POST', '/api/songs', {
-          content: finalContent, format_detected: fmt, visibility
-        });
+        const result = await apiCall<{ id: number }>('POST', '/api/songs', body);
         toast(t('songEdit.created'), 'success');
         navigate('song-view', { id: String(result.id) });
       }
@@ -136,21 +122,14 @@ modals.openConfirmModal({ children: t('songEdit.confirmDelete'), onConfirm: asyn
   const isOwner = !song || (user && song && user.id === song.user_id);
 
   const saveAsVersion = async () => {
-    const { content } = state;
     const targetId = songId || (song?.id);
     if (!targetId) return;
-    if (!extractDirective(content, 'title')?.trim()) { toast(t('songEdit.titleRequired'), 'error'); return; }
-    if (!content.trim()) { toast(t('songEdit.contentRequired'), 'error'); return; }
-    const fmt = detectFormat(content);
-    if (!fmt) { toast('No chords detected. Add chords in [brackets] before the syllable, e.g. [G]Amazing [C]grace', 'error'); return; }
-    if (!extractDirective(content, 'x_language')) { toast('Please select a language', 'error'); return; }
-
-    let finalContent = toChordPro(content);
-    finalContent = ensureKeyDirective(finalContent);
+    const prepared = prepareSongForSave(state.content, t);
+    if ('error' in prepared) { toast(prepared.error, 'error'); return; }
 
     try {
       const result = await apiCall<{ id: number }>('POST', `/api/songs/${targetId}/version`, {
-        content: finalContent
+        content: prepared.content
       });
       toast('Version created successfully', 'success');
       leave('song-view', { id: String(result.id) });

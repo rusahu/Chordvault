@@ -4,9 +4,9 @@ import { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { showStatusNotification as toast } from '../lib/notifications';
 import { CodeMirrorEditor } from '../components/CodeMirrorEditor';
-import { detectFormat, toChordPro, ensureKeyDirective } from '../lib/chords';
+import { useI18n } from '../context/I18nContext';
+import { prepareSongForSave } from '../lib/songSubmit';
 import type { Song } from '../types';
-import { MAX_CONTENT_LENGTH } from '../lib/constants';
 
 interface CorrectionViewProps {
   songId: number;
@@ -15,6 +15,7 @@ interface CorrectionViewProps {
 
 export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
   const apiCall = useApi();
+  const { t } = useI18n();
   const { readOnly } = useOffline();
   useOfflineActivity(true);
   const theme = useComputedColorScheme('dark');
@@ -28,14 +29,10 @@ export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
 
   const submit = async () => {
     if (readOnly) return;
-    const trimmed = content.trim();
-    if (!trimmed) { toast('Content is required', 'error'); return; }
-    if (trimmed.length > MAX_CONTENT_LENGTH) { toast('Content too large', 'error'); return; }
-    if (!detectFormat(trimmed)) { toast('No chords detected. Add chords (e.g. [C], [G]) before submitting.', 'error'); return; }
-    let final = toChordPro(trimmed);
-    final = ensureKeyDirective(final);
+    const prepared = prepareSongForSave(content, t, { requireLanguage: false });
+    if ('error' in prepared) { toast(prepared.error, 'error'); return; }
     try {
-      await apiCall('POST', `/api/songs/${songId}/correction`, { content: final });
+      await apiCall('POST', `/api/songs/${songId}/correction`, { content: prepared.content });
       toast('Correction submitted for review', 'success');
       navigate('song-view', { id: String(songId) });
     } catch (e) { toast((e as Error).message, 'error'); }

@@ -1,7 +1,9 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
 import { Mock } from 'vitest';
 import { SetlistPlayView } from '../SetlistPlayView';
 import { useSetlistPlayer } from '../../hooks/useSetlistPlayer';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { showStatusNotification } from '../../lib/notifications';
 
 // ─── Mocks ──────────────────────────────────────────────────────────
 
@@ -19,8 +21,9 @@ vi.mock('../../hooks/useSetlistPlayer', () => ({
   useSetlistPlayer: vi.fn(),
 }));
 
+const apiCall = vi.hoisted(() => vi.fn());
 vi.mock('../../hooks/useApi', () => ({
-  useApi: () => vi.fn(),
+  useApi: () => apiCall,
 }));
 
 vi.mock('../../context/AuthContext', () => ({
@@ -92,5 +95,42 @@ describe('SetlistPlayView edit song', () => {
     fireEvent.click(await screen.findByRole('menuitem', { name: 'Edit song' }));
 
     expect(navigate).toHaveBeenCalledWith('song-edit', { id: '42', back: 'setlist-play', setlist: '4', index: '2' });
+  });
+});
+
+describe('SetlistPlayView inline editor save as version', () => {
+  const updateEntry = vi.fn();
+
+  function renderEditor(text: string) {
+    (useSetlistPlayer as Mock).mockReturnValue({
+      setlist: { id: 4, entries: [] },
+      entry: { entry_id: 7, song_id: 42, title: 'Song', content: '{title: Song}\n[C]a' },
+      index: 0, total: 1,
+      prev: vi.fn(), next: vi.fn(), exit: vi.fn(), updateEntry,
+      isModified: false, saveOnline: vi.fn(), saveLocal: vi.fn(),
+    });
+    render(<SetlistPlayView setlistId={4} navigate={vi.fn()} />);
+    const shortcuts = (useKeyboardShortcuts as Mock).mock.lastCall![0];
+    act(() => shortcuts.e());
+    fireEvent.change(screen.getByLabelText('Setlist chord sheet'), { target: { value: text } });
+    fireEvent.click(screen.getByRole('button', { name: 'setlist.saveAsVersion' }));
+  }
+
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('saves chords over lyrics as ChordPro with a key', async () => {
+    renderEditor('{title: Song}\nG       C\nAmazing grace');
+    await waitFor(() => expect(updateEntry).toHaveBeenCalled());
+    const saved = updateEntry.mock.calls[0][0].content_override;
+    expect(saved).toMatch(/^\{key: G\}\n\{title: Song\}/);
+    expect(saved).toContain('[G]Amazing');
+    expect(apiCall).toHaveBeenCalledWith('POST', '/api/songs/42/version', { content: saved });
+    expect(apiCall).toHaveBeenCalledWith('PUT', '/api/setlists/4/entries/7', { content_override: saved });
+  });
+
+  it('rejects an invalid tempo without saving', () => {
+    renderEditor('{title: Song}\n{tempo: 120bpm}\n[C]a');
+    expect(showStatusNotification).toHaveBeenCalledWith('BPM must be between 1 and 300', 'error');
+    expect(apiCall).not.toHaveBeenCalled();
   });
 });
