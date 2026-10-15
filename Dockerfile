@@ -27,6 +27,7 @@ COPY routes/ ./routes/
 COPY --from=frontend /app/public ./public
 COPY public/locales ./public/locales
 COPY scripts/seed-data.mjs ./scripts/seed-data.mjs
+COPY scripts/lib/session.mjs ./scripts/lib/session.mjs
 COPY entrypoint.sh ./
 RUN chmod +x entrypoint.sh && mkdir -p data
 EXPOSE 3100
