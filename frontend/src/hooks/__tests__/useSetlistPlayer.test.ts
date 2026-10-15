@@ -1,5 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useSetlistPlayer } from '../useSetlistPlayer';
+import { resolveEffectivePreferences } from '../../lib/chords';
 import { getSetlistOverrides, saveSetlistOverride } from '../../lib/storage';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 
@@ -92,7 +93,7 @@ describe('useSetlistPlayer Hook', () => {
     }
   });
 
-  it('forces font, two_col to null and nashville to 0 on setlist load to protect against legacy values', async () => {
+  it('ignores legacy font, two_col and nashville values stored on an entry', async () => {
     mockApiCall.mockResolvedValue(mockSetlist);
 
     const { result } = renderHook(() =>
@@ -107,9 +108,8 @@ describe('useSetlistPlayer Hook', () => {
     });
 
     const entry = result.current.setlist!.entries[0];
-    expect(entry.font).toBeNull();
-    expect(entry.two_col).toBeNull();
-    expect(entry.nashville).toBe(0);
+    const global = { nashville: false, twoCol: false, fontSize: 0, hideYt: false };
+    expect(resolveEffectivePreferences(entry, global)).toEqual(global);
   });
 
   it('does not trigger isModified when session layout options are changed, but triggers when the key changes', async () => {

@@ -3,7 +3,7 @@ const yazl = require('yazl');
 const { requireAuth, requireAdmin, optionalAuth, isAdminRole, canManageSong, viewerId } = require('../lib/auth');
 const { STATUS, LIMITS } = require('../lib/constants');
 const { validateListQuery, validateObjectBody, requireId, assertValid, validateSongInput, validateVisibility, validateSongMetadata, parsePaginationParams, songListOptions } = require('../lib/validation');
-const { AppError, requireFound } = require('../lib/errors');
+const { AppError, requireFound, requireChanged } = require('../lib/errors');
 const { DEMO_MODE } = require('../lib/demo');
 const { makeUniqueNamer } = require('../lib/exportFilename');
 const Song = require('../lib/models/song');
@@ -172,9 +172,7 @@ function createSongsRouter() {
 
   router.delete('/songs/:id', requireAuth, (req, res) => {
     const id = requireId(req.params.id, 'Invalid song ID');
-    const isAdmin = isAdminRole(req.user.role);
-    const result = Song.delete(id, isAdmin ? null : req.user.id);
-    if (!result.changes) throw new AppError('Song not found or not yours', 404);
+    requireChanged(Song.delete(id, isAdminRole(req.user.role) ? null : req.user.id), 'Song not found or not yours');
     res.json({ success: true });
   });
 

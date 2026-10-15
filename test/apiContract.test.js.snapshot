@@ -6144,10 +6144,9 @@ exports[`API responses match the recorded contract 2`] = `
   },
   {
     "call": "POST /api/setlists as alice",
-    "status": 200,
+    "status": 400,
     "body": {
-      "id": 5,
-      "name": "Weird vis"
+      "error": "Visibility must be \\"public\\" or \\"private\\""
     }
   },
   {
@@ -6363,8 +6362,8 @@ exports[`API responses match the recorded contract 2`] = `
           "position": 1,
           "target_key": "F#",
           "nashville": 0,
-          "font": 2,
-          "two_col": 1,
+          "font": null,
+          "two_col": null,
           "content_override": "{title: G}\\n[C]o",
           "title": "Grace",
           "artist": "",
@@ -6570,8 +6569,8 @@ exports[`API responses match the recorded contract 2`] = `
           "position": 3,
           "target_key": "F#",
           "nashville": 0,
-          "font": 2,
-          "two_col": 1,
+          "font": null,
+          "two_col": null,
           "content_override": "{title: G}\\n[C]o",
           "title": "Grace",
           "artist": "",
@@ -7852,16 +7851,6 @@ exports[`API responses match the recorded contract 5`] = `
     "status": 200,
     "body": [
       {
-        "id": 5,
-        "user_id": 3,
-        "name": "Weird vis",
-        "visibility": "public",
-        "event_date": null,
-        "created_at": "<time>",
-        "updated_at": "<time>",
-        "song_count": 0
-      },
-      {
         "id": 2,
         "user_id": 3,
         "name": "Rehearsal",
@@ -7925,17 +7914,6 @@ exports[`API responses match the recorded contract 5`] = `
         "song_count": 2
       },
       {
-        "id": 5,
-        "user_id": 3,
-        "name": "Weird vis",
-        "visibility": "public",
-        "event_date": null,
-        "created_at": "<time>",
-        "updated_at": "<time>",
-        "username": "alice",
-        "song_count": 0
-      },
-      {
         "id": 1,
         "user_id": 3,
         "name": "Sunday AM",
@@ -7962,17 +7940,6 @@ exports[`API responses match the recorded contract 5`] = `
         "updated_at": "<time>",
         "username": "bob",
         "song_count": 2
-      },
-      {
-        "id": 5,
-        "user_id": 3,
-        "name": "Weird vis",
-        "visibility": "public",
-        "event_date": null,
-        "created_at": "<time>",
-        "updated_at": "<time>",
-        "username": "alice",
-        "song_count": 0
       },
       {
         "id": 1,
@@ -8003,17 +7970,6 @@ exports[`API responses match the recorded contract 5`] = `
         "song_count": 2
       },
       {
-        "id": 5,
-        "user_id": 3,
-        "name": "Weird vis",
-        "visibility": "public",
-        "event_date": null,
-        "created_at": "<time>",
-        "updated_at": "<time>",
-        "username": "alice",
-        "song_count": 0
-      },
-      {
         "id": 1,
         "user_id": 3,
         "name": "Sunday AM",
@@ -8042,17 +7998,6 @@ exports[`API responses match the recorded contract 5`] = `
         "song_count": 2
       },
       {
-        "id": 5,
-        "user_id": 3,
-        "name": "Weird vis",
-        "visibility": "public",
-        "event_date": null,
-        "created_at": "<time>",
-        "updated_at": "<time>",
-        "username": "alice",
-        "song_count": 0
-      },
-      {
         "id": 1,
         "user_id": 3,
         "name": "Sunday AM",
@@ -8079,17 +8024,6 @@ exports[`API responses match the recorded contract 5`] = `
         "updated_at": "<time>",
         "username": "bob",
         "song_count": 2
-      },
-      {
-        "id": 5,
-        "user_id": 3,
-        "name": "Weird vis",
-        "visibility": "public",
-        "event_date": null,
-        "created_at": "<time>",
-        "updated_at": "<time>",
-        "username": "alice",
-        "song_count": 0
       },
       {
         "id": 1,
@@ -8149,8 +8083,8 @@ exports[`API responses match the recorded contract 5`] = `
           "position": 3,
           "target_key": "F#",
           "nashville": 0,
-          "font": 2,
-          "two_col": 1,
+          "font": null,
+          "two_col": null,
           "content_override": "{title: G}\\n[C]o",
           "title": "Grace",
           "artist": "",
@@ -9636,8 +9570,8 @@ exports[`API responses match the recorded contract 5`] = `
               "position": 3,
               "target_key": "F#",
               "nashville": 0,
-              "font": 2,
-              "two_col": 1,
+              "font": null,
+              "two_col": null,
               "content_override": "{title: G}\\n[C]o",
               "title": "Grace",
               "artist": "",
@@ -9670,21 +9604,6 @@ exports[`API responses match the recorded contract 5`] = `
           "username": "alice",
           "search": [
             "rehearsal"
-          ]
-        },
-        {
-          "id": 5,
-          "user_id": 3,
-          "name": "Weird vis",
-          "visibility": "public",
-          "event_date": null,
-          "created_at": "<time>",
-          "updated_at": "<time>",
-          "entries": [],
-          "song_count": 0,
-          "username": "alice",
-          "search": [
-            "weird vis"
           ]
         }
       ]

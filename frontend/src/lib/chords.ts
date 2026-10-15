@@ -526,8 +526,8 @@ export function resolveEffectivePreferences(
   if (!entry) return global;
   return {
     nashville: entry._num != null ? !!entry._num : global.nashville,
-    twoCol: entry._twoCol != null ? entry._twoCol : (entry.two_col != null ? !!entry.two_col : global.twoCol),
-    fontSize: entry._font != null ? entry._font : (entry.font != null ? entry.font : global.fontSize),
+    twoCol: entry._twoCol ?? global.twoCol,
+    fontSize: entry._font ?? global.fontSize,
     hideYt: entry._hideYt != null ? entry._hideYt : global.hideYt,
   };
 }

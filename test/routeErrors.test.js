@@ -176,3 +176,10 @@ test('admins can use any song they can view; others cannot use a private song', 
   assert.equal((await request(`/api/setlists/${otherSetlist}/songs`, { ...other, method: 'POST', body: { song_id: privateId } })).status, 403);
   assert.equal((await request(`/api/songs/${privateId}/correction`, { ...other, method: 'POST', body: correction })).status, 403);
 });
+
+test('setlists reject an unknown visibility', async t => {
+  const request = await serve(t, mount);
+  const error = 'Visibility must be "public" or "private"';
+  await expectError(request, '/api/setlists', { ...owner, method: 'POST', body: { name: 'Odd', visibility: 'secret' } }, 400, error);
+  await expectError(request, `/api/setlists/${setlistId}`, { ...owner, method: 'PUT', body: { name: 'Odd', visibility: 'secret' } }, 400, error);
+});

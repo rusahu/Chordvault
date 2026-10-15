@@ -42,7 +42,7 @@ function applyStoredOverrides(setlistId: number | string, entries: SetlistEntry[
     const storedKey = raw && ('target_key' in raw || 'transpose' in raw);
     const targetKey = (storedKey ? ov!.target_key : en.target_key) ?? null;
     targetKeys[String(en.entry_id)] = targetKey;
-    return { ...en, target_key: targetKey, font: null, two_col: null, nashville: 0 };
+    return { ...en, target_key: targetKey, nashville: 0 };
   });
   return { entries: merged, targetKeys };
 }
