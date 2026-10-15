@@ -23,6 +23,16 @@ interface Summary {
   errors: { filename: string; error: string }[];
 }
 
+/** FileReader honours a byte order mark (UTF-16 files from Windows Notepad); Blob.text() always decodes UTF-8. */
+function readText(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsText(file);
+  });
+}
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function ImportModal({ opened, onClose, onDone }: ImportModalProps) {
@@ -78,7 +88,7 @@ function ImportContent({ busy, setBusy, onClose, onDone }: Omit<ImportModalProps
 
     setBusy(true);
     try {
-      const texts = await Promise.all(files.map((f) => f.text()));
+      const texts = await Promise.all(files.map(readText));
       if (!active.current) return;
       const songs = texts.map((t, i) => fileToSong(files[i].name, t));
       const batches = chunkSongs(songs);
