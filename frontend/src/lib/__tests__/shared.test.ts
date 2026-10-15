@@ -27,4 +27,10 @@ describe('shared browser definitions', () => {
     expect(constants.IMPORT_MAX_BATCH_BYTES).toBe(12_000_000);
     expect(constants.MAX_LOCAL_ENTRIES).toBe(100);
   });
+  it('re-exports the shared role and visibility helpers', () => {
+    expect(constants.isAdminRole(constants.ROLES.OWNER)).toBe(true);
+    expect(constants.isAdminRole(constants.ROLES.USER)).toBe(false);
+    expect(constants.normalizeVisibility(undefined)).toBe(constants.VISIBILITY.PUBLIC);
+    expect(constants.normalizeVisibility('private')).toBe(constants.VISIBILITY.PRIVATE);
+  });
 });

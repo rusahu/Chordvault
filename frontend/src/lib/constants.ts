@@ -1,5 +1,8 @@
 import shared from '../../../shared/public-constants.json';
 
+export { ROLES, STATUS, VISIBILITY, isAdminRole, normalizeVisibility } from '../../../shared/access.mjs';
+export type { Visibility } from '../../../shared/access.mjs';
+
 export const DEFAULT_TAGS: string[] = shared.DEFAULT_TAGS;
 export const MAX_TAG_LENGTH = shared.limits.MAX_TAG_LENGTH;
 

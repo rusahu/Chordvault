@@ -6,6 +6,7 @@ const { AppError, requireFound } = require('../lib/errors');
 const Setlist = require('../lib/models/setlist');
 const Song = require('../lib/models/song');
 const { maskSetlistEntry } = require('../lib/songAccess');
+const { normalizeVisibility } = require('../shared/access.mjs');
 
 const requireSetlistId = raw => requireId(raw, 'Invalid setlist ID');
 
@@ -26,7 +27,7 @@ function createSetlistsRouter() {
   router.post('/setlists', requireAuth, (req, res) => {
     const { name, visibility, event_date } = req.body;
     assertValid(validateSetlistInput(name, event_date));
-    const vis = visibility === VISIBILITY.PRIVATE ? VISIBILITY.PRIVATE : VISIBILITY.PUBLIC;
+    const vis = normalizeVisibility(visibility);
     const result = Setlist.create(req.user.id, name.trim(), vis, event_date || null);
     res.json({ id: result.lastInsertRowid, name: name.trim() });
   });
@@ -57,7 +58,7 @@ function createSetlistsRouter() {
     const id = requireSetlistId(req.params.id);
     const { name, visibility, event_date } = req.body;
     assertValid(validateSetlistInput(name, event_date));
-    const vis = visibility === VISIBILITY.PRIVATE ? VISIBILITY.PRIVATE : VISIBILITY.PUBLIC;
+    const vis = normalizeVisibility(visibility);
     const result = Setlist.update(id, req.user.id, name.trim(), vis, event_date !== undefined ? (event_date || null) : null);
     if (!result.changes) throw new AppError('Setlist not found', 404);
     res.json({ success: true });

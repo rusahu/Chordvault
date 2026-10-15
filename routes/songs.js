@@ -11,6 +11,7 @@ const User = require('../lib/models/user');
 const Tags = require('../lib/models/tags');
 const { canViewSongVisibility } = require('../lib/songAccess');
 const { splitTags } = require('../shared/tags.mjs');
+const { normalizeVisibility } = require('../shared/access.mjs');
 
 function extractDirective(content, name) {
   const re = new RegExp(`\\{${name}:\\s*([^}]*)\\}`, 'i');
@@ -119,7 +120,7 @@ function createSongsRouter() {
     assertValid(validateVisibility(visibility));
 
     const fmt = format_detected?.trim() || null;
-    const finalVisibility = visibility === VISIBILITY.PRIVATE ? VISIBILITY.PRIVATE : VISIBILITY.PUBLIC;
+    const finalVisibility = normalizeVisibility(visibility);
     const result = Song.create(req.user.id, meta, content, finalVisibility, fmt);
     res.json({ id: result.lastInsertRowid });
   });
@@ -146,7 +147,7 @@ function createSongsRouter() {
         index: i,
         ...meta,
         content: s.content.trim(),
-        visibility: s.visibility === VISIBILITY.PRIVATE ? VISIBILITY.PRIVATE : VISIBILITY.PUBLIC,
+        visibility: normalizeVisibility(s.visibility),
       });
     });
 
@@ -170,7 +171,7 @@ function createSongsRouter() {
     assertValid(validateVisibility(visibility));
 
     const fmt = format_detected !== undefined ? (format_detected?.trim() || null) : existing.format_detected;
-    const finalVisibility = visibility !== undefined ? (visibility === VISIBILITY.PRIVATE ? VISIBILITY.PRIVATE : VISIBILITY.PUBLIC) : existing.visibility;
+    const finalVisibility = visibility !== undefined ? normalizeVisibility(visibility) : existing.visibility;
     Song.update(id, meta, finalContent, finalVisibility, fmt);
     res.json({ success: true });
   });
