@@ -74,7 +74,7 @@ function createAuthRouter() {
     assertValid(validatePassword(new_password, 'New password'));
     const user = User.getFullById(req.user.id);
     if (!user) throw new AppError('User not found', 404);
-    if (!(await checkPassword(current_password, user.password_hash))) throw new AppError('Current password is incorrect', 401);
+    if (!(await checkPassword(current_password, user.password_hash))) throw new AppError('Current password is incorrect', 400);
     await setPassword(req.user.id, new_password);
     res.json({ success: true });
   });
