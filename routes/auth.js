@@ -3,23 +3,24 @@ const bcrypt = require('bcryptjs');
 const { isRegistrationAllowed } = require('../lib/db');
 const User = require('../lib/models/user');
 const Invite = require('../lib/models/invite');
-const { requireAuth, hashPassword, issueToken } = require('../lib/auth');
+const { requireAuth, hashPassword, sessionResponse, createAccount } = require('../lib/auth');
 const { validateObjectBody, assertValid, validateUserCredentials, validatePassword } = require('../lib/validation');
 const { ROLES, LIMITS } = require('../lib/constants');
-const { AppError, handleDbError } = require('../lib/errors');
+const { AppError } = require('../lib/errors');
 const { DEMO_MODE, blockInDemo } = require('../lib/demo');
 
-async function verifyTurnstile(token) {
+async function assertTurnstile(token) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
-  if (!secret) return true;
-  if (!token) return false;
-  const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `secret=${encodeURIComponent(secret)}&response=${encodeURIComponent(token)}`,
-  });
-  const data = await res.json();
-  return data.success === true;
+  if (!secret) return;
+  if (token) {
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `secret=${encodeURIComponent(secret)}&response=${encodeURIComponent(token)}`,
+    });
+    if ((await res.json()).success === true) return;
+  }
+  throw new AppError('Bot verification failed. Please try again.', 400);
 }
 
 function createAuthRouter() {
@@ -38,19 +39,11 @@ function createAuthRouter() {
     if (!isRegistrationAllowed() && userCount > 0) throw new AppError('Registration is currently disabled', 403);
 
     const { username, password, turnstile_token } = req.body;
-    if (!(await verifyTurnstile(turnstile_token))) throw new AppError('Bot verification failed. Please try again.', 400);
+    await assertTurnstile(turnstile_token);
     assertValid(validateUserCredentials(username, password));
-
-    const isFirstUser = userCount === 0;
-    const role = isFirstUser ? ROLES.OWNER : ROLES.USER;
-    const hash = await hashPassword(password);
-    try {
-      const result = User.create(username.trim(), hash, role);
-      const token = issueToken({ id: result.lastInsertRowid, username: username.trim() });
-      res.json({ token, id: result.lastInsertRowid, username: username.trim(), role });
-    } catch (e) {
-      throw handleDbError(e, { uniqueMessage: 'Username already taken' });
-    }
+    const role = userCount === 0 ? ROLES.OWNER : ROLES.USER;
+    const result = await createAccount(username, password, (name, hash) => User.create(name, hash, role));
+    res.json(sessionResponse({ id: result.lastInsertRowid, username: username.trim(), role }));
   });
 
   router.post('/login', async (req, res) => {
@@ -60,26 +53,19 @@ function createAuthRouter() {
     const user = User.findByUsername(username.trim());
     if (!user || !(await bcrypt.compare(password, user.password_hash))) throw new AppError('Invalid username or password', 401);
     if (user.disabled) throw new AppError('Account is disabled. Contact an administrator.', 403);
-    res.json({ token: issueToken(user), id: user.id, username: user.username, role: user.role });
+    res.json(sessionResponse(user));
   });
 
   router.post('/redeem-invite', blockInDemo, async (req, res) => {
     const { code, username, password, turnstile_token } = req.body;
-    if (!(await verifyTurnstile(turnstile_token))) throw new AppError('Bot verification failed. Please try again.', 400);
-    if (typeof code !== 'string' || !code.trim()) throw new AppError('Invite code is required', 400);
+    await assertTurnstile(turnstile_token);
+    const inviteCode = typeof code === 'string' ? code.trim() : '';
+    if (!inviteCode) throw new AppError('Invite code is required', 400);
     assertValid(validateUserCredentials(username, password));
+    if (!Invite.findByCode(inviteCode)) throw new AppError('Invalid or already used invite code', 400);
 
-    const invite = Invite.findByCode(code.trim());
-    if (!invite) throw new AppError('Invalid or already used invite code', 400);
-
-    const hash = await hashPassword(password);
-    try {
-      const result = Invite.redeem(code.trim(), username.trim(), hash);
-      const token = issueToken({ id: result.lastInsertRowid, username: username.trim() });
-      res.json({ token, id: result.lastInsertRowid, username: username.trim(), role: ROLES.USER });
-    } catch (e) {
-      throw handleDbError(e, { uniqueMessage: 'Username already taken' });
-    }
+    const result = await createAccount(username, password, (name, hash) => Invite.redeem(inviteCode, name, hash));
+    res.json(sessionResponse({ id: result.lastInsertRowid, username: username.trim(), role: ROLES.USER }));
   });
 
   router.put('/password', blockInDemo, requireAuth, async (req, res) => {
