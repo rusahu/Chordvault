@@ -6648,13 +6648,17 @@ exports[`API responses match the recorded contract 3`] = `
   },
   {
     "call": "GET /api/admin/nope as anon",
-    "status": 404,
-    "body": "<text/html>"
+    "status": 401,
+    "body": {
+      "error": "Authentication required"
+    }
   },
   {
     "call": "GET /api/admin/nope as alice",
-    "status": 404,
-    "body": "<text/html>"
+    "status": 403,
+    "body": {
+      "error": "Admin access required"
+    }
   },
   {
     "call": "PUT /api/admin/users/3/role as admin",
