@@ -1,17 +1,15 @@
-import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { setTimeout } from 'node:timers/promises';
-import { signIn } from './lib/session.mjs';
+import { launchBrowser, newAppContext, signIn } from './lib/session.mjs';
 
-const { chromium } = createRequire(new URL('../frontend/package.json', import.meta.url))('playwright');
 const base = process.env.CV_SCREENSHOT_BASE || 'http://127.0.0.1:3108';
 const songId = process.env.CV_SCREENSHOT_SONG_ID;
 const setlistId = process.env.CV_SCREENSHOT_SETLIST_ID;
 if (!songId || !setlistId) throw new Error('Set CV_SCREENSHOT_SONG_ID and CV_SCREENSHOT_SETLIST_ID to public sample records in the disposable local instance.');
 const output = fileURLToPath(new URL('../docs/screenshots/', import.meta.url));
 mkdirSync(output, { recursive: true });
-const browser = await chromium.launch({ channel: process.env.CV_SCREENSHOT_BROWSER_CHANNEL });
+const browser = await launchBrowser(process.env.CV_SCREENSHOT_BROWSER_CHANNEL);
 
 const DESKTOP = { width: 1280, height: 900 };
 const PHONE = { width: 390, height: 844 };
@@ -21,12 +19,7 @@ async function capture(filename, route, scheme, { viewport = DESKTOP, user = nul
   // Fresh contexts share the server's five-second burst window.
   await setTimeout(5100);
   const touch = viewport.width < 1024;
-  const context = await browser.newContext({ viewport, isMobile: touch, hasTouch: touch, reducedMotion: 'reduce' });
-  await context.addInitScript(([theme, account]) => {
-    localStorage.setItem('cv_theme', theme);
-    localStorage.setItem('cv_fontsize', '0');
-    if (account) localStorage.setItem('cv_user', JSON.stringify(account));
-  }, [scheme, user]);
+  const context = await newAppContext(browser, { account: user, storage: { cv_theme: scheme, cv_fontsize: '0' }, viewport, isMobile: touch, hasTouch: touch, reducedMotion: 'reduce' });
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
