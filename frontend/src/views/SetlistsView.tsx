@@ -16,6 +16,7 @@ import { Pagination } from '../components/Pagination';
 import { useSearchSessionValue } from '../hooks/useSearchSessionValue';
 import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
 import { PageTitle } from '../components/PageTitle';
+import { VISIBILITY } from '../lib/constants';
 
 interface SetlistsViewProps {
   navigate: (view: string, params?: Record<string, string>) => void;
@@ -186,7 +187,7 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
                   setlist={{
                     id: sl.id,
                     name: sl.name,
-                    visibility: 'private',
+                    visibility: VISIBILITY.PRIVATE,
                     song_count: sl.entries.length,
                     event_date: null,
                   }}

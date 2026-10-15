@@ -9,6 +9,7 @@ import { showStatusNotification as toast } from '../lib/notifications';
 import { getSetlistOverrides, saveSetlistOverride, migrateOverride } from '../lib/storage';
 import { enrichLocalSetlistSongs } from '../lib/setlists';
 import type { Setlist, SetlistEntry } from '../types';
+import { VISIBILITY } from '../lib/constants';
 
 interface UseSetlistPlayerOptions {
   setlistId: number | string;
@@ -92,7 +93,7 @@ export function useSetlistPlayer({
                 name: sl.name,
                 entries,
                 isLocal: true,
-                visibility: 'private',
+                visibility: VISIBILITY.PRIVATE,
                 event_date: null,
               };
 

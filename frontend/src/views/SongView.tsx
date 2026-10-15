@@ -22,6 +22,7 @@ import { languageName } from '../lib/languages';
 import type { Song, SongVersion, Correction } from '../types';
 import { TagBadges } from '../components/TagBadges';
 import { PageTitle } from '../components/PageTitle';
+import { VISIBILITY } from '../lib/constants';
 
 interface SongViewProps {
   songId: number;
@@ -166,7 +167,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
                 &#9998; {t('songView.edit')}
               </Button>
             )}
-            {user && !isOwner && song.visibility !== 'private' && (
+            {user && !isOwner && song.visibility !== VISIBILITY.PRIVATE && (
               <>
                 <Button disabled={readOnly} variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => navigate('song-edit', { id: String(song.id) })}>
                   &#43; Create Version
@@ -187,7 +188,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
           {!isOwner && song.username && <span className="song-view-by">@{song.username}</span>}
           {song.bpm && <Badge>{song.bpm} bpm</Badge>}
           {song.language && <Badge title={languageName(song.language)}>{song.language.toUpperCase()}</Badge>}
-          {isOwner && song.visibility === 'private' && <Badge leftSection={<IconLock size={14} aria-hidden />}>Private</Badge>}
+          {isOwner && song.visibility === VISIBILITY.PRIVATE && <Badge leftSection={<IconLock size={14} aria-hidden />}>Private</Badge>}
           {versions.length > 1 && (
             <Group gap="xs" wrap="nowrap">
               <Text component="label" htmlFor="song-version" size="xs" c="dimmed" fw={600}>Version</Text>

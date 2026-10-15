@@ -2,6 +2,7 @@ import Dexie, { type Table } from 'dexie';
 import type { Setlist, SongListItem } from '../types';
 import type { CatalogSong, LibraryQuery, OfflineSnapshot, OfflineSong, OfflineState, RefreshTicket } from '../types/offline';
 import { splitTags } from './tagName';
+import { STATUS, VISIBILITY } from './constants';
 
 type Database = Dexie & {
   songs: Table<OfflineSong, number>;
@@ -32,8 +33,8 @@ export function validateSnapshot(value: unknown, accountId: number): asserts val
   const ids = new Set(value.songs.map(s => s.id));
   const songs = new Map(value.songs.map(s => [s.id, s]));
   if (value.catalog.length !== ids.size || value.songs.some(s => typeof s.content !== 'string' ||
-      typeof s.title !== 'string' || typeof s.updated_at !== 'string' || typeof s.created_at !== 'string' || !Number.isSafeInteger(s.familyId) || s.status !== 'active' ||
-      (s.visibility !== 'public' && s.user_id !== accountId)) ||
+      typeof s.title !== 'string' || typeof s.updated_at !== 'string' || typeof s.created_at !== 'string' || !Number.isSafeInteger(s.familyId) || s.status !== STATUS.ACTIVE ||
+      (s.visibility !== VISIBILITY.PUBLIC && s.user_id !== accountId)) ||
       value.catalog.some(s => !ids.has(s.id) || ['familyId', 'user_id', 'title', 'artist', 'visibility', 'status', 'language', 'updated_at', 'created_at'].some(key => s[key] !== songs.get(s.id)?.[key]) || !record(s.search) || typeof s.search.pinyin !== 'string' ||
         !['title', 'artist', 'lyrics'].every(key => Array.isArray((s.search as Record<string, unknown>)[key]) &&
           ((s.search as Record<string, unknown>)[key] as unknown[]).every(v => typeof v === 'string'))) ||
@@ -146,7 +147,7 @@ export function createOfflineLibrary(name = 'chordvault-offline') {
     const counts = new Map<number, number>();
     await db.catalog.each(row => {
       counts.set(row.familyId, (counts.get(row.familyId) || 0) + 1);
-      if (query.own ? row.user_id !== accountId : row.visibility !== 'public') return;
+      if (query.own ? row.user_id !== accountId : row.visibility !== VISIBILITY.PUBLIC) return;
       if (query.language && row.language !== query.language) return;
       if (tags.length && !splitTags(row.tags).some(tag => tags.includes(tag))) return;
       const fieldMatch = (forms: string[]) => terms.every(term => forms.some(form => form.includes(term)));

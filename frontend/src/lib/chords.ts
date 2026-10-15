@@ -392,10 +392,6 @@ export function songHasKey(content: string, semitones: number): boolean {
 
 export { escHtml } from './util';
 
-export function isAdminRole(role: string): boolean {
-  return role === 'admin' || role === 'owner';
-}
-
 export function clampFontSize(val: number): number {
   return Math.max(-3, Math.min(5, val));
 }

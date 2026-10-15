@@ -3,6 +3,7 @@ import { IconGripVertical, IconLock, IconPencil } from '@tabler/icons-react';
 import { getSongKey } from '../lib/chords';
 import { entrySemitones } from '../lib/setlistKeys';
 import type { SetlistEntry } from '../types';
+import { VISIBILITY } from '../lib/constants';
 
 interface SetlistEntryCardProps {
   entry: SetlistEntry;
@@ -66,7 +67,7 @@ export function SetlistEntryCard({
       <Box className="song-card-info" flex={1} miw={0}>
         <div className="song-card-title">
           {entry.title}
-          {entry.visibility === 'private' && (
+          {entry.visibility === VISIBILITY.PRIVATE && (
             <Badge ml={8} px={8} title="Private"><IconLock size={14} aria-hidden /><VisuallyHidden>Private</VisuallyHidden></Badge>
           )}
           {!isLocal && isEditable && entry.content_override && (

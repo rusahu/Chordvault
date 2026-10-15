@@ -17,6 +17,7 @@ import { detectFormat, toChordPro, ensureKeyDirective, extractDirective, updateD
 import type { Song } from '../types';
 import { EditorActionBar } from '../components/EditorActionBar';
 import type { Destination } from '../lib/songEditRoute';
+import { VISIBILITY, normalizeVisibility, type Visibility } from '../lib/constants';
 
 interface SongEditViewProps {
   songId?: number;
@@ -30,8 +31,8 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
   const { user } = useAuth();
   const { t } = useI18n();
   const [song, setSong] = useState<Song | null>(null);
-  const [visibility, setVisibility] = useState<'public' | 'private'>('public');
-  const [saved, setSaved] = useState<{ content: string; visibility: 'public' | 'private' }>({ content: '', visibility: 'public' });
+  const [visibility, setVisibility] = useState<Visibility>(VISIBILITY.PUBLIC);
+  const [saved, setSaved] = useState<{ content: string; visibility: Visibility }>({ content: '', visibility: VISIBILITY.PUBLIC });
   const [preferredLanguages, setPreferredLanguages] = useState<string[]>([]);
   const [ocrOpen, ocr] = useDisclosure(false);
   const [hasGeminiKey, setHasGeminiKey] = useState(false);
@@ -47,7 +48,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
       apiCall<Song>('GET', `/api/songs/${songId}`)
         .then((s) => {
           setSong(s);
-          setVisibility(s.visibility === 'private' ? 'private' : 'public');
+          setVisibility(normalizeVisibility(s.visibility));
 
           // CodeMirror joins lines with \n, so CRLF content would read as an unsaved edit.
           let c = s.content.replace(/\r\n?/g, '\n');
@@ -60,7 +61,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
           if (s.language && !extractDirective(c, 'x_language')) c = updateDirective(c, 'x_language', s.language);
 
           setInitialContent(c);
-          setSaved({ content: c, visibility: s.visibility === 'private' ? 'private' : 'public' });
+          setSaved({ content: c, visibility: normalizeVisibility(s.visibility) });
         })
         .catch((e) => { toast(e.message, 'error'); navigate('my-songs'); });
     }
@@ -183,11 +184,11 @@ modals.openConfirmModal({ children: t('songEdit.confirmDelete'), onConfirm: asyn
         <Input.Wrapper label="Tags" labelElement="div">
           <TagPicker label="Tags" selected={state.tags} onChange={handleTagsChange} />
         </Input.Wrapper>
-        <Switch label={<>Public {visibility === 'private' && <Text span size="xs" c="dimmed">&#128274; Only you can see this song</Text>}</>}
+        <Switch label={<>Public {visibility === VISIBILITY.PRIVATE && <Text span size="xs" c="dimmed">&#128274; Only you can see this song</Text>}</>}
                 type="checkbox"
                 disabled={!isOwner}
-                checked={visibility === 'public'}
-                onChange={(e) => setVisibility(e.target.checked ? 'public' : 'private')}
+                checked={visibility === VISIBILITY.PUBLIC}
+                onChange={(e) => setVisibility(e.target.checked ? VISIBILITY.PUBLIC : VISIBILITY.PRIVATE)}
                />
         <Box>
           <Group align="flex-start" justify="space-between" gap="xs" mb="xs">

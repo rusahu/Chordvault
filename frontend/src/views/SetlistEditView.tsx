@@ -23,6 +23,7 @@ import { SetlistEntryCard } from '../components/SetlistEntryCard';
 import type { Setlist, SongListItem } from '../types';
 import { useDragReorder } from '../hooks/useDragReorder';
 import { songEditFromSetlist } from '../lib/songEditRoute';
+import { VISIBILITY } from '../lib/constants';
 
 interface SetlistEditViewProps {
   setlistId: number | string;
@@ -63,7 +64,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
         name: sl.name,
         entries: sl.entries.map((e, idx) => formatLocalEntry(e, idx)),
         isLocal: true,
-        visibility: 'private',
+        visibility: VISIBILITY.PRIVATE,
         event_date: null,
       };
       setMetadata({ name: formatted.name, visibility: false, event_date: '' });
@@ -87,7 +88,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
       } else {
         sl = await getSetlist(Number(setlistId), true);
       }
-      setMetadata({ name: sl.name, visibility: sl.visibility === 'public', event_date: sl.event_date || '' });
+      setMetadata({ name: sl.name, visibility: sl.visibility === VISIBILITY.PUBLIC, event_date: sl.event_date || '' });
       setSetlist(sl);
       location.hash = `#setlist/${setlistId}`;
     } catch (e) {
@@ -144,7 +145,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
       rename(String(setlistId), nameInput);
       setSetlist((prev) => prev ? { ...prev, name: nameInput } : prev);
     } else {
-      const vis = values.visibility ? 'public' : 'private';
+      const vis = values.visibility ? VISIBILITY.PUBLIC : VISIBILITY.PRIVATE;
       const date = values.event_date;
       try {
         await apiCall('PUT', `/api/setlists/${setlistId}`, { name: nameInput, visibility: vis, event_date: date });
@@ -287,7 +288,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
             {setlist.entries.length > 0 && (
               <Button size="xs" className="btn btn-sm" onClick={() => handleItemClick(0)}>{t('setlist.play')}</Button>
             )}
-            {!isLocal && setlist.visibility === 'public' && (
+            {!isLocal && setlist.visibility === VISIBILITY.PUBLIC && (
               <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={copyShareLink}>{t('setlist.share')}</Button>
             )}
             {isEditable && <Button color="red" size="xs" className="btn btn-danger btn-sm" onClick={deleteSetlist}>{t('admin.delete')}</Button>}

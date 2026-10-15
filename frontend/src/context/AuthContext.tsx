@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 import type { User } from '../types';
 import { getStoredUser, setStoredUser, removeStoredUser, clearSearchSession } from '../lib/storage';
-import { isAdminRole } from '../lib/chords';
+import { isAdminRole } from '../lib/constants';
 
 import { useWindowEvent } from '@mantine/hooks';
 import { offlineLibrary } from '../lib/offlineLibrary';

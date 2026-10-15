@@ -14,6 +14,7 @@ import { useDemo } from '../context/DemoContext';
 import { languageName } from '../lib/languages';
 import { PageTitle } from '../components/PageTitle';
 import { AdminTags } from '../components/AdminTags';
+import { ROLES } from '../lib/constants';
 
 interface AdminViewProps {
   navigate: (view: string, params?: Record<string, string>) => void;
@@ -87,10 +88,10 @@ export function AdminView({ navigate }: AdminViewProps) {
   });
 
   const setRole = (userId: number, role: string) => {
-    const action = role === 'admin' ? t('admin.confirmPromote') : t('admin.confirmDemote');
+    const action = role === ROLES.ADMIN ? t('admin.confirmPromote') : t('admin.confirmDemote');
     modals.openConfirmModal({ children: action, onConfirm: () => runAction(async () => {
       await apiCall('PUT', `/api/admin/users/${userId}/role`, { role });
-      toast(role === 'admin' ? t('admin.userPromoted') : t('admin.userDemoted'), 'success');
+      toast(role === ROLES.ADMIN ? t('admin.userPromoted') : t('admin.userDemoted'), 'success');
       await load();
     }) });
   };
@@ -126,7 +127,7 @@ export function AdminView({ navigate }: AdminViewProps) {
 
   if (!stats) return <Loading />;
 
-  const isOwner = user?.role === 'owner';
+  const isOwner = user?.role === ROLES.OWNER;
   const currentId = user?.id;
   const pending = invites.filter((i) => !i.used_at);
 
@@ -196,8 +197,8 @@ export function AdminView({ navigate }: AdminViewProps) {
       <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12} mb={28}>
         {users.map((u) => {
           const isSelf = u.id === currentId;
-          const isTargetOwner = u.role === 'owner';
-          const isTargetAdmin = u.role === 'admin';
+          const isTargetOwner = u.role === ROLES.OWNER;
+          const isTargetAdmin = u.role === ROLES.ADMIN;
           const canManage = !isSelf && !isTargetOwner && (isOwner || !isTargetAdmin);
 
           return (
@@ -208,16 +209,16 @@ export function AdminView({ navigate }: AdminViewProps) {
                   <div className="song-card-meta">{u.song_count} {u.song_count !== 1 ? t('admin.songPlural') : t('admin.song')} &middot; {t('admin.joined')} {new Date(u.created_at).toLocaleDateString()}</div>
                 </Box>
                 <Group gap={6}>
-                  {u.role === 'owner' && <Badge>owner</Badge>}
-                  {u.role === 'admin' && <Badge>admin</Badge>}
+                  {u.role === ROLES.OWNER && <Badge>owner</Badge>}
+                  {u.role === ROLES.ADMIN && <Badge>admin</Badge>}
                   {u.disabled && <Badge color="red">disabled</Badge>}
                 </Group>
               </Group>
               {canManage && !demoMode && (
                 <Stack gap={10} mt={10}><Divider /><Group className="user-card-actions" gap={6}>
                   {isOwner && (isTargetAdmin
-                    ? <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, 'user'); }}>{t('admin.demote')}</Button>
-                    : <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, 'admin'); }}>{t('admin.promote')}</Button>
+                    ? <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, ROLES.USER); }}>{t('admin.demote')}</Button>
+                    : <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, ROLES.ADMIN); }}>{t('admin.promote')}</Button>
                   )}
                   <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); resetPassword(u.id, u.username); }}>{t('admin.resetPassword')}</Button>
                   <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setDisabled(u.id, !u.disabled); }}>{u.disabled ? t('admin.enable') : t('admin.disable')}</Button>

@@ -10,6 +10,7 @@ import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
 import { useLocalSetlists } from '../hooks/useLocalSetlists';
 import type { SetlistListItem } from '../types';
+import { VISIBILITY } from '../lib/constants';
 
 interface AddToSetlistModalProps {
   isOpen: boolean;
@@ -57,7 +58,7 @@ export function AddToSetlistModal({
         id: sl.id,
         name: sl.name,
         song_count: sl.entries.length,
-        visibility: 'private',
+        visibility: VISIBILITY.PRIVATE,
         event_date: null,
       }));
       setUserSetlists(formatted);
@@ -89,7 +90,7 @@ export function AddToSetlistModal({
       }
       return;
     }
-    if (!confirmed && songVisibility === 'private' && targetSetlist?.visibility === 'public') {
+    if (!confirmed && songVisibility === VISIBILITY.PRIVATE && targetSetlist?.visibility === VISIBILITY.PUBLIC) {
       modals.openConfirmModal({ children: 'This song is private. Other viewers of this public setlist will see it as "[Private Song]". Continue?', labels: { confirm: 'Continue', cancel: 'Cancel' }, onConfirm: () => { void addToExisting(targetId, true); } });
       return;
     }
@@ -160,7 +161,7 @@ export function AddToSetlistModal({
               meta={<>{sl.song_count} {sl.song_count !== 1 ? t('admin.songPlural') : t('admin.song')}</>}
               onClick={() => { void addToExisting(sl.id); }}
             >
-              {sl.visibility === 'public' && (
+              {sl.visibility === VISIBILITY.PUBLIC && (
                 <Badge size="sm">Public</Badge>
               )}
             </ListCard>
