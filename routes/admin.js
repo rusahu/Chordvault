@@ -7,7 +7,7 @@ const Invite = require('../lib/models/invite');
 const { requireAuth, requireAdmin, createAccount, setPassword } = require('../lib/auth');
 const { validateObjectBody, requireId, assertValid, validateUserCredentials, validatePassword, validateBoolean, validateTagList } = require('../lib/validation');
 const { AppError, requireFound } = require('../lib/errors');
-const { ROLES } = require('../lib/constants');
+const { ROLES, SETTING_KEYS } = require('../lib/constants');
 const Tags = require('../lib/models/tags');
 const { blockInDemo } = require('../lib/demo');
 
@@ -131,7 +131,7 @@ function createAdminRouter() {
   router.put('/admin/config', blockInDemo, (req, res) => {
     const { allowRegistration } = req.body;
     assertValid(validateBoolean(allowRegistration, 'allowRegistration'));
-    setSetting('allow_registration', allowRegistration ? '1' : '0');
+    setSetting(SETTING_KEYS.ALLOW_REGISTRATION, allowRegistration ? '1' : '0');
     res.json({ success: true, allowRegistration });
   });
 
