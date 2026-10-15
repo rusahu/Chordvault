@@ -24,6 +24,8 @@ import { TagBadges } from '../components/TagBadges';
 import { PageTitle } from '../components/PageTitle';
 import { VISIBILITY } from '../lib/constants';
 import { formatDbDate } from '../lib/format';
+import { errorMessage, notifyError } from '../lib/errors';
+import { usePdfExport } from '../hooks/usePdfExport';
 
 interface SongViewProps {
   songId: number;
@@ -41,7 +43,6 @@ export function SongView({ songId, navigate }: SongViewProps) {
   const [versions, setVersions] = useState<SongVersion[]>([]);
   const [corrections, setCorrections] = useState<Correction[]>([]);
   const [addToSetlistOpen, addToSetlist] = useDisclosure(false);
-  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     setSong(null);
@@ -51,7 +52,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
         setSong(data);
         location.hash = `#song/${songId}`;
       })
-      .catch((e) => setLoadError(e.message));
+      .catch((e) => setLoadError(errorMessage(e)));
   }, [songId, getSong, navigate, user]);
 
   useEffect(() => {
@@ -99,26 +100,12 @@ export function SongView({ songId, navigate }: SongViewProps) {
 
   const isOwner = user && song && user.username === song.username;
 
-  const handleExportPdf = async () => {
-    if (!song || exporting) return;
-    setExporting(true);
-    try {
-      const { exportSongPdf } = await import('../lib/pdf-export');
-      const missing = await exportSongPdf(song, {
-        transpose: chord.transpose,
-        nashville: chord.nashville,
-        fontSize: fontScale.fontSize,
-      });
-      if (missing.length) {
-        toast(`PDF exported, but these characters may be missing: ${missing.slice(0, 8).join(' ')}`, 'error');
-      } else {
-        toast('PDF exported', 'success');
-      }
-    } catch (e) {
-      toast((e as Error).message || 'PDF export failed', 'error');
-    } finally {
-      setExporting(false);
-    }
+  const exportPdf = usePdfExport();
+  const handleExportPdf = () => {
+    if (!song) return;
+    void exportPdf('PDF exported', async () => (await import('../lib/pdf-export')).exportSongPdf(song, {
+      transpose: chord.transpose, nashville: chord.nashville, fontSize: fontScale.fontSize,
+    }));
   };
 
 
@@ -131,7 +118,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
       setSong(null);
       const data = await getSong(songId);
       setSong(data);
-    } catch (e) { toast((e as Error).message, 'error'); }
+    } catch (e) { notifyError(e); }
 
 } });
 };
@@ -142,7 +129,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
       await apiCall('DELETE', `/api/corrections/${id}`);
       toast('Correction rejected', 'success');
       setCorrections((prev) => prev.filter((c) => c.id !== id));
-    } catch (e) { toast((e as Error).message, 'error'); }
+    } catch (e) { notifyError(e); }
 
 } });
 };

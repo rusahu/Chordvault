@@ -4,6 +4,7 @@ import { prepareSong, resolveEffectivePreferences } from './chords';
 import { entryContent, entrySemitones } from './setlistKeys';
 import { buildPdfConfig } from './pdf-config';
 import { EMBEDDED_FONT } from './constants';
+import { downloadBlob } from './download';
 import { loadPdfFont, makePdfConstructor, unsupportedChars, type PdfFontData } from './pdf-fonts';
 import type { Setlist } from '../types/setlist';
 
@@ -11,14 +12,7 @@ import type { Setlist } from '../types/setlist';
 // Floor matches the app's own font scale.
 const FIT_FLOOR = -3;
 
-function download(bytes: Uint8Array, filename: string): void {
-  const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: 'application/pdf' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(url);
-}
+const downloadPdf = (bytes: Uint8Array, filename: string) => downloadBlob(new Blob([bytes as BlobPart], { type: 'application/pdf' }), filename);
 
 async function loadFontFor(content: string): Promise<PdfFontData | null> {
   try {
@@ -84,7 +78,7 @@ interface SongExportOptions {
 export async function exportSongPdf(song: SongData, options: SongExportOptions): Promise<string[]> {
   const bytes = await renderOne(song.content, options.transpose, options.nashville, options.fontSize);
   const name = [song.title, song.artist].filter(Boolean).join(' - ') || 'song';
-  download(bytes, `${name}.pdf`);
+  downloadPdf(bytes, `${name}.pdf`);
   return unsupportedChars(song.content);
 }
 
@@ -117,6 +111,6 @@ export async function exportSetlistPdf(
     (await merged.copyPages(src, src.getPageIndices())).forEach((p) => merged.addPage(p));
   }
 
-  download(await merged.save(), `${setlist.name || 'setlist'}.pdf`);
+  downloadPdf(await merged.save(), `${setlist.name || 'setlist'}.pdf`);
   return [...missing];
 }

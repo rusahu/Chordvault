@@ -27,6 +27,8 @@ import { stepKey } from '../lib/keys';
 import { entryContent, entrySemitones, entryStartKey } from '../lib/setlistKeys';
 import { songEditFromSetlist } from '../lib/songEditRoute';
 import { prepareSongForSave } from '../lib/songSubmit';
+import { notifyError } from '../lib/errors';
+import { usePdfExport } from '../hooks/usePdfExport';
 import type { Setlist } from '../types';
 
 interface SetlistPlayViewProps {
@@ -45,7 +47,6 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
   const { readOnly } = useOffline();
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
-  const [exportingPdf, setExportingPdf] = useState(false);
 
   // Global setlist settings
   const [slNashville, setSlNashville] = useState(false);
@@ -143,7 +144,7 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
       updateEntry({ content_override: editContent });
       setEditing(false);
       toast(t('setlist.editSaved'), 'success');
-    } catch (e) { toast((e as Error).message, 'error'); }
+    } catch (e) { notifyError(e); }
   };
 
   const saveEditorAsVersion = async () => {
@@ -156,7 +157,7 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
       updateEntry({ content_override: prepared.content });
       setEditing(false);
       toast(t('setlist.versionCreated'), 'success');
-    } catch (e) { toast((e as Error).message, 'error'); }
+    } catch (e) { notifyError(e); }
   };
 
   // Swipe
@@ -182,28 +183,12 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
     if (entry) updateEntry({ _font: null });
   };
 
-  const handleExportAllPdf = async () => {
-    if (!setlist || exportingPdf) return;
-    setExportingPdf(true);
-    try {
-      const { exportSetlistPdf } = await import('../lib/pdf-export');
-      const missing = await exportSetlistPdf(setlist, {
-        nashville: slNashville,
-        fontSize: fontScale.fontSize,
-      });
-      if (missing.length) {
-        toast(
-          `Setlist PDF exported, but these characters may be missing: ${missing.slice(0, 8).join(' ')}`,
-          'error',
-        );
-      } else {
-        toast('Setlist PDF exported', 'success');
-      }
-    } catch (e) {
-      toast((e as Error).message || 'PDF export failed', 'error');
-    } finally {
-      setExportingPdf(false);
-    }
+  const exportPdf = usePdfExport();
+  const handleExportAllPdf = () => {
+    if (!setlist) return;
+    void exportPdf('Setlist PDF exported', async () => (await import('../lib/pdf-export')).exportSetlistPdf(setlist, {
+      nashville: slNashville, fontSize: fontScale.fontSize,
+    }));
   };
 
   const doFit = () => {
