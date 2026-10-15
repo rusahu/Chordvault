@@ -178,3 +178,10 @@ it('picks the newest, then highest id, version on equal score and orders familie
   expect((await library.querySongs(1, { q: 'amazing' })).songs.map(s => s.id)).toEqual([4]);
   expect((await library.querySongs(1, {})).songs.map(s => s.id)).toEqual([3, 4]);
 });
+
+it('pages like the server: a page past the end is empty and no rows means no pages', async () => {
+  await save();
+  const { songs, page, limit, total, totalPages } = await library.querySongs(1, { page: 5, limit: 1 });
+  expect({ ids: songs.map(s => s.id), page, limit, total, totalPages }).toEqual({ ids: [], page: 5, limit: 1, total: 2, totalPages: 2 });
+  expect(await library.querySetlists(1, { q: 'nothing matches', page: 1, limit: 20 })).toMatchObject({ setlists: [], total: 0, totalPages: 0 });
+});
