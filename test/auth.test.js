@@ -37,3 +37,9 @@ test('required auth retains errors while optional auth allows anonymous access',
     assert.equal(await (await request('/optional', { token })).json(), null);
   }
 });
+
+test('viewerId is the signed-in user id or 0', () => {
+  const { viewerId } = require('../lib/auth');
+  assert.equal(viewerId({ user: { id: 4 } }), 4);
+  assert.equal(viewerId({}), 0);
+});
