@@ -26,7 +26,6 @@ import { VISIBILITY } from '../lib/constants';
 import { formatDbDate, versionLabel } from '../lib/format';
 import { errorMessage, notifyError } from '../lib/errors';
 import { usePdfExport } from '../hooks/usePdfExport';
-import { songHash } from '../lib/routes';
 
 interface SongViewProps {
   songId: number;
@@ -49,10 +48,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
     setSong(null);
     setLoadError('');
     getSong(songId)
-      .then((data) => {
-        setSong(data);
-        location.hash = songHash(songId);
-      })
+      .then(setSong)
       .catch((e) => setLoadError(errorMessage(e)));
   }, [songId, getSong, navigate, user]);
 
@@ -142,7 +138,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
     <div lang={song.language || undefined}>
       <Box mb="lg">
         <Group justify="space-between" mb="md">
-          <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => { location.hash = ''; navigate(user ? 'my-songs' : 'browse'); }}>
+          <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => navigate(user ? 'my-songs' : 'browse')}>
             &#8592; {t('songView.back')}
           </Button>
           <Group gap="xs">
