@@ -204,9 +204,9 @@ function commentText(l: ChordSheetJS.Line): string | null {
 const UNTYPED = ['none', 'indeterminate'];
 
 /** The cleaned label of a line that holds only a section label (a comment, a lyric or a bracket chord), else null. */
-function lineLabel(l: ChordSheetJS.Line | undefined): string | null {
+function lineLabel(l: ChordSheetJS.Line | undefined, comment = l && commentText(l)): string | null {
   if (!l) return null;
-  let text = commentText(l)?.trim();
+  let text = comment?.trim();
   if (text === undefined) {
     const first = l.items[0];
     if (!first || !('lyrics' in first)) return null;
@@ -249,9 +249,9 @@ class ResponsiveHtmlFormatter {
   }
 
   private renderLine(l: ChordSheetJS.Line): string {
-    const label = lineLabel(l);
-    if (label !== null) return labelRow(label);
     const comment = commentText(l);
+    const label = lineLabel(l, comment);
+    if (label !== null) return labelRow(label);
     if (comment !== null) return `<div class="comment">${escHtml(comment)}</div>`;
 
     const content = l.items.map(it => this.renderItem(it as ChordSheetJS.ChordLyricsPair)).join('');
