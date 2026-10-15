@@ -17,8 +17,7 @@ test('validators reject malformed field types instead of throwing', () => {
     assert.ok(validateUserCredentials(value,'password123'));
     assert.ok(validateUserCredentials('validuser',value));
     assert.ok(validateSongInput({content:value}));
-    assert.ok(validateSongInput({title:value}));
-    assert.ok(validateSongInput({youtube_url:value}));
+    assert.ok(validateSongInput({format_detected:value}));
     assert.ok(validateSetlistInput(value));
   }
 });

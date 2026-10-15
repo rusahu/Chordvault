@@ -7,7 +7,6 @@ test('server song validation uses the shared messages', () => {
   assert.equal(validateSongMetadata({ title: '', language: 'en' }), SONG_ERRORS.titleRequired);
   assert.equal(validateSongInput({ content: '{title: T}\nno chords here', requireChord: true }), SONG_ERRORS.noChords);
   assert.equal(validateSongInput({ content: 'x'.repeat(100001) }), SONG_ERRORS.contentTooLarge);
-  assert.equal(validateSongInput({ bpm: 0 }), SONG_ERRORS.bpmRange);
 });
 
 test('shared song messages carry the limits and no dashes', () => {

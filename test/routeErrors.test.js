@@ -141,3 +141,26 @@ test('admin disable accepts only a boolean', async t => {
     assert.equal(db.prepare('SELECT disabled FROM users WHERE id = ?').get(target.id).disabled, disabled ? 1 : 0);
   }
 });
+
+test('every song save checks the YouTube link and title length from the song text', async t => {
+  const request = await serve(t, mount);
+  const youtubeError = 'YouTube URL must be a valid youtube.com or youtu.be link';
+  const evil = '{title: Grace}\n{x_language: en}\n{x_youtube: https://evil.example/watch}\n[C]Grace';
+  const longTitle = `{title: ${'T'.repeat(201)}}\n{x_language: en}\n[C]Grace`;
+  const saves = [
+    ['/api/songs', { ...owner, method: 'POST' }],
+    [`/api/songs/${songId}`, { ...owner, method: 'PUT' }],
+    [`/api/songs/${songId}/version`, { ...other, method: 'POST' }],
+    [`/api/songs/${songId}/correction`, { ...other, method: 'POST' }],
+  ];
+  for (const [path, options] of saves) {
+    await expectError(request, path, { ...options, body: { content: evil } }, 400, youtubeError);
+    await expectError(request, path, { ...options, body: { content: longTitle } }, 400, 'Title too long (max 200 characters)');
+  }
+  const imported = await (await request('/api/songs/import', { ...admin, method: 'POST', body: { songs: [{ content: evil }, { content: '{title: Words}\njust words' }] } })).json();
+  assert.deepEqual(imported.errors, [{ index: 0, error: youtubeError }, { index: 1, error: SONG_ERRORS.noChords }]);
+  for (const link of ['https://m.youtube.com/watch?v=abc', 'https://music.youtube.com/watch?v=abc', 'https://youtu.be/abc']) {
+    const ok = await request('/api/songs', { ...owner, method: 'POST', body: { content: `{title: Link}\n{x_language: en}\n{x_youtube: ${link}}\n[C]Grace` } });
+    assert.equal(ok.status, 200, link);
+  }
+});
