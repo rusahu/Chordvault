@@ -21,15 +21,6 @@ interface Summary {
   errors: { filename: string; error: string }[];
 }
 
-function readText(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsText(file);
-  });
-}
-
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function ImportModal({ opened, onClose, onDone }: ImportModalProps) {
@@ -86,7 +77,7 @@ function ImportContent({ busy, setBusy, onClose, onDone }: Omit<ImportModalProps
 
     setBusy(true);
     try {
-      const texts = await Promise.all(files.map(readText));
+      const texts = await Promise.all(files.map((f) => f.text()));
       if (!active.current) return;
       const songs = texts.map((t, i) => fileToSong(files[i].name, t));
       const batches = chunkSongs(songs);

@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 import type { User } from '../types';
-import { getStoredUser, setStoredUser, removeStoredUser, clearSearchSession } from '../lib/storage';
+import { getStoredUser, setStoredUser, removeStoredUser, clearSearchSession, USER_STORAGE_KEY } from '../lib/storage';
 import { isAdminRole } from '../lib/constants';
 
 import { useWindowEvent } from '@mantine/hooks';
@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   useWindowEvent('storage', event => {
-    if (event.key === 'cv_user' || event.key === null) syncStoredUser();
+    if (event.key === USER_STORAGE_KEY || event.key === null) syncStoredUser();
   });
   useWindowEvent('focus', syncStoredUser);
 

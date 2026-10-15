@@ -1,44 +1,31 @@
 import type { User, LocalSetlist } from '../types';
 import { legacyTransposeToTargetKey } from './setlistKeys';
 
-const KEYS = {
-  user: 'cv_user',
-  fontsize: 'cv_fontsize',
-  localSetlists: 'cv_local_setlists',
-  setlistOverrides: 'cv_setlist_overrides',
-} as const;
+export const USER_STORAGE_KEY = 'cv_user';
+const LOCAL_SETLISTS_KEY = 'cv_local_setlists';
+const SETLIST_OVERRIDES_KEY = 'cv_setlist_overrides';
 
-export function getStoredUser(): User | null {
+function readJson<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(KEYS.user);
-    return raw ? JSON.parse(raw) : null;
-  } catch { return null; }
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch { return fallback; }
 }
 
+export const getStoredUser = (): User | null => readJson<User | null>(USER_STORAGE_KEY, null);
+
 export function setStoredUser(user: User): void {
-  localStorage.setItem(KEYS.user, JSON.stringify(user));
+  localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
 }
 
 export function removeStoredUser(): void {
-  localStorage.removeItem(KEYS.user);
+  localStorage.removeItem(USER_STORAGE_KEY);
 }
 
-export function getStoredFontSize(): number {
-  return parseInt(localStorage.getItem(KEYS.fontsize) || '0') || 0;
-}
-
-export function setStoredFontSize(size: number): void {
-  localStorage.setItem(KEYS.fontsize, String(size));
-}
-
-export function getLocalSetlists(): LocalSetlist[] {
-  try {
-    return JSON.parse(localStorage.getItem(KEYS.localSetlists) || '[]');
-  } catch { return []; }
-}
+export const getLocalSetlists = (): LocalSetlist[] => readJson<LocalSetlist[]>(LOCAL_SETLISTS_KEY, []);
 
 export function saveLocalSetlists(arr: LocalSetlist[]): void {
-  localStorage.setItem(KEYS.localSetlists, JSON.stringify(arr));
+  localStorage.setItem(LOCAL_SETLISTS_KEY, JSON.stringify(arr));
 }
 
 export interface SetlistOverride {
@@ -56,10 +43,7 @@ export interface SetlistOverride {
  * migrateOverride() before use.
  */
 export function getSetlistOverrides(setlistId: number | string): Record<string, SetlistOverride> {
-  try {
-    const all = JSON.parse(localStorage.getItem(KEYS.setlistOverrides) || '{}');
-    return all[String(setlistId)] || {};
-  } catch { return {}; }
+  return readJson<Record<string, Record<string, SetlistOverride>> | null>(SETLIST_OVERRIDES_KEY, {})?.[String(setlistId)] || {};
 }
 
 /**
@@ -71,13 +55,13 @@ export function saveSetlistOverride(
   data: SetlistOverride
 ): void {
   try {
-    const all = JSON.parse(localStorage.getItem(KEYS.setlistOverrides) || '{}');
+    const all = readJson<Record<string, Record<string, SetlistOverride>>>(SETLIST_OVERRIDES_KEY, {});
     const sid = String(setlistId);
     const eid = String(entryId);
     if (!all[sid]) all[sid] = {};
     all[sid][eid] = { ...all[sid][eid], ...data };
     delete all[sid][eid].transpose; // legacy field never written going forward; drop it on every save
-    localStorage.setItem(KEYS.setlistOverrides, JSON.stringify(all));
+    localStorage.setItem(SETLIST_OVERRIDES_KEY, JSON.stringify(all));
   } catch (e) { console.error('Failed to save setlist override', e); }
 }
 

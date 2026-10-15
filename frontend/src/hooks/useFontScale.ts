@@ -1,28 +1,14 @@
-import { useState, useCallback } from 'react';
+import { useCallback } from 'react';
+import { useLocalStorage } from '@mantine/hooks';
 import { clampFontSize } from '../lib/chords';
-import { getStoredFontSize, setStoredFontSize } from '../lib/storage';
 
 export function useFontScale() {
-  const [fontSize, setFontSize] = useState(() => getStoredFontSize());
-
-  const changeFontSize = useCallback((delta: number) => {
-    setFontSize((prev) => {
-      const next = clampFontSize(prev + delta);
-      setStoredFontSize(next);
-      return next;
-    });
-  }, []);
-
-  const resetFontSize = useCallback(() => {
-    setFontSize(0);
-    setStoredFontSize(0);
-  }, []);
-
-  const setFontSizeTo = useCallback((val: number) => {
-    const clamped = clampFontSize(val);
-    setFontSize(clamped);
-    setStoredFontSize(clamped);
-  }, []);
-
-  return { fontSize, changeFontSize, resetFontSize, setFontSize, setFontSizeTo };
+  const [fontSize, setFontSize] = useLocalStorage({
+    key: 'cv_fontsize', defaultValue: 0, getInitialValueInEffect: false, sync: false,
+    serialize: String, deserialize: (value) => parseInt(value ?? '0') || 0,
+  });
+  const changeFontSize = useCallback((delta: number) => setFontSize((prev) => clampFontSize(prev + delta)), [setFontSize]);
+  const resetFontSize = useCallback(() => setFontSize(0), [setFontSize]);
+  const setFontSizeTo = useCallback((value: number) => setFontSize(clampFontSize(value)), [setFontSize]);
+  return { fontSize, changeFontSize, resetFontSize, setFontSizeTo };
 }

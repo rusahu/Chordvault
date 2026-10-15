@@ -6,7 +6,8 @@ import { useAuth } from './AuthContext';
 import { offlineLibrary } from '../lib/offlineLibrary';
 import { downloadOfflineLibrary } from '../lib/offlineDownload';
 import { usePersistentStorage } from '../hooks/usePersistentStorage';
-import { getStoredUser } from '../lib/storage';
+import { getStoredUser, USER_STORAGE_KEY } from '../lib/storage';
+import { errorMessage } from '../lib/errors';
 import { ApiError } from '../lib/api';
 import type { OfflineState } from '../types/offline';
 
@@ -58,7 +59,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
       if (updated && !abort.signal.aborted) setUsingDownload(false);
     } catch (err) {
       if (!abort.signal.aborted && mounted.current) {
-        setError(err instanceof Error ? err.message : 'Could not download library');
+        setError(errorMessage(err, 'Could not download library'));
         if (err instanceof ApiError && err.status === 401) logout();
       }
     } finally {
@@ -87,7 +88,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
       await readState();
       void requestPersistence();
       await refresh(true);
-    } catch (err) { setError((err as Error).message); }
+    } catch (err) { setError(errorMessage(err)); }
   }, [user, readState, refresh, requestPersistence]);
   const disable = useCallback(async () => {
     controller.current?.abort();
@@ -98,10 +99,10 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
       setError('');
       setUsingDownload(false);
       await readState();
-    } catch (err) { setError((err as Error).message); }
+    } catch (err) { setError(errorMessage(err)); }
   }, [user, readState]);
   useEffect(() => {
-    const subscription = liveQuery(() => offlineLibrary.status()).subscribe({ next: setState, error: err => { setState(undefined); setError(`Offline storage unavailable: ${err.message}`); } });
+    const subscription = liveQuery(() => offlineLibrary.status()).subscribe({ next: setState, error: err => { setState(undefined); setError(`Offline storage unavailable: ${errorMessage(err)}`); } });
     return () => subscription.unsubscribe();
   }, []);
   useEffect(() => { if (visibility === 'visible') void refreshRef.current(); }, [visibility]);
@@ -119,13 +120,13 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
         await offlineLibrary.disable(current.accountId);
         await readState();
       } else if (user) void refreshRef.current();
-    }).catch(err => { if (active) setError(`Offline storage unavailable: ${err.message}`); });
+    }).catch(err => { if (active) setError(`Offline storage unavailable: ${errorMessage(err)}`); });
     return () => { active = false; controller.current?.abort(); };
   }, [user, readState]);
   useWindowEvent('online', () => { void refreshRef.current(); });
   useWindowEvent('focus', () => { void readState().then(() => refreshRef.current()).catch(() => {}); });
   useWindowEvent('storage', (event) => {
-    if (event.key === 'cv_user') { controller.current?.abort(); void readState().catch(() => {}); }
+    if (event.key === USER_STORAGE_KEY) { controller.current?.abort(); void readState().catch(() => {}); }
   });
   const value = useMemo(() => ({ state: state?.accountId === user?.id ? state : undefined,
     activity, busy, error, shellError, shellReady, enabled, persisted, requestPersistence, usingDownload, online: network.online,
