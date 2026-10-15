@@ -156,11 +156,11 @@ export function AdminView({ navigate }: AdminViewProps) {
           <div className="muted-text" style={{ marginTop: 4 }}>
             {config.allowRegistration ? 'Anyone can create an account — no email verification, so open to spam. Use invite codes instead.' : 'Registration is closed. Use invite codes to add new users.'}
           </div>
-          {demoMode && <div className="muted-text" style={{ fontSize: 12, marginTop: 4 }}>Disabled in demo mode</div>}
+          {demoMode && <div className="muted-text" style={{ fontSize: 12, marginTop: 4 }}>{t('common.demoDisabled')}</div>}
         </div>
         <Stack gap={14}><Divider />
           <Group gap={12}>
-            <Button className="btn" onClick={generateInvite} disabled={demoMode || busy} title={demoMode ? 'Disabled in demo mode' : ''}>{t('admin.generateInvite')}</Button>
+            <Button className="btn" onClick={generateInvite} disabled={demoMode || busy} title={demoMode ? t('common.demoDisabled') : ''}>{t('admin.generateInvite')}</Button>
             {inviteCode && (
               <Group gap={8}>
                 <Code fz={18} fw={600} py={6} px={14} bg="var(--accent-bg)" style={{ userSelect: 'all', letterSpacing: '0.08em' }}>{inviteCode}</Code>
@@ -243,7 +243,7 @@ export function AdminView({ navigate }: AdminViewProps) {
 
       {corrections.length > 0 && (
         <>
-          <h3 className="admin-section-title">Pending Corrections ({corrections.length})</h3>
+          <h3 className="admin-section-title">{tReplace('admin.pendingCorrections', { count: corrections.length })}</h3>
           <CardGrid>
             {corrections.map((c) => (
               <ListCard

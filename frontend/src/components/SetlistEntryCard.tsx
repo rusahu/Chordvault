@@ -58,7 +58,7 @@ export function SetlistEntryCard({
           mr={{ base: 0, xs: 16 }}
           onClick={(e) => e.stopPropagation()}
           {...handleProps}
-          title="Drag to reorder"
+          title={t('admin.dragToReorder')}
         >
           <IconGripVertical size={20} aria-hidden />
         </Box>

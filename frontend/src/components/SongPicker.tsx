@@ -28,7 +28,7 @@ export function SongPicker({ opened, onPick, onClose }: SongPickerProps) {
 
 function SongPickerContent({ onPick }: Pick<SongPickerProps, 'onPick'>) {
   const api = useApi();
-  const { t } = useI18n();
+  const { t, tReplace } = useI18n();
   const [songs, setSongs] = useState<SongListItem[]>([]);
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<number | null>(null);
@@ -79,7 +79,7 @@ function SongPickerContent({ onPick }: Pick<SongPickerProps, 'onPick'>) {
             onKeyDown={(e) => { if (e.key === 'Enter') load(search); }}
             data-autofocus
           />
-          <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => load(search)}>Search</Button>
+          <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => load(search)}>{t('songs.search')}</Button>
         </SearchRow>
         <CardGrid>
           {songs.length === 0 ? (
@@ -92,7 +92,7 @@ function SongPickerContent({ onPick }: Pick<SongPickerProps, 'onPick'>) {
                 meta={<>
                   {s.artist || ''}
                   {(s.version_count ?? 0) > 1 && (
-                    <Badge variant="filled" ml={8}>{s.version_count} Versions</Badge>
+                    <Badge variant="filled" ml={8}>{tReplace('songs.versionCount', { count: s.version_count ?? 0 })}</Badge>
                   )}
                 </>}
                 onClick={() => { void handleCardClick(s); }}

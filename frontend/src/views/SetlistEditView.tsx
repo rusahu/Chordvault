@@ -190,7 +190,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
           ) : !isEditable ? (
             <>
               {setlist.username && <span style={{ fontSize: 13, color: 'var(--muted)' }}>By @{setlist.username}</span>}
-              {setlist.event_date && <span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 8 }}>Date: {setlist.event_date}</span>}
+              {setlist.event_date && <span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 8 }}>{t('setlist.date')}: {setlist.event_date}</span>}
             </>
           ) : (
             <>

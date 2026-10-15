@@ -21,9 +21,11 @@ import { PageTitle } from '../components/PageTitle';
 import { SettingsSection } from '../components/SettingsSection';
 import { ModelSelect } from '../components/ModelSelect';
 import { getLanguages, getOcrModels, type OcrModels } from '../lib/settingsApi';
+import { useI18n } from '../context/I18nContext';
 
 export function SettingsView() {
   const { readOnly } = useOffline();
+  const { t } = useI18n();
   const apiCall = useApi();
   const { demoMode } = useDemo();
   const { user, isAdmin } = useAuth();
@@ -127,7 +129,7 @@ export function SettingsView() {
       <div className="settings-grid">
         <SettingsSection title="Change Password">
           {demoMode ? (
-            <Text size="sm" c="dimmed">Disabled in demo mode</Text>
+            <Text size="sm" c="dimmed">{t('common.demoDisabled')}</Text>
           ) : (
             <Stack gap="sm" renderRoot={(props) => <form {...props} onSubmit={passwordForm.onSubmit(changePassword)} />}>
               <PasswordInput label={<>Current Password</>} type="password" {...passwordForm.getInputProps('currentPw')} autoComplete="current-password" />
@@ -167,7 +169,7 @@ export function SettingsView() {
           <Stack gap="sm">
             <Group>
               {isAdmin && (
-                <Button size="xs" className="btn btn-sm" onClick={openImport}>Import Songs</Button>
+                <Button size="xs" className="btn btn-sm" onClick={openImport}>{t('admin.importSongs')}</Button>
               )}
               <Button size="xs" className="btn btn-sm" onClick={handleExport} disabled={exportAction.busy}>
                 {exportAction.busy ? 'Exporting…' : 'Export Songs'}

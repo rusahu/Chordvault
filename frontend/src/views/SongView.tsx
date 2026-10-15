@@ -36,7 +36,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
   const { getSong, getVersions } = useLibraryRead();
   const { readOnly } = useOffline();
   const { user } = useAuth();
-  const { t } = useI18n();
+  const { t, tReplace } = useI18n();
   const [loadError, setLoadError] = useState('');
   const [song, setSong] = useState<Song | null>(null);
   const [versions, setVersions] = useState<SongVersion[]>([]);
@@ -138,7 +138,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
             {user && !isOwner && song.visibility !== VISIBILITY.PRIVATE && (
               <>
                 <Button disabled={readOnly} variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => navigate('song-edit', { id: String(song.id) })}>
-                  &#43; Create Version
+                  &#43; {t('songEdit.createVersion')}
                 </Button>
                 <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={readOnly} onClick={() => navigate('correction', { id: String(song.id) })}>
                   &#9998; Correction
@@ -211,7 +211,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
       {/* Corrections section */}
       {isOwner && corrections.length > 0 && (
         <div className="corrections-section">
-          <h3 className="admin-section-title">Pending Corrections ({corrections.length})</h3>
+          <h3 className="admin-section-title">{tReplace('admin.pendingCorrections', { count: corrections.length })}</h3>
           {corrections.map((c) => (
             <Paper withBorder key={c.id} className="correction-card" bg="var(--ui-card-bg)" radius={12} p={16} mb={12} shadow="sm">
               <Group justify="space-between" gap={8} mb={12} c="dimmed" fz={13}>

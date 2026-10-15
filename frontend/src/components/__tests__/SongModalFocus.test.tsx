@@ -14,7 +14,7 @@ const { api, localSetlists, auth, toast } = vi.hoisted(() => ({
 vi.mock('../../hooks/useApi', () => ({ useApi: () => api }));
 vi.mock('../../hooks/useLocalSetlists', () => ({ useLocalSetlists: () => localSetlists }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
-vi.mock('../../context/I18nContext', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
+vi.mock('../../context/I18nContext', () => ({ useI18n: () => ({ t: (key: string) => key, tReplace: (key: string) => key }) }));
 vi.mock('../../lib/notifications', () => ({ showStatusNotification: toast }));
 
 beforeEach(() => { api.mockReset(); api.mockResolvedValue([]); auth.user = null; toast.mockReset(); localSetlists.setlists = []; localSetlists.addEntry.mockReset(); });

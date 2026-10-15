@@ -147,7 +147,7 @@ describe('SongEditView opened from a setlist', () => {
 
 it('connects tabs to persistent panels and preserves editor content when switching', async () => {
   await renderEditor();
-  const edit = screen.getByRole('tab', { name: 'Edit' });
+  const edit = screen.getByRole('tab', { name: 'songView.edit' });
   const preview = screen.getByRole('tab', { name: 'Preview' });
   const panel = document.getElementById(edit.getAttribute('aria-controls')!);
   expect(panel).not.toBeNull();

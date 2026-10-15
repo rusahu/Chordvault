@@ -86,7 +86,7 @@ export function AdminTags() {
       </Group>
       <Paper withBorder bg="var(--surface)" radius="var(--radius)" py={16} px={20} mb={20}>
         <div className="muted-text">{t('admin.songTagsHelp')}</div>
-        {demoMode && <div className="muted-text" style={{ fontSize: 12, marginTop: 4 }}>Disabled in demo mode</div>}
+        {demoMode && <div className="muted-text" style={{ fontSize: 12, marginTop: 4 }}>{t('common.demoDisabled')}</div>}
         <Stack gap={0} mt={12}>
           {items.map((name, idx) => (
             <Box key={name}>

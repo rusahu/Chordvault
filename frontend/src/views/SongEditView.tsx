@@ -125,7 +125,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
       const result = await apiCall<{ id: number }>('POST', `/api/songs/${targetId}/version`, {
         content: prepared.content
       });
-      toast('Version created successfully', 'success');
+      toast(t('setlist.versionCreated'), 'success');
       leave('song-view', { id: String(result.id) });
     } catch (e) { notifyError(e); }
   };
@@ -154,10 +154,10 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
           <TextInput label={<>BPM</>} type="number" value={state.bpm} onChange={(e) => handleFieldChange('tempo', e.target.value, editor.setBpm)} placeholder="e.g. 120" min={MIN_BPM} max={MAX_BPM} />
         </SimpleGrid>
         <TextInput label={<>YouTube URL</>} type="url" value={state.youtubeUrl} onChange={(e) => handleFieldChange('x_youtube', e.target.value, editor.setYoutubeUrl)} placeholder="https://youtube.com/watch?v=..." />
-        <Input.Wrapper label="Tags" labelElement="div">
-          <TagPicker label="Tags" selected={state.tags} onChange={handleTagsChange} />
+        <Input.Wrapper label={t('songs.tags')} labelElement="div">
+          <TagPicker label={t('songs.tags')} selected={state.tags} onChange={handleTagsChange} />
         </Input.Wrapper>
-        <Switch label={<>Public {visibility === VISIBILITY.PRIVATE && <Text span size="xs" c="dimmed">&#128274; Only you can see this song</Text>}</>}
+        <Switch label={<>Public {visibility === VISIBILITY.PRIVATE && <Text span size="xs" c="dimmed">&#128274; {t('songEdit.privateOnly')}</Text>}</>}
                 type="checkbox"
                 disabled={!isOwner}
                 checked={visibility === VISIBILITY.PUBLIC}
@@ -174,7 +174,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
             </Box>
           )}
           <Tabs value={editorTab} onChange={(value) => { if (value === 'preview') { setEditorTab('preview'); setForceRender(n => n + 1); } else setEditorTab('edit'); }} keepMounted keepMountedMode="display-none">
-            <Tabs.List grow className="editor-tabs"><Tabs.Tab value="edit">Edit</Tabs.Tab><Tabs.Tab value="preview">Preview</Tabs.Tab></Tabs.List>
+            <Tabs.List grow className="editor-tabs"><Tabs.Tab value="edit">{t('songView.edit')}</Tabs.Tab><Tabs.Tab value="preview">Preview</Tabs.Tab></Tabs.List>
             <div className="editor-split">
               <Tabs.Panel value="edit" className="cm-editor-wrap">
                 <CodeMirrorEditor
