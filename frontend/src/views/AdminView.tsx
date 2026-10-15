@@ -3,8 +3,10 @@ import { Badge, Paper, Switch, Button, SimpleGrid, Group, Stack, Text, Box, Divi
 import { ListCard } from '../components/ListCard';
 import { useCopyNotification } from '../hooks/useCopyNotification';
 import { modals } from '@mantine/modals';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
+import { useBusyAction } from '../hooks/useBusyAction';
+import { notifyError } from '../lib/errors';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
@@ -34,17 +36,7 @@ export function AdminView({ navigate }: AdminViewProps) {
   const [config, setConfig] = useState<AdminConfig>({ allowRegistration: true });
   const [invites, setInvites] = useState<InviteCode[]>([]);
   const [inviteCode, setInviteCode] = useState('');
-  const [busy, setBusy] = useState(false);
-  const pendingAction = useRef(false);
-
-  const runAction = async (action: () => Promise<void>) => {
-    if (pendingAction.current) return;
-    pendingAction.current = true;
-    setBusy(true);
-    try { await action(); }
-    catch (e) { toast((e as Error).message, 'error'); }
-    finally { pendingAction.current = false; setBusy(false); }
-  };
+  const { busy, run: runAction } = useBusyAction();
 
   const loadInvites = useCallback(async () => {
     try {
@@ -63,7 +55,7 @@ export function AdminView({ navigate }: AdminViewProps) {
       ]);
       setStats(s); setUsers(u); setCorrections(c); setConfig(cfg);
       await loadInvites();
-    } catch (e) { toast((e as Error).message, 'error'); navigate('my-songs'); }
+    } catch (e) { notifyError(e); navigate('my-songs'); }
   }, [apiCall, navigate, loadInvites]);
 
   useEffect(() => {

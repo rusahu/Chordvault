@@ -5,6 +5,11 @@ import { useForm } from '@mantine/form';
 import { useDisclosure } from '@mantine/hooks';
 import { useState, useEffect, useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
+import { useBusyAction } from '../hooks/useBusyAction';
+import { useStatusMessage } from '../hooks/useStatusMessage';
+import { StatusText } from '../components/StatusText';
+import { downloadBlob } from '../lib/download';
+import { errorMessage } from '../lib/errors';
 import { LANGUAGES, languageName } from '../lib/languages';
 import { useDemo } from '../context/DemoContext';
 import { useAuth } from '../context/AuthContext';
@@ -20,20 +25,20 @@ export function SettingsView() {
   const { demoMode } = useDemo();
   const { user, isAdmin } = useAuth();
   const passwordForm = useForm({ initialValues: { currentPw: '', newPw: '', confirmPw: '' }, validate: { currentPw: value => value ? null : 'All fields are required', newPw: value => value.length >= MIN_PASSWORD_LENGTH ? null : `New password must be at least ${MIN_PASSWORD_LENGTH} characters`, confirmPw: (value, values) => value === values.newPw ? null : 'New passwords do not match' } });
-  const { currentPw, newPw, confirmPw } = passwordForm.values;
-  const [changingPassword, setChangingPassword] = useState(false);
-  const [pwMsg, setPwMsg] = useState<{ text: string; color: string } | null>(null);
+  const { currentPw, newPw } = passwordForm.values;
+  const pwStatus = useStatusMessage();
+  const langStatus = useStatusMessage();
+  const promptStatus = useStatusMessage();
+  const modelStatus = useStatusMessage();
+  const exportStatus = useStatusMessage();
+  const passwordAction = useBusyAction();
+  const exportAction = useBusyAction();
   const [preferredLangs, setPreferredLangs] = useState<string[]>([]);
-  const [langMsg, setLangMsg] = useState<{ text: string; color: string } | null>(null);
   const [ocrPrompt, setOcrPrompt] = useState('');
   const [defaultPrompt, setDefaultPrompt] = useState('');
   const [hasCustomPrompt, setHasCustomPrompt] = useState(false);
-  const [promptMsg, setPromptMsg] = useState<{ text: string; color: string } | null>(null);
   const [ocrModel, setOcrModel] = useState(DEFAULT_GEMINI_MODEL);
   const [modelList, setModelList] = useState<{ id: string; label: string }[]>([]);
-  const [modelMsg, setModelMsg] = useState<{ text: string; color: string } | null>(null);
-  const [exporting, setExporting] = useState(false);
-  const [exportMsg, setExportMsg] = useState<{ text: string; color: string } | null>(null);
   const [showImport, { open: openImport, close: closeImport }] = useDisclosure(false);
 
   const loadPreferredLangs = useCallback(async () => {
@@ -65,39 +70,31 @@ export function SettingsView() {
   useEffect(() => { loadOcrPrompt(); loadOcrModel(); }, [loadOcrPrompt, loadOcrModel]);
   useEffect(() => { loadPreferredLangs(); }, [loadPreferredLangs]);
 
-  const changePassword = async () => {
-    if (changingPassword) return;
-    setPwMsg(null);
-    if (!currentPw || !newPw || !confirmPw) { setPwMsg({ text: 'All fields are required', color: 'var(--danger)' }); return; }
-    if (newPw.length < MIN_PASSWORD_LENGTH) { setPwMsg({ text: `New password must be at least ${MIN_PASSWORD_LENGTH} characters`, color: 'var(--danger)' }); return; }
-    if (newPw !== confirmPw) { setPwMsg({ text: 'New passwords do not match', color: 'var(--danger)' }); return; }
-    setChangingPassword(true);
-    try {
-      await apiCall('PUT', '/api/auth/password', { current_password: currentPw, new_password: newPw });
-      setPwMsg({ text: 'Password changed successfully', color: 'var(--success)' });
-      passwordForm.reset();
-    } catch (e) { setPwMsg({ text: (e as Error).message, color: 'var(--danger)' }); }
-    finally { setChangingPassword(false); }
-  };
+  const changePassword = () => passwordAction.run(async () => {
+    pwStatus.clear();
+    await apiCall('PUT', '/api/auth/password', { current_password: currentPw, new_password: newPw });
+    pwStatus.succeed('Password changed successfully');
+    passwordForm.reset();
+  }, (e) => pwStatus.fail(errorMessage(e)));
 
   const saveOcrModel = async (model: string) => {
     setOcrModel(model);
-    setModelMsg(null);
+    modelStatus.clear();
     try {
       await apiCall('PUT', '/api/settings/ocr-model', { model });
-      setModelMsg({ text: 'Default model saved', color: 'var(--success)' });
-    } catch (e) { setModelMsg({ text: (e as Error).message, color: 'var(--danger)' }); }
+      modelStatus.succeed('Default model saved');
+    } catch (e) { modelStatus.fail(errorMessage(e)); }
   };
 
   const saveOcrPrompt = async () => {
-    setPromptMsg(null);
-    if (!ocrPrompt.trim()) { setPromptMsg({ text: 'Prompt cannot be empty', color: 'var(--danger)' }); return; }
-    if (ocrPrompt.length > MAX_OCR_PROMPT) { setPromptMsg({ text: `Prompt must be under ${MAX_OCR_PROMPT} characters`, color: 'var(--danger)' }); return; }
+    promptStatus.clear();
+    if (!ocrPrompt.trim()) { promptStatus.fail('Prompt cannot be empty'); return; }
+    if (ocrPrompt.length > MAX_OCR_PROMPT) { promptStatus.fail(`Prompt must be under ${MAX_OCR_PROMPT} characters`); return; }
     try {
       await apiCall('PUT', '/api/settings/ocr-prompt', { prompt: ocrPrompt });
-      setPromptMsg({ text: 'Custom prompt saved', color: 'var(--success)' });
+      promptStatus.succeed('Custom prompt saved');
       setHasCustomPrompt(true);
-    } catch (e) { setPromptMsg({ text: (e as Error).message, color: 'var(--danger)' }); }
+    } catch (e) { promptStatus.fail(errorMessage(e)); }
   };
 
   const resetOcrPrompt = async () => {
@@ -105,48 +102,28 @@ export function SettingsView() {
       await apiCall('DELETE', '/api/settings/ocr-prompt');
       setOcrPrompt('');
       setHasCustomPrompt(false);
-      setPromptMsg({ text: 'Reset to default prompt', color: 'var(--success)' });
-    } catch (e) { setPromptMsg({ text: (e as Error).message, color: 'var(--danger)' }); }
+      promptStatus.succeed('Reset to default prompt');
+    } catch (e) { promptStatus.fail(errorMessage(e)); }
   };
 
-  const addLang = async (code: string) => {
-    if (preferredLangs.includes(code)) return;
-    const updated = [...preferredLangs, code];
+  const saveLanguages = async (updated: string[]) => {
     try {
       await apiCall('PUT', '/api/settings/languages', { languages: updated });
       setPreferredLangs(updated);
-      setLangMsg({ text: 'Saved', color: 'var(--success)' });
-    } catch (e) { setLangMsg({ text: (e as Error).message, color: 'var(--danger)' }); }
+      langStatus.succeed('Saved');
+    } catch (e) { langStatus.fail(errorMessage(e)); }
   };
+  const addLang = (code: string) => { if (!preferredLangs.includes(code)) void saveLanguages([...preferredLangs, code]); };
+  const removeLang = (code: string) => saveLanguages(preferredLangs.filter((c) => c !== code));
 
-  const removeLang = async (code: string) => {
-    const updated = preferredLangs.filter(c => c !== code);
-    try {
-      await apiCall('PUT', '/api/settings/languages', { languages: updated });
-      setPreferredLangs(updated);
-      setLangMsg({ text: 'Saved', color: 'var(--success)' });
-    } catch (e) { setLangMsg({ text: (e as Error).message, color: 'var(--danger)' }); }
-  };
-
-  const handleExport = async () => {
-    if (!user?.token) return;
-    setExporting(true);
-    setExportMsg(null);
-    try {
-      const { blob, filename } = await exportSongsBlob(user.token);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      setExportMsg({ text: (e as Error).message, color: 'var(--danger)' });
-    } finally {
-      setExporting(false);
-    }
+  const handleExport = () => {
+    const token = user?.token;
+    if (!token) return;
+    void exportAction.run(async () => {
+      exportStatus.clear();
+      const { blob, filename } = await exportSongsBlob(token);
+      downloadBlob(blob, filename);
+    }, (e) => exportStatus.fail(errorMessage(e)));
   };
 
   return (
@@ -164,8 +141,8 @@ export function SettingsView() {
               <PasswordInput label={<>Current Password</>} type="password" {...passwordForm.getInputProps('currentPw')} autoComplete="current-password" />
               <PasswordInput label={<>New Password</>} type="password" {...passwordForm.getInputProps('newPw')} autoComplete="new-password" />
               <PasswordInput label={<>Confirm New Password</>} type="password" {...passwordForm.getInputProps('confirmPw')} autoComplete="new-password" />
-              <Button style={{ alignSelf: 'flex-start' }} type="submit" loading={changingPassword} disabled={changingPassword}>Change Password</Button>
-              {pwMsg && <Text size="sm" c={pwMsg.color} role={pwMsg.color === 'var(--danger)' ? 'alert' : 'status'}>{pwMsg.text}</Text>}
+              <Button style={{ alignSelf: 'flex-start' }} type="submit" loading={passwordAction.busy} disabled={passwordAction.busy}>Change Password</Button>
+              <StatusText status={pwStatus.status} />
             </Stack>
           )}
         </Paper>
@@ -185,9 +162,9 @@ export function SettingsView() {
               {preferredLangs.length === 0 && <Text size="sm" c="dimmed">No languages set</Text>}
             </Group>
             {preferredLangs.length < MAX_PREFERRED_LANGUAGES && (
-              <Select searchable label="Add a language" placeholder="Search languages" value={null} data={LANGUAGES.filter(language => !preferredLangs.includes(language.code)).map(language => ({ value: language.code, label: `${language.name} (${language.code})` }))} onChange={(value) => { if (value) void addLang(value); }} />
+              <Select searchable label="Add a language" placeholder="Search languages" value={null} data={LANGUAGES.filter(language => !preferredLangs.includes(language.code)).map(language => ({ value: language.code, label: `${language.name} (${language.code})` }))} onChange={(value) => { if (value) addLang(value); }} />
             )}
-            {langMsg && <Text size="sm" c={langMsg.color} role={langMsg.color === 'var(--danger)' ? 'alert' : 'status'}>{langMsg.text}</Text>}
+            <StatusText status={langStatus.status} />
           </Stack>
         </Paper>
 
@@ -202,11 +179,11 @@ export function SettingsView() {
               {isAdmin && (
                 <Button size="xs" className="btn btn-sm" onClick={openImport}>Import Songs</Button>
               )}
-              <Button size="xs" className="btn btn-sm" onClick={handleExport} disabled={exporting}>
-                {exporting ? 'Exporting…' : 'Export Songs'}
+              <Button size="xs" className="btn btn-sm" onClick={handleExport} disabled={exportAction.busy}>
+                {exportAction.busy ? 'Exporting…' : 'Export Songs'}
               </Button>
             </Group>
-            {exportMsg && <Text size="sm" c={exportMsg.color} role={exportMsg.color === 'var(--danger)' ? 'alert' : 'status'}>{exportMsg.text}</Text>}
+            <StatusText status={exportStatus.status} />
           </Stack>
           <ImportModal opened={showImport} onClose={closeImport} onDone={() => {}} />
         </Paper>
@@ -235,7 +212,7 @@ export function SettingsView() {
                   <option key={m.id} value={m.id}>{m.label}</option>
                 ))}
               </NativeSelect>
-              {modelMsg && <Text size="sm" mt={4} c={modelMsg.color} role={modelMsg.color === 'var(--danger)' ? 'alert' : 'status'}>{modelMsg.text}</Text>}
+              <StatusText status={modelStatus.status} mt={4} />
             </Box>
             <Box>
               <Textarea label={<>Prompt</>}
@@ -261,7 +238,7 @@ export function SettingsView() {
                 <Button color="red" size="xs" className="btn btn-danger btn-sm" onClick={resetOcrPrompt}>Reset to Default</Button>
               )}
             </Group>
-            {promptMsg && <Text size="sm" c={promptMsg.color} role={promptMsg.color === 'var(--danger)' ? 'alert' : 'status'}>{promptMsg.text}</Text>}
+            <StatusText status={promptStatus.status} />
           </Stack>
         </Paper>
       </div>
