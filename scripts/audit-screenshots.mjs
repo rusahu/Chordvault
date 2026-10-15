@@ -11,6 +11,7 @@
 
 import { chromium } from 'playwright';
 import { mkdirSync, unlinkSync, symlinkSync } from 'fs';
+import { DEMO_ACCOUNT } from './lib/session.mjs';
 
 const BASE = process.argv[2] || 'http://localhost:3100';
 const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
@@ -97,8 +98,8 @@ await navClick(d, 'Sign in');
 
 // Fill and submit
 await d.waitForSelector('#auth-user', { timeout: 5000 });
-await d.fill('#auth-user', 'demo');
-await d.fill('input[type="password"]', 'demopass123');
+await d.fill('#auth-user', DEMO_ACCOUNT.username);
+await d.fill('input[type="password"]', DEMO_ACCOUNT.password);
 await d.click('#auth-submit');
 await wait(d, 1500);
 await shot(d, 'browse-auth');
@@ -225,8 +226,8 @@ await navClick(m, 'Sign in');
 await shot(m, 'mobile-sign-in');
 
 await m.waitForSelector('#auth-user', { timeout: 5000 });
-await m.fill('#auth-user', 'demo');
-await m.fill('input[type="password"]', 'demopass123');
+await m.fill('#auth-user', DEMO_ACCOUNT.username);
+await m.fill('input[type="password"]', DEMO_ACCOUNT.password);
 await m.click('#auth-submit');
 await wait(m, 1500);
 await shot(m, 'mobile-browse-auth');

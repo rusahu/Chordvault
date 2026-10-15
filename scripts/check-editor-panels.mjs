@@ -1,14 +1,13 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
+import { DEMO_ACCOUNT, signIn } from './lib/session.mjs';
 
 const base = process.env.CV_CHECK_BASE || 'http://localhost:3118';
 const songId = process.env.CV_CHECK_SONG_ID || '2';
-const response = await fetch(`${base}/api/auth/login`, {
-  method: 'POST', headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ username: process.env.CV_CHECK_USER || 'demo', password: process.env.CV_CHECK_PASSWORD || 'demopass123' }),
+const account = await signIn(base, {
+  username: process.env.CV_CHECK_USER || DEMO_ACCOUNT.username,
+  password: process.env.CV_CHECK_PASSWORD || DEMO_ACCOUNT.password,
 });
-assert(response.ok, 'Test account login failed');
-const account = await response.json();
 const browser = await chromium.launch({ ...(process.env.CV_CHECK_CHANNEL ? { channel: process.env.CV_CHECK_CHANNEL } : {}) });
 try {
   for (const theme of ['light', 'dark']) {

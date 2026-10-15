@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { signIn } from './lib/session.mjs';
 
 const { chromium } = createRequire(new URL('../frontend/package.json', import.meta.url))('playwright');
 const base = process.env.CV_CHECK_BASE || 'http://localhost:5173';
@@ -169,9 +170,7 @@ for (const width of [390, 768, 1280]) {
 // their card, sheet padding as designed, setlist titles with room to read.
 const { CV_CHECK_USER: user, CV_CHECK_PASSWORD: password, CV_CHECK_SONG_ID: songId } = process.env;
 if (user && password && songId) {
-  const res = await fetch(`${base}/api/auth/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: user, password }) });
-  const a = await res.json();
-  const account = { token: a.token, id: a.id, username: a.username, role: a.role };
+  const account = await signIn(base, { username: user, password });
   const pages = [['songs', '', null], ['setlists', '', 'Setlists'], ['song', `#song/${songId}`, null], ['setlist', `#setlist/${setlistId}`, null]];
   for (const width of [360, 384, 412, 768]) {
     for (const [name, route, click] of pages) {

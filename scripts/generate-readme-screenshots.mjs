@@ -2,6 +2,7 @@ import { createRequire } from 'node:module';
 import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { setTimeout } from 'node:timers/promises';
+import { signIn } from './lib/session.mjs';
 
 const { chromium } = createRequire(new URL('../frontend/package.json', import.meta.url))('playwright');
 const base = process.env.CV_SCREENSHOT_BASE || 'http://127.0.0.1:3108';
@@ -15,17 +16,6 @@ const browser = await chromium.launch({ channel: process.env.CV_SCREENSHOT_BROWS
 const DESKTOP = { width: 1280, height: 900 };
 const PHONE = { width: 390, height: 844 };
 const TABLET = { width: 768, height: 1024 };
-
-/** Signs in as the seeded demo account so pages behind the account can be shown. */
-async function signIn() {
-  const res = await fetch(`${base}/api/auth/login`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'demo', password: 'demopass123' }),
-  });
-  if (!res.ok) throw new Error(`Sign-in failed: ${res.status}`);
-  const { token, id, username, role } = await res.json();
-  return { token, id, username, role };
-}
 
 async function capture(filename, route, scheme, { viewport = DESKTOP, user = null, open = null } = {}) {
   // Fresh contexts share the server's five-second burst window.
@@ -64,7 +54,7 @@ const openEditor = async (page) => {
 };
 
 try {
-  const user = await signIn();
+  const user = await signIn(base);
   await capture('browse.png', '', 'dark');
   await capture('song-view.png', `#song/${songId}`, 'dark', { open: singleColumn });
   await capture('song-view-light.png', `#song/${songId}`, 'light', { open: singleColumn });

@@ -1,3 +1,4 @@
+process.env.DB_PATH = ':memory:';
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { AppError, requireFound } = require('../lib/errors');
@@ -42,4 +43,10 @@ test('OCR validators keep each route message', () => {
   assert.equal(validateRefineInput({ ...refine, history: [{ role: 'system', text: 'x' }] }), 'History entries require a user/model role and string text');
   assert.equal(validateRefineInput({ ...refine, message: 'x'.repeat(2001) }), 'Message too long (max 2000 chars)');
   assert.equal(validateRefineInput({ ...refine, history: Array(21).fill({ role: 'user', text: 'x' }) }), 'Conversation too long. Start a new extraction.');
+});
+
+test('shared error messages keep their wording', () => {
+  assert.equal(require('../lib/demo').DEMO_DISABLED, 'Disabled in demo mode');
+  assert.equal(require('../lib/models/invite').INVALID_INVITE, 'Invalid or already used invite code');
+  assert.equal(require('../lib/validation').CREDENTIALS_REQUIRED, 'Username and password required');
 });
