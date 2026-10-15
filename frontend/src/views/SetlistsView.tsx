@@ -69,7 +69,7 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
       <LoadErrorAlert message={loadError} />
       <Group justify="space-between" mb="lg">
         <PageTitle className="view-title">{t('setlist.title')}</PageTitle>
-        <Button disabled={readOnly} size="xs" className="btn btn-sm" leftSection={<IconPlus size={14} aria-hidden />} onClick={() => setShowNew(true)}>{t('setlist.newSetlist')}</Button>
+        <Button disabled={readOnly} size="xs" leftSection={<IconPlus size={14} aria-hidden />} onClick={() => setShowNew(true)}>{t('setlist.newSetlist')}</Button>
       </Group>
       <SetlistTabs value="mine" navigate={navigate} />
       {!user && (
@@ -89,8 +89,8 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') create(); }}
           />
-          <Button size="xs" className="btn btn-sm" onClick={create}>{t('setlist.create')}</Button>
-          <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => setShowNew(false)}>{t('songEdit.cancel')}</Button>
+          <Button size="xs" onClick={create}>{t('setlist.create')}</Button>
+          <Button variant="default" size="xs" onClick={() => setShowNew(false)}>{t('songEdit.cancel')}</Button>
         </SearchRow>
       )}
       <SearchRow>

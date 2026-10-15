@@ -170,7 +170,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
           </Group>
           {user && (
             <Box mb="xs">
-              <Button variant="default" size="xs" className="btn btn-sm btn-ghost" disabled={readOnly} onClick={ocr.open}>&#128247; Import from image or PDF</Button>
+              <Button variant="default" size="xs" disabled={readOnly} onClick={ocr.open}>&#128247; Import from image or PDF</Button>
             </Box>
           )}
           <Tabs value={editorTab} onChange={(value) => { if (value === 'preview') { setEditorTab('preview'); setForceRender(n => n + 1); } else setEditorTab('edit'); }} keepMounted keepMountedMode="display-none">

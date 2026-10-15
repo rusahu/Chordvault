@@ -270,9 +270,9 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
             autoFocus
           />
           <div className="setlist-editor-actions">
-            <Button size="xs" className="btn btn-sm" onClick={saveEditorToSetlist}>{t('setlist.saveToSetlist')}</Button>
-            <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={saveEditorAsVersion}>{t('setlist.saveAsVersion')}</Button>
-            <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => setEditing(false)}>{t('songEdit.cancel')}</Button>
+            <Button size="xs" onClick={saveEditorToSetlist}>{t('setlist.saveToSetlist')}</Button>
+            <Button variant="default" size="xs" onClick={saveEditorAsVersion}>{t('setlist.saveAsVersion')}</Button>
+            <Button variant="default" size="xs" onClick={() => setEditing(false)}>{t('songEdit.cancel')}</Button>
           </div>
         </div>
       ) : (

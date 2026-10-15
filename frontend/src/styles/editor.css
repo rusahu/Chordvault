@@ -40,16 +40,6 @@
   padding: 20px 24px;
   border: 0;
   background: transparent;
-  box-shadow: none;
-}
-
-.editor-preview-wrap .chord-sheet h1 {
-  font-size: 20px;
-  margin-bottom: 8px;
-}
-
-.editor-preview-wrap .chord-sheet h2 {
-  font-size: 16px;
 }
 
 /* Mobile Tabs */

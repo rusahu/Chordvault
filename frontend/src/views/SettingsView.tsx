@@ -169,9 +169,9 @@ export function SettingsView() {
           <Stack gap="sm">
             <Group>
               {isAdmin && (
-                <Button size="xs" className="btn btn-sm" onClick={openImport}>{t('admin.importSongs')}</Button>
+                <Button size="xs" onClick={openImport}>{t('admin.importSongs')}</Button>
               )}
-              <Button size="xs" className="btn btn-sm" onClick={handleExport} disabled={exportAction.busy}>
+              <Button size="xs" onClick={handleExport} disabled={exportAction.busy}>
                 {exportAction.busy ? 'Exporting…' : 'Export Songs'}
               </Button>
             </Group>
@@ -211,14 +211,14 @@ export function SettingsView() {
               </Text>
             </Box>
             <Group gap="xs">
-              <Button size="xs" className="btn btn-sm" onClick={saveOcrPrompt}>Save Prompt</Button>
+              <Button size="xs" onClick={saveOcrPrompt}>Save Prompt</Button>
               {!ocrPrompt && (
-                <Button size="xs" className="btn btn-sm" style={{ background: 'var(--surface-alt, var(--surface))' }} onClick={() => setOcrPrompt(defaultPrompt)}>
+                <Button size="xs" style={{ background: 'var(--surface-alt, var(--surface))' }} onClick={() => setOcrPrompt(defaultPrompt)}>
                   Copy Default
                 </Button>
               )}
               {hasCustomPrompt && (
-                <Button color="red" size="xs" className="btn btn-danger btn-sm" onClick={resetOcrPrompt}>Reset to Default</Button>
+                <Button color="red" size="xs" onClick={resetOcrPrompt}>Reset to Default</Button>
               )}
             </Group>
             <StatusText status={promptStatus.status} />

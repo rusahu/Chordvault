@@ -82,13 +82,13 @@ export function TextSizeGroup({ onFontChange, overridden, size = 'md', dense }: 
 export function FitButton({ onAutoFit, size = 'md', dense, iconOnly }: { onAutoFit: () => void; size?: ControlSize; dense?: boolean; iconOnly?: boolean }) {
   if (iconOnly) {
     return (
-      <ActionIcon size={`input-${size}`} variant="light" className="autofit-btn" aria-label="Fit" title="Auto-fit for this screen (one-time)" onClick={onAutoFit}>
+      <ActionIcon size={`input-${size}`} variant="light" aria-label="Fit" title="Auto-fit for this screen (one-time)" onClick={onAutoFit}>
         <IconArrowsMaximize size={20} aria-hidden />
       </ActionIcon>
     );
   }
   return (
-    <Button size={size} px={dense ? 'xs' : undefined} className="autofit-btn" onClick={onAutoFit} title="Auto-fit for this screen (one-time)" leftSection={dense ? undefined : <IconArrowsMaximize size={18} aria-hidden />}>
+    <Button size={size} px={dense ? 'xs' : undefined} onClick={onAutoFit} title="Auto-fit for this screen (one-time)" leftSection={dense ? undefined : <IconArrowsMaximize size={18} aria-hidden />}>
       Fit
     </Button>
   );

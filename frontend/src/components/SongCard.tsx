@@ -35,7 +35,6 @@ export function SongCard({ song, isOwner, onClick, onEdit }: SongCardProps) {
           {Boolean(song.bpm) && <Badge>{song.bpm}</Badge>}
           {isOwner && onEdit && (
             <Button variant="default" size="xs" ml="auto"
-              className="btn btn-ghost btn-sm"
               onClick={(e) => { e.stopPropagation(); onEdit(); }}
             >
               {t('songView.edit')}

@@ -40,9 +40,9 @@ export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
   return (
     <>
       <Group mb="lg">
-        <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => navigate('song-view', { id: String(songId) })}>&#8592; Cancel</Button>
+        <Button variant="default" size="xs" onClick={() => navigate('song-view', { id: String(songId) })}>&#8592; Cancel</Button>
         <Title order={2} size="h3" flex="1 1 160px">Submit Correction</Title>
-        <Button size="xs" className="btn btn-sm" disabled={readOnly} onClick={submit}>Submit</Button>
+        <Button size="xs" disabled={readOnly} onClick={submit}>Submit</Button>
       </Group>
       <Text size="sm" c="dimmed" mb="sm">
         Edit the chords below. Your correction will be reviewed by the song owner before being applied.

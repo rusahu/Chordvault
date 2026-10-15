@@ -65,11 +65,11 @@ export function GeminiKeySettings() {
           autoComplete="off"
         />
       <Group gap={8}>
-        <Button size="xs" className="btn btn-sm" onClick={saveKey} loading={saving} disabled={removing}>
+        <Button size="xs" onClick={saveKey} loading={saving} disabled={removing}>
           {hasKey ? 'Replace Key' : 'Save Key'}
         </Button>
         {hasKey && (
-          <Button color="red" size="xs" className="btn btn-danger btn-sm" onClick={removeKey} loading={removing} disabled={saving}>
+          <Button color="red" size="xs" onClick={removeKey} loading={removing} disabled={saving}>
             Remove Key
           </Button>
         )}

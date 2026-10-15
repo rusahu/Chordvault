@@ -29,7 +29,7 @@
 /* Chords sit directly on their lyric; pairs and sections are spaced apart. */
 .chord-sheet .paragraph { margin-bottom: 1.45em; }
 .chord-sheet .paragraph:last-child { margin-bottom: 0; }
-.chord-sheet .paragraph:has(.section-label, h3.label) { padding-top: 0.7em; }
+.chord-sheet .paragraph:has(h3.label) { padding-top: 0.7em; }
 .chord-sheet .row { display: block; white-space: pre-wrap; line-height: 1.1; margin-bottom: 0.62em; }
 .chord-sheet .row:last-child { margin-bottom: 0; }
 .chord-sheet .column { display: inline-flex; flex-direction: column; vertical-align: top; flex-shrink: 0; margin-right: 1px; }
@@ -65,8 +65,7 @@
 /* Rows with no lyrics (intros, interludes) space their chords apart. */
 .chord-sheet .row:not(:has(.lyrics:not(:empty))) > .column:not(:last-child) > .chord:not(:empty) { padding-right: 2.5ch; }
 
-.chord-sheet .comment,
-.chord-sheet .tag {
+.chord-sheet .comment {
   color: var(--muted);
   font-size: calc(0.72em * var(--font-scale));
   font-style: italic;
@@ -74,7 +73,7 @@
 }
 
 /* Section names: readable, neutral, on a hairline to the column edge. */
-.chord-sheet .section-label, .chord-sheet h3.label {
+.chord-sheet h3.label {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -85,7 +84,7 @@
   line-height: 1.2;
   color: var(--muted);
 }
-.chord-sheet .section-label::after, .chord-sheet h3.label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.chord-sheet h3.label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 
 /* Chorus: a quiet band, pulled out so lyrics stay aligned with other sections. */
 .chord-sheet .paragraph.chorus {
@@ -94,7 +93,7 @@
   padding: 0.7em 0.55em 0.8em;
   margin-inline: -0.55em;
 }
-.chord-sheet .paragraph.chorus .section-label, .chord-sheet .paragraph.chorus h3.label { color: var(--text); }
-.chord-sheet .paragraph.chorus .section-label::after, .chord-sheet .paragraph.chorus h3.label::after { background: var(--line-strong); }
+.chord-sheet .paragraph.chorus h3.label { color: var(--text); }
+.chord-sheet .paragraph.chorus h3.label::after { background: var(--line-strong); }
 
 .chord-sheet .row:has(> h3.label) + .row:not(:has(.chord:not(:empty), .lyrics:not(:empty))) { display: none; }

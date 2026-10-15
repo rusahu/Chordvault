@@ -79,7 +79,7 @@ function SongPickerContent({ onPick }: Pick<SongPickerProps, 'onPick'>) {
             onKeyDown={(e) => { if (e.key === 'Enter') load(search); }}
             data-autofocus
           />
-          <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => load(search)}>{t('songs.search')}</Button>
+          <Button variant="default" size="xs" onClick={() => load(search)}>{t('songs.search')}</Button>
         </SearchRow>
         <CardGrid>
           {songs.length === 0 ? (

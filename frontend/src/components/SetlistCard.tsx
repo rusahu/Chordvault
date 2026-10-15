@@ -27,7 +27,6 @@ export function SetlistCard({ setlist, onClick, onPlay, showUsername }: SetlistC
       onClick={onClick}
       actions={onPlay && setlist.song_count > 0 && (
         <Button variant="default" size="xs"
-          className="btn btn-ghost btn-sm"
           onClick={(e) => { e.stopPropagation(); onPlay(); }}
         >
           {t('setlist.play')}

@@ -139,7 +139,7 @@ export function AdminTags() {
             onChange={e => { setNewName(e.currentTarget.value); setAddError(null); }}
             onKeyDown={e => { if (e.key === 'Enter') add(); }}
           />
-          <Button className="btn" onClick={add} disabled={disabled}>{t('admin.addTag')}</Button>
+          <Button onClick={add} disabled={disabled}>{t('admin.addTag')}</Button>
         </Group>
       </Paper>
     </>

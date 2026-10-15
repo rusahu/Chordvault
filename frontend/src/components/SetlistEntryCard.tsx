@@ -82,16 +82,16 @@ export function SetlistEntryCard({
       {(isEditable || onEdit) && (
         <Group className="setlist-entry-controls" gap={4} wrap="nowrap" justify="flex-end" w={{ base: '100%', xs: 'auto' }} onClick={(e) => e.stopPropagation()}>
           {onEdit && (
-            <Button variant="default" size="xs" className="btn btn-ghost btn-sm" leftSection={<IconPencil size={14} aria-hidden />} onClick={() => onEdit(idx)}>
+            <Button variant="default" size="xs" leftSection={<IconPencil size={14} aria-hidden />} onClick={() => onEdit(idx)}>
               {t('songView.edit')}
             </Button>
           )}
           {isEditable && (
             <>
-              <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={!canStep} onClick={() => onStepKey(entry.entry_id, idx, -1)}>
+              <Button variant="default" size="xs" disabled={!canStep} onClick={() => onStepKey(entry.entry_id, idx, -1)}>
                 &#9837;
               </Button>
-              <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={!canStep} onClick={() => onStepKey(entry.entry_id, idx, 1)}>
+              <Button variant="default" size="xs" disabled={!canStep} onClick={() => onStepKey(entry.entry_id, idx, 1)}>
                 &#9839;
               </Button>
             </>

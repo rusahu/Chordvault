@@ -29,13 +29,6 @@ body {
 /* -- Layout ------------------------------─ */
 #app { max-width: 860px; margin: 0 auto; padding: 32px 24px; }
 
-/* -- Divider ------------------------------ */
-.divider {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 24px 0;
-}
-
 /* -- View Transitions -------------------- */
 @keyframes viewFadeIn {
   from { opacity: 0; transform: translateY(8px); }

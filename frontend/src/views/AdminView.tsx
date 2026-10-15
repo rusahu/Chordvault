@@ -160,11 +160,11 @@ export function AdminView({ navigate }: AdminViewProps) {
         </div>
         <Stack gap={14}><Divider />
           <Group gap={12}>
-            <Button className="btn" onClick={generateInvite} disabled={demoMode || busy} title={demoMode ? t('common.demoDisabled') : ''}>{t('admin.generateInvite')}</Button>
+            <Button onClick={generateInvite} disabled={demoMode || busy} title={demoMode ? t('common.demoDisabled') : ''}>{t('admin.generateInvite')}</Button>
             {inviteCode && (
               <Group gap={8}>
                 <Code fz={18} fw={600} py={6} px={14} bg="var(--accent-bg)" style={{ userSelect: 'all', letterSpacing: '0.08em' }}>{inviteCode}</Code>
-                <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => copyWithFeedback(inviteCode)}>{t('admin.copy')}</Button>
+                <Button variant="default" size="xs" onClick={() => copyWithFeedback(inviteCode)}>{t('admin.copy')}</Button>
               </Group>
             )}
           </Group>
@@ -176,7 +176,7 @@ export function AdminView({ navigate }: AdminViewProps) {
                 <Group key={inv.id} gap={8} mb={4}>
                   <code style={{ fontSize: 13 }}>{inv.code}</code>
                   <span className="muted-text" style={{ fontSize: 12 }}>{formatDbDate(inv.created_at)}</span>
-                  <Button variant="default" size="xs" className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: '2px 6px' }} onClick={() => deleteInvite(inv.id)} disabled={demoMode || busy}>&#10005;</Button>
+                  <Button variant="default" size="xs" style={{ fontSize: 11, padding: '2px 6px' }} onClick={() => deleteInvite(inv.id)} disabled={demoMode || busy}>&#10005;</Button>
                 </Group>
               ))}
             </Stack>
@@ -210,12 +210,12 @@ export function AdminView({ navigate }: AdminViewProps) {
               {canManage && !demoMode && (
                 <Stack gap={10} mt={10}><Divider /><Group className="user-card-actions" gap={6}>
                   {isOwner && (isTargetAdmin
-                    ? <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, ROLES.USER); }}>{t('admin.demote')}</Button>
-                    : <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, ROLES.ADMIN); }}>{t('admin.promote')}</Button>
+                    ? <Button variant="default" size="xs" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, ROLES.USER); }}>{t('admin.demote')}</Button>
+                    : <Button variant="default" size="xs" disabled={busy} onClick={(e) => { e.stopPropagation(); setRole(u.id, ROLES.ADMIN); }}>{t('admin.promote')}</Button>
                   )}
-                  <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); resetPassword(u.id, u.username); }}>{t('admin.resetPassword')}</Button>
-                  <Button variant="default" size="xs" className="btn btn-ghost btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); setDisabled(u.id, !u.disabled); }}>{u.disabled ? t('admin.enable') : t('admin.disable')}</Button>
-                  <Button color="red" size="xs" className="btn btn-danger btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); deleteUser(u.id, u.username); }}>{t('admin.delete')}</Button>
+                  <Button variant="default" size="xs" disabled={busy} onClick={(e) => { e.stopPropagation(); resetPassword(u.id, u.username); }}>{t('admin.resetPassword')}</Button>
+                  <Button variant="default" size="xs" disabled={busy} onClick={(e) => { e.stopPropagation(); setDisabled(u.id, !u.disabled); }}>{u.disabled ? t('admin.enable') : t('admin.disable')}</Button>
+                  <Button color="red" size="xs" disabled={busy} onClick={(e) => { e.stopPropagation(); deleteUser(u.id, u.username); }}>{t('admin.delete')}</Button>
                 </Group></Stack>
               )}
             </Paper>
@@ -234,7 +234,7 @@ export function AdminView({ navigate }: AdminViewProps) {
                 title={s.title}
                 meta={<>{s.artist ? `${s.artist} · ` : ''}@{s.username} &middot; {formatDbDate(s.created_at)}</>}
                 onClick={() => navigate('song-view', { id: String(s.id) })}
-                actions={<Button color="red" size="xs" className="btn btn-danger btn-sm" disabled={busy} onClick={(e) => { e.stopPropagation(); deleteSong(s.id, s.title); }}>{t('admin.delete')}</Button>}
+                actions={<Button color="red" size="xs" disabled={busy} onClick={(e) => { e.stopPropagation(); deleteSong(s.id, s.title); }}>{t('admin.delete')}</Button>}
               />
             ))}
           </CardGrid>

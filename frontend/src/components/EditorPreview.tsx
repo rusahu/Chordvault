@@ -60,14 +60,13 @@ export function EditorPreview({ content, debounceMs = 300, forceRender }: Editor
       <div className="editor-preview-toolbar">
         {currentKey && (
           <Popover opened={keyPickerVisible} onChange={(opened) => opened ? keyPicker.open() : keyPicker.close()} trapFocus returnFocus width="min(90vw, 440px)">
-          <Popover.Target><Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={keyPicker.toggle}>
+          <Popover.Target><Button variant="default" size="xs" onClick={keyPicker.toggle}>
             Key: {currentKey}
           </Button></Popover.Target>
           <Popover.Dropdown><KeyPicker currentKey={currentKey} onPickKey={handlePickKey} visible={keyPickerVisible} /></Popover.Dropdown>
           </Popover>
         )}
         <Button
-          className={`btn btn-ghost btn-sm${nashville ? ' active' : ''}`}
           onClick={() => setNashville(!nashville)}
           disabled={nashvilleDisabled}
           title="Nashville numbers"
@@ -77,7 +76,7 @@ export function EditorPreview({ content, debounceMs = 300, forceRender }: Editor
           #
         </Button>
         {targetKey && (
-          <Button variant="default" size="xs" className="btn btn-ghost btn-sm" onClick={() => setTargetKey(null)} title="Reset transpose">
+          <Button variant="default" size="xs" onClick={() => setTargetKey(null)} title="Reset transpose">
             &#8634;
           </Button>
         )}

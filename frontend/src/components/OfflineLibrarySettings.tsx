@@ -8,7 +8,7 @@ export function OfflineLibrarySettings() {
   const { t } = useI18n();
   const { state, busy, enabled, error, shellError, shellReady, persisted } = offline;
   return <SettingsSection title={t('offline.title', 'Offline library')}>
-    <Stack gap="sm" mt={8}>
+    <Stack gap="sm" mt="sm">
       <Switch label={t('offline.enable', 'Keep my library offline')} checked={enabled}
         onChange={event => { void (event.currentTarget.checked ? offline.enable() : offline.disable()); }} />
       <Text size="sm" c="dimmed">{t('offline.description', 'Download public songs, your private songs and your saved setlists for viewing. Stored on this device. Removed when you sign out.')}</Text>

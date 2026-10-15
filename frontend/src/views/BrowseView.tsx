@@ -53,8 +53,8 @@ export function BrowseView({ navigate }: BrowseViewProps) {
           <Text size="lg" mb={6}>{t('hero.tagline')}</Text>
           <Text size="sm" c="dimmed" maw={360} mx="auto">{t('hero.cta')}</Text>
           <Group mt="md" gap="sm" justify="center">
-            <Button className="btn" onClick={() => navigate('auth')}>{t('auth.signIn')}</Button>
-            <Button variant="default" className="btn btn-ghost" onClick={() => navigate('about')}>Learn more</Button>
+            <Button onClick={() => navigate('auth')}>{t('auth.signIn')}</Button>
+            <Button variant="default" onClick={() => navigate('about')}>Learn more</Button>
           </Group>
         </Box>
       ) : (
