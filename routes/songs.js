@@ -2,7 +2,7 @@ const express = require('express');
 const yazl = require('yazl');
 const { requireAuth, requireAdmin, optionalAuth, isAdminRole, canManageSong } = require('../lib/auth');
 const { STATUS, VISIBILITY, LIMITS } = require('../lib/constants');
-const { validateListQuery, validateObjectBody, requireId, assertValid, validateSongInput, validateVisibility, validateSongMetadata, parsePaginationParams } = require('../lib/validation');
+const { validateListQuery, validateObjectBody, requireId, assertValid, validateSongInput, validateVisibility, validateSongMetadata, parsePaginationParams, songListOptions } = require('../lib/validation');
 const { AppError, requireFound } = require('../lib/errors');
 const { DEMO_MODE } = require('../lib/demo');
 const { makeUniqueNamer } = require('../lib/exportFilename');
@@ -60,17 +60,11 @@ function createSongsRouter() {
   router.use(validateObjectBody);
 
   router.get('/songs', requireAuth, validateListQuery, (req, res) => {
-    const { q, language, page, limit } = req.query;
-    const userId = req.user.id;
-    const { page: pageNum, limit: limitNum } = parsePaginationParams(page, limit);
-    res.json(Song.listForUser(userId, { q, language, page: pageNum, limit: limitNum }));
+    res.json(Song.listForUser(req.user.id, songListOptions(req.query)));
   });
 
   router.get('/songs/public', optionalAuth, validateListQuery, (req, res) => {
-    const { q, language, page, limit } = req.query;
-    const userId = req.user ? req.user.id : 0;
-    const { page: pageNum, limit: limitNum } = parsePaginationParams(page, limit);
-    res.json(Song.listPublic({ q, language, userId, page: pageNum, limit: limitNum }));
+    res.json(Song.listPublic({ ...songListOptions(req.query), userId: req.user ? req.user.id : 0 }));
   });
 
   router.get('/songs/export', requireAuth, (req, res) => {
