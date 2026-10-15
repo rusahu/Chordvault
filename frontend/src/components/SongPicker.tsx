@@ -2,10 +2,10 @@ import { Badge, Flex, Modal, Button, NativeSelect, TextInput, SimpleGrid, Group,
 import { EmptyState } from './EmptyState';
 import { ListCard } from './ListCard';
 import { SearchRow } from './SearchRow';
-import { useModals } from '@mantine/modals';
 import { useState, useEffect, useCallback } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useI18n } from '../context/I18nContext';
+import { useStackedModalProps } from '../hooks/useStackedModalProps';
 import type { SongListItem, SongVersion } from '../types';
 
 interface SongPickerProps {
@@ -15,10 +15,10 @@ interface SongPickerProps {
 }
 
 export function SongPicker({ opened, onPick, onClose }: SongPickerProps) {
-  const modalManager = useModals();
+  const stacked = useStackedModalProps();
   const { t } = useI18n();
   return (
-    <Modal opened={opened} onClose={onClose} title={t('setlist.pickSong')} trapFocus={modalManager.modals.length === 0} closeOnEscape={modalManager.modals.length === 0} closeOnClickOutside={modalManager.modals.length === 0}>
+    <Modal opened={opened} onClose={onClose} title={t('setlist.pickSong')} {...stacked}>
       {opened && <SongPickerContent onPick={onPick} />}
     </Modal>
   );

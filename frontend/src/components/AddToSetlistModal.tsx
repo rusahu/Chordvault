@@ -1,7 +1,7 @@
 import { Badge, Group, Modal, SimpleGrid } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { ListCard } from './ListCard';
-import { modals, useModals } from '@mantine/modals';
+import { modals } from '@mantine/modals';
 import { useFocusReturn } from '@mantine/hooks';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApi } from '../hooks/useApi';
@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
 import { useLocalSetlists } from '../hooks/useLocalSetlists';
+import { useStackedModalProps } from '../hooks/useStackedModalProps';
 import type { SetlistListItem } from '../types';
 import { VISIBILITY, MAX_LOCAL_SETLISTS } from '../lib/constants';
 
@@ -33,7 +34,7 @@ export function AddToSetlistModal({
   targetKey,
   nashville,
 }: AddToSetlistModalProps) {
-  const modalManager = useModals();
+  const stacked = useStackedModalProps();
   useFocusReturn({ opened: isOpen });
   const apiCall = useApi();
   const { user } = useAuth();
@@ -148,7 +149,7 @@ export function AddToSetlistModal({
   };
 
   return (
-    <Modal opened={isOpen} onClose={onClose} title={<>{t('setlist.addToSetlist')}</>} returnFocus={false} trapFocus={modalManager.modals.length === 0} closeOnEscape={modalManager.modals.length === 0} closeOnClickOutside={modalManager.modals.length === 0}>
+    <Modal opened={isOpen} onClose={onClose} title={<>{t('setlist.addToSetlist')}</>} returnFocus={false} {...stacked}>
 
 
         <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12}>

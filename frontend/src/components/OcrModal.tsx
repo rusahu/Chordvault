@@ -1,10 +1,12 @@
 import { Progress, Modal, Button, FileInput, NativeSelect, TextInput, Textarea, Stack, Group, Text, Paper, Image } from '@mantine/core';
 import { useTimeout } from '@mantine/hooks';
 import { IconFileText } from '@tabler/icons-react';
-import { useModals } from '@mantine/modals';
 import { useState, useRef, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { showStatusNotification as toast } from '../lib/notifications';
+import { errorMessage } from '../lib/errors';
+import { useStackedModalProps } from '../hooks/useStackedModalProps';
+import { useActiveRef } from '../hooks/useActiveRef';
 import { DEFAULT_GEMINI_MODEL } from '../lib/constants';
 
 interface OcrModalProps {
@@ -29,17 +31,16 @@ function fileToBase64(file: File): Promise<string> {
 }
 
 export function OcrModal({ opened, hasGeminiKey, onResult, onClose }: OcrModalProps) {
-  const modalManager = useModals();
+  const stacked = useStackedModalProps();
   return (
-    <Modal opened={opened} onClose={onClose} title="Import from image or PDF" trapFocus={modalManager.modals.length === 0} closeOnEscape={modalManager.modals.length === 0} closeOnClickOutside={modalManager.modals.length === 0}>
+    <Modal opened={opened} onClose={onClose} title="Import from image or PDF" {...stacked}>
       {opened && <OcrContent hasGeminiKey={hasGeminiKey} onResult={onResult} onClose={onClose} />}
     </Modal>
   );
 }
 
 function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'opened'>) {
-  const active = useRef(true);
-  useEffect(() => { active.current = true; return () => { active.current = false; }; }, []);
+  const active = useActiveRef();
   const api = useApi();
   const [file, setFile] = useState<File | null>(null);
   const previewReader = useRef<FileReader | null>(null);
@@ -61,7 +62,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
     api<{ model: string; models: { id: string; label: string }[] }>('GET', '/api/settings/ocr-model')
       .then(data => { if (active.current) { setSelectedModel(data.model); setModels(data.models); } })
       .catch(() => {});
-  }, [api]);
+  }, [api, active]);
 
   // Chat state
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -112,7 +113,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
       // Seed chat history with the initial model response
       setChatHistory([{ role: 'model', text: result.text }]);
     } catch (e) {
-      if (active.current) toast(`OCR failed: ${(e as Error).message}`, 'error');
+      if (active.current) toast(`OCR failed: ${errorMessage(e)}`, 'error');
     }
     if (active.current) setProcessing(false);
   };
@@ -139,7 +140,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
       scrollToLatest();
     } catch (e) {
       if (!active.current) return;
-      toast(`Fix failed: ${(e as Error).message}`, 'error');
+      toast(`Fix failed: ${errorMessage(e)}`, 'error');
       // Remove the user message on failure
       setChatHistory(chatHistory);
     }
