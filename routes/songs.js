@@ -92,10 +92,7 @@ function createSongsRouter() {
 
   router.get('/users/:username/songs', validateListQuery, (req, res) => {
     const user = requireFound(User.findByUsername(req.params.username), 'User not found');
-    const { page, limit } = req.query;
-    const { page: pageNum, limit: limitNum } = parsePaginationParams(page, limit);
-    const songs = Song.listByUser(user.id, { page: pageNum, limit: limitNum });
-    res.json(songs);
+    res.json(Song.listByUser(user.id, parsePaginationParams(req.query.page, req.query.limit)));
   });
 
   router.get('/tags', (_req, res) => res.json({ tags: Tags.getTags() }));

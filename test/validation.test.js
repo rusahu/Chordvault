@@ -58,3 +58,15 @@ test('tag lists are cleaned and validated', () => {
     [Array.from({ length: 51 }, (_, i) => `t${i}`), 'Maximum 50 tags'],
   ]) assert.equal(validateTagList(value).error, error, JSON.stringify(value).slice(0, 40));
 });
+
+test('validateNashville accepts booleans, 0, 1 and absence', () => {
+  const { validateNashville } = require('../lib/validation');
+  assert.deepEqual([undefined, true, false, 0, 1].map(validateNashville), [null, null, null, null, null]);
+  assert.deepEqual(['yes', 2, null].map(validateNashville), Array(3).fill('Nashville must be a boolean'));
+});
+
+test('setlistListOptions maps query names and paginates', () => {
+  const { setlistListOptions } = require('../lib/validation');
+  assert.deepEqual(setlistListOptions({ q: 'x', date_from: 'a', date_to: 'b' }), { q: 'x', dateFrom: 'a', dateTo: 'b', page: null, limit: null });
+  assert.deepEqual(setlistListOptions({ page: '2' }), { q: undefined, dateFrom: undefined, dateTo: undefined, page: 2, limit: 20 });
+});
