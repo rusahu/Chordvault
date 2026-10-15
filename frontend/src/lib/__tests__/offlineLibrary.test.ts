@@ -150,3 +150,31 @@ it('filters offline songs by any picked tag, by exact name', async () => {
   // Unfiltered, family 1 shows its newest row (id 2); filtered, only id 1 carries the tag.
   expect(await ids([])).toEqual([3, 2]);
 });
+
+it('filters and sorts setlists like the server', async () => {
+  const data = snapshot();
+  const base = { user_id: 1, visibility: 'private', entries: [] };
+  data.setlists = [
+    { ...base, id: 1, name: 'Early', event_date: '2026-10-01', updated_at: '2026-10-30 00:00:00' },
+    { ...base, id: 2, name: 'Undated', event_date: null, created_at: '2026-10-15 01:00:00', updated_at: '2026-10-20 00:00:00' },
+    { ...base, id: 3, name: 'Later', event_date: '2026-10-10', updated_at: '2026-10-11 00:00:00' },
+    { ...base, id: 4, name: '讚美', event_date: null, created_at: '2026-09-01 00:00:00', search: ['讚美', '赞美'] },
+  ];
+  await save(data);
+  const ids = async (query: object) => (await library.querySetlists(1, query)).setlists.map(s => s.id);
+  expect(await ids({})).toEqual([3, 1, 2, 4]);
+  expect(await ids({ dateFrom: '2026-10-15', dateTo: '2026-10-15' })).toEqual([2]);
+  expect(await ids({ q: '赞美' })).toEqual([4]);
+  expect(await ids({ q: '  EARLY ' })).toEqual([1]);
+  expect((await library.querySetlists(1, {})).setlists[0]).not.toHaveProperty('search');
+});
+
+it('picks the newest, then highest id, version on equal score and orders families by newest match', async () => {
+  const data = snapshot();
+  const extra = { ...data.songs[0], id: 4, familyId: 1, parent_id: 1, updated_at: '2026-01-02' };
+  data.songs.push(extra);
+  data.catalog.push({ ...data.catalog[0], id: 4, familyId: 1, parent_id: 1, updated_at: '2026-01-02' });
+  await save(data);
+  expect((await library.querySongs(1, { q: 'amazing' })).songs.map(s => s.id)).toEqual([4]);
+  expect((await library.querySongs(1, {})).songs.map(s => s.id)).toEqual([3, 4]);
+});

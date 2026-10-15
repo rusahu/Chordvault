@@ -98,3 +98,13 @@ test('conditional responses authenticate first and reflect edits, reorder and de
     etag = response.headers.get('etag');
   }
 });
+
+test('own setlists carry Traditional and Simplified name search forms', async () => {
+  db.prepare('UPDATE setlists SET name = ? WHERE id = ?').run('讚美 Night', setlist);
+  try {
+    const { search } = (await (await request()).json()).setlists[0];
+    assert.ok(search.includes('讚美 night') && search.includes('赞美 night'), JSON.stringify(search));
+  } finally {
+    db.prepare('UPDATE setlists SET name = ? WHERE id = ?').run('Offline worship', setlist);
+  }
+});

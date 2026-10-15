@@ -4958,7 +4958,10 @@ exports[`API responses match the recorded contract 1`] = `
             }
           ],
           "song_count": 3,
-          "username": "alice"
+          "username": "alice",
+          "search": [
+            "sunday"
+          ]
         },
         {
           "id": 2,
@@ -4970,7 +4973,10 @@ exports[`API responses match the recorded contract 1`] = `
           "updated_at": "<time>",
           "entries": [],
           "song_count": 0,
-          "username": "alice"
+          "username": "alice",
+          "search": [
+            "rehearsal"
+          ]
         }
       ]
     }
@@ -5290,7 +5296,10 @@ exports[`API responses match the recorded contract 1`] = `
             }
           ],
           "song_count": 2,
-          "username": "bob"
+          "username": "bob",
+          "search": [
+            "bob night"
+          ]
         }
       ]
     }
@@ -9643,7 +9652,10 @@ exports[`API responses match the recorded contract 5`] = `
             }
           ],
           "song_count": 2,
-          "username": "alice"
+          "username": "alice",
+          "search": [
+            "sunday am"
+          ]
         },
         {
           "id": 2,
@@ -9655,7 +9667,10 @@ exports[`API responses match the recorded contract 5`] = `
           "updated_at": "<time>",
           "entries": [],
           "song_count": 0,
-          "username": "alice"
+          "username": "alice",
+          "search": [
+            "rehearsal"
+          ]
         },
         {
           "id": 5,
@@ -9667,7 +9682,10 @@ exports[`API responses match the recorded contract 5`] = `
           "updated_at": "<time>",
           "entries": [],
           "song_count": 0,
-          "username": "alice"
+          "username": "alice",
+          "search": [
+            "weird vis"
+          ]
         }
       ]
     }
@@ -10038,7 +10056,10 @@ exports[`API responses match the recorded contract 5`] = `
             }
           ],
           "song_count": 2,
-          "username": "bob"
+          "username": "bob",
+          "search": [
+            "bob night"
+          ]
         }
       ]
     }
