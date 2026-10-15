@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { launchBrowser, scriptCredentials } from './lib/session.mjs';
+import { launchBrowser } from './lib/browser.mjs';
+import { scriptCredentials } from './lib/session.mjs';
 const base = process.env.CV_CHECK_BASE || 'http://localhost:3118';
 const credentials = scriptCredentials();
 const browser = await launchBrowser();

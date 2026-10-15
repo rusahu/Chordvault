@@ -1,4 +1,5 @@
-import { launchBrowser, newAppContext, signIn } from './lib/session.mjs';
+import { launchBrowser, newAppContext } from './lib/browser.mjs';
+import { signIn } from './lib/session.mjs';
 
 const base = process.env.CV_CHECK_BASE || 'http://localhost:5173';
 const setlistId = process.env.CV_CHECK_SETLIST_ID;

@@ -1,7 +1,8 @@
 import { mkdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { setTimeout } from 'node:timers/promises';
-import { launchBrowser, newAppContext, signIn } from './lib/session.mjs';
+import { launchBrowser, newAppContext } from './lib/browser.mjs';
+import { signIn } from './lib/session.mjs';
 
 const base = process.env.CV_SCREENSHOT_BASE || 'http://127.0.0.1:3108';
 const songId = process.env.CV_SCREENSHOT_SONG_ID;

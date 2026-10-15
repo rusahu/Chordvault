@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { launchBrowser, newAppContext, scriptCredentials, signIn } from './lib/session.mjs';
+import { launchBrowser, newAppContext } from './lib/browser.mjs';
+import { scriptCredentials, signIn } from './lib/session.mjs';
 
 const base = process.env.CV_CHECK_BASE || 'http://localhost:3118';
 const songId = process.env.CV_CHECK_SONG_ID || '2';
