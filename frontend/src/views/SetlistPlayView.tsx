@@ -149,7 +149,7 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialSetlist, 
 
   const saveEditorAsVersion = async () => {
     if (!setlist || !entry) return;
-    const prepared = prepareSongForSave(editContent, t, { requireLanguage: false });
+    const prepared = prepareSongForSave(editContent, { requireLanguage: false });
     if ('error' in prepared) { toast(prepared.error, 'error'); return; }
     try {
       await apiCall('POST', `/api/songs/${entry.song_id}/version`, { content: prepared.content });

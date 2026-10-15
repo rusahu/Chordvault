@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { extractDirective, updateDirective, detectFormat } from '../lib/chords';
 import { splitTags } from '../lib/tagName';
+import { SONG_ERRORS } from '../../../shared/song-errors.mjs';
 
 export interface SongEditorState {
   title: string;
@@ -27,7 +28,7 @@ export function useSongEditor(initialContent: string = '') {
   const updateBadge = useCallback((text: string) => {
     const fmt = detectFormat(text);
     if (fmt) setFormatBadge({ text: fmt, ok: true });
-    else if (text?.trim()) setFormatBadge({ text: 'No chords detected — add chords in [brackets] e.g. [G]lyrics', ok: false });
+    else if (text?.trim()) setFormatBadge({ text: SONG_ERRORS.noChords, ok: false });
     else setFormatBadge(null);
   }, []);
 
