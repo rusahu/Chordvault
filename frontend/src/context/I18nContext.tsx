@@ -51,7 +51,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(() => ({ t, tReplace, loaded }), [t, tReplace, loaded]);
 
-  return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
+  // Wait for the strings (precached offline) so raw keys never flash on screen.
+  return <I18nContext.Provider value={value}>{loaded ? children : null}</I18nContext.Provider>;
 }
 
 export function useI18n(): I18nContextValue {
