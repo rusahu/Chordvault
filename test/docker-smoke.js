@@ -3,6 +3,7 @@ const { execFileSync } = require('node:child_process');
 const { appendFileSync } = require('node:fs');
 const { setTimeout: sleep } = require('node:timers/promises');
 const assert = require('node:assert/strict');
+const { DEMO_ACCOUNT } = require('../shared/public-constants.json');
 
 const image = process.env.DOCKER_TEST_IMAGE || 'chordvault:ci';
 const docker = (...args) => execFileSync('docker', args, { encoding: 'utf8', timeout: 20_000 }).trim();
@@ -48,7 +49,7 @@ async function check(demo) {
     if (demo) {
       const login = await fetch(`${base}/api/auth/login`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: 'demo', password: 'demopass123' }), signal: AbortSignal.timeout(5000),
+        body: JSON.stringify(DEMO_ACCOUNT), signal: AbortSignal.timeout(5000),
       });
       assert.equal(login.status, 200);
       assert.ok((await login.json()).token);

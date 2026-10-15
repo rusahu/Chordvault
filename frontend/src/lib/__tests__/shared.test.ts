@@ -37,4 +37,8 @@ describe('shared browser definitions', () => {
     expect(constants.MIN_PASSWORD_LENGTH).toBe(6);
     expect(constants.MIN_PASSWORD_LENGTH).toBe(shared.limits.PASSWORD_MIN);
   });
+  it('shares the demo account with the server scripts', () => {
+    expect(constants.DEMO_ACCOUNT).toEqual({ username: 'demo', password: 'demopass123' });
+    expect(constants.DEMO_ACCOUNT).toEqual(shared.DEMO_ACCOUNT);
+  });
 });

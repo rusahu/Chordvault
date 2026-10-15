@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { api } from '../lib/api';
+import { DEMO_ACCOUNT } from '../lib/constants';
 import type { AuthConfig, AuthResponse } from '../types';
 
 interface AuthViewProps {
@@ -31,9 +32,7 @@ export function AuthView({ navigate }: AuthViewProps) {
   useEffect(() => {
     api<AuthConfig>('GET', '/api/auth/config').then((cfg) => {
       setConfig(cfg);
-      if (cfg.demoMode) {
-        setValues({ username: 'demo', password: 'demopass123' });
-      }
+      if (cfg.demoMode) setValues(DEMO_ACCOUNT);
     }).catch(() => {});
   }, [setValues]);
 

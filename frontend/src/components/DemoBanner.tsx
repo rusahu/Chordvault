@@ -1,5 +1,6 @@
 import { Alert } from '@mantine/core';
 import { useDemo } from '../context/DemoContext';
+import { DEMO_ACCOUNT } from '../lib/constants';
 
 export function DemoBanner() {
   const { demoMode } = useDemo();
@@ -7,7 +8,7 @@ export function DemoBanner() {
 
   return (
     <Alert className="demo-banner">
-      Demo instance &middot; Login: <strong>demo</strong> / <strong>demopass123</strong> &middot; Data resets every 6 hours
+      Demo instance &middot; Login: <strong>{DEMO_ACCOUNT.username}</strong> / <strong>{DEMO_ACCOUNT.password}</strong> &middot; Data resets every 6 hours
     </Alert>
   );
 }

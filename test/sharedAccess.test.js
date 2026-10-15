@@ -22,3 +22,8 @@ test('the password minimum is a shared limit', () => {
   assert.equal(require('../shared/public-constants.json').limits.PASSWORD_MIN, 6);
   assert.equal(constants.LIMITS.PASSWORD_MIN, 6);
 });
+
+test('scripts sign in with the shared demo account', () => {
+  assert.deepEqual(require('../scripts/lib/session.mjs').DEMO_ACCOUNT, require('../shared/public-constants.json').DEMO_ACCOUNT);
+  assert.deepEqual(require('../shared/public-constants.json').DEMO_ACCOUNT, { username: 'demo', password: 'demopass123' });
+});

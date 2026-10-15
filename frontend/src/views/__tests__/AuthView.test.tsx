@@ -43,3 +43,10 @@ it('keeps invite redemption distinct when registration is closed', async () => {
     code: 'local-invite', username: 'preview', password: 'password', turnstile_token: null,
   });
 });
+
+it('prefills the demo account in demo mode', async () => {
+  api.mockImplementation((method: string) => method === 'GET' ? Promise.resolve({ allowRegistration: false, demoMode: true }) : new Promise(() => {}));
+  render(<AuthView navigate={vi.fn()} />);
+  await waitFor(() => expect(screen.getByLabelText('auth.username')).toHaveValue('demo'));
+  expect(screen.getByLabelText('auth.password')).toHaveValue('demopass123');
+});

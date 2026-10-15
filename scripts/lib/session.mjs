@@ -1,4 +1,6 @@
-export const DEMO_ACCOUNT = { username: 'demo', password: 'demopass123' };
+import { createRequire } from 'node:module';
+
+export const { DEMO_ACCOUNT } = createRequire(import.meta.url)('../../shared/public-constants.json');
 
 /** Signs in through the API; the result is what the app stores as cv_user. */
 export async function signIn(base, { username, password } = DEMO_ACCOUNT) {

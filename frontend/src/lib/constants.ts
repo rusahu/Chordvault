@@ -17,6 +17,7 @@ export const MAX_PREFERRED_LANGUAGES = shared.limits.MAX_PREFERRED_LANGUAGES;
 export const MAX_OCR_PROMPT = shared.limits.MAX_OCR_PROMPT;
 
 export const DEFAULT_GEMINI_MODEL = shared.DEFAULT_GEMINI_MODEL;
+export const DEMO_ACCOUNT = shared.DEMO_ACCOUNT;
 
 export const IMPORT_MAX_BATCH = shared.limits.MAX_IMPORT;
 export const IMPORT_MAX_BATCH_BYTES = 12_000_000;

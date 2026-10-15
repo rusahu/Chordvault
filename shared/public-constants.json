@@ -13,6 +13,7 @@
     "PASSWORD_MIN": 6
   },
   "DEFAULT_GEMINI_MODEL": "gemini-3.8-flash",
+  "DEMO_ACCOUNT": { "username": "demo", "password": "demopass123" },
   "DEFAULT_TAGS": [
     "worship",
     "praise",
