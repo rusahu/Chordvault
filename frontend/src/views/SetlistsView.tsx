@@ -158,8 +158,8 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
       </SearchRow>
       {activeTab === 'cloud' && showDates && (
         <SearchRow mt={-10}>
-          <TextInput label={<>From</>} type="date" flex={1} miw={0} value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-          <TextInput label={<>To</>} type="date" flex={1} miw={0} value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+          <TextInput label={<>From</>} type="date" flex={1} miw={0} value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); load({ q: query, dateFrom: e.target.value, dateTo }); }} />
+          <TextInput label={<>To</>} type="date" flex={1} miw={0} value={dateTo} onChange={(e) => { setDateTo(e.target.value); load({ q: query, dateFrom, dateTo: e.target.value }); }} />
         </SearchRow>
       )}
       <SimpleGrid className="song-grid" minColWidth="min(100%, 320px)" autoFlow="auto-fill" spacing={12}>
