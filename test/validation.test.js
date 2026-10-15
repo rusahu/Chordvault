@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { parseId, isValidDate, validateUserCredentials, validateSongInput, validateSetlistInput, parsePaginationParams, validatePassword, validateSongMetadata, validateBoolean, validateTagList } = require('../lib/validation');
+const { SONG_ERRORS } = require('../shared/song-errors.mjs');
 
 test('IDs are positive safe integers with no coercion of other types', () => {
   for (const value of ['12junk','1.5','1e3','',0,-1,1.5,true,[],{},Number.MAX_SAFE_INTEGER+1]) assert.equal(parseId(value),null,JSON.stringify(value));
@@ -30,7 +31,7 @@ test('pagination retains omission defaults and rejects explicit invalid values',
 });
 
 test('song metadata needs a title and accepts only known languages', () => {
-  assert.equal(validateSongMetadata({ title: '', language: 'en' }), 'Title is required. Add {title: Song Name} to your content.');
+  assert.equal(validateSongMetadata({ title: '', language: 'en' }), SONG_ERRORS.titleRequired);
   assert.equal(validateSongMetadata({ title: 'Grace', language: 'zz' }), 'Invalid language code');
   assert.equal(validateSongMetadata({ title: 'Grace', language: '' }), null);
   assert.equal(validateSongMetadata({ title: 'Grace', language: 'en' }), null);
