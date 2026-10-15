@@ -62,6 +62,9 @@
    collapse them so they don't reserve a full blank line of height. */
 .chord-sheet .lyrics:empty { min-height: 0; }
 
+/* Rows with no lyrics (intros, interludes) space their chords apart. */
+.chord-sheet .row:not(:has(.lyrics:not(:empty))) > .column:not(:last-child) > .chord { padding-right: 2.5ch; }
+
 .chord-sheet .comment,
 .chord-sheet .tag {
   color: var(--muted);
