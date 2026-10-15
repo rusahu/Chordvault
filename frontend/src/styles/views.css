@@ -209,7 +209,7 @@
 
 @media (max-width: 600px) {
   .search-filters { flex-direction: column; gap: 8px; margin-top: 0; }
-  .search-filters .language-filter { max-width: none; }
+  .search-filters .language-filter, .search-filters .tag-filter { max-width: none; }
 }
 
 /* Pagination */

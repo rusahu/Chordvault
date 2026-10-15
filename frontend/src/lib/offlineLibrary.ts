@@ -1,6 +1,7 @@
 import Dexie, { type Table } from 'dexie';
 import type { Setlist, SongListItem } from '../types';
 import type { CatalogSong, LibraryQuery, OfflineSnapshot, OfflineSong, OfflineState, RefreshTicket } from '../types/offline';
+import { splitTags } from './tagName';
 
 type Database = Dexie & {
   songs: Table<OfflineSong, number>;
@@ -140,12 +141,14 @@ export function createOfflineLibrary(name = 'chordvault-offline') {
   const querySongs = (accountId: number, query: LibraryQuery) => read(accountId, async () => {
     const terms = (query.q || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
     const pinyin = terms.join('');
+    const tags = query.tags ?? [];
     const groups = new Map<number, { row: CatalogSong; score: number }>();
     const counts = new Map<number, number>();
     await db.catalog.each(row => {
       counts.set(row.familyId, (counts.get(row.familyId) || 0) + 1);
       if (query.own ? row.user_id !== accountId : row.visibility !== 'public') return;
       if (query.language && row.language !== query.language) return;
+      if (tags.length && !splitTags(row.tags).some(tag => tags.includes(tag))) return;
       const fieldMatch = (forms: string[]) => terms.every(term => forms.some(form => form.includes(term)));
       const { title, artist, lyrics } = row.search;
       if (terms.length && !fieldMatch([...title, ...artist, ...lyrics]) && !row.search.pinyin.includes(pinyin)) return;

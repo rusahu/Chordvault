@@ -28,6 +28,7 @@ export interface OfflineState {
 export interface LibraryQuery {
   q?: string;
   language?: string;
+  tags?: string[];
   page?: number;
   limit?: number;
   own?: boolean;

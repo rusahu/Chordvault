@@ -138,3 +138,15 @@ it('allows another tab to upgrade storage without changing hydrated playback dat
     await expect(library.getSong(1, 1)).rejects.toThrow();
   } finally { upgraded.close(); }
 });
+
+it('filters offline songs by any picked tag, by exact name', async () => {
+  const data = snapshot();
+  data.catalog[0].tags = 'christmas,worship';
+  data.catalog[2].tags = 'kids';
+  await save(data);
+  const ids = async (tags: string[]) => (await library.querySongs(1, { tags })).songs.map(s => s.id);
+  expect(await ids(['kids', 'christmas'])).toEqual([3, 1]);
+  expect(await ids(['christ'])).toEqual([]);
+  // Unfiltered, family 1 shows its newest row (id 2); filtered, only id 1 carries the tag.
+  expect(await ids([])).toEqual([3, 2]);
+});

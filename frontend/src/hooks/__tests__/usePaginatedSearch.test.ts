@@ -69,3 +69,20 @@ it('ignores a response that arrives after unmount', async () => {
   expect(opts.persist).not.toHaveBeenCalled();
   expect(sessionStorage.getItem(pageKey)).toBe('1');
 });
+
+it('keeps the latest request when an earlier one finishes last', async () => {
+  let resolveSlow!: (page: LibraryPage<string, 'songs'>) => void;
+  const fetchPage = vi.fn<Options['fetchPage']>()
+    .mockResolvedValueOnce(result(['initial']))
+    .mockImplementationOnce(() => new Promise(resolve => { resolveSlow = resolve; }))
+    .mockResolvedValueOnce(result(['kids or christmas']));
+  const opts = options({ fetchPage });
+  const hook = renderHook(() => usePaginatedSearch(opts));
+  await waitFor(() => expect(hook.result.current.items).toEqual(['initial']));
+  let slow!: Promise<void>;
+  act(() => { slow = hook.result.current.load({ tags: ['kids'] }); });
+  await act(() => hook.result.current.load({ tags: ['kids', 'christmas'] }));
+  await act(async () => { resolveSlow(result(['kids only'])); await slow; });
+  expect(hook.result.current.items).toEqual(['kids or christmas']);
+  expect(opts.persist).toHaveBeenLastCalledWith({ tags: ['kids', 'christmas'] });
+});

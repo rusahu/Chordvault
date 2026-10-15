@@ -34,3 +34,10 @@ test('invalid lists and non-admins are rejected without saving', async t => {
   assert.equal((await request('/api/admin/tags', member)).status, 403);
   assert.deepEqual(await (await request('/api/tags')).json(), { tags: DEFAULT_TAGS });
 });
+
+test('saving a song stores its tags cleaned and without duplicates', async t => {
+  const request = await serve(t, mount);
+  const content = '{title: Dupes}\n{x_language: en}\n{x_tags: Worship, worship ,Kids}\n[G]Hi';
+  const { id } = await (await request('/api/songs', { ...member, method: 'POST', body: { content } })).json();
+  assert.equal(db.prepare('SELECT tags FROM songs WHERE id = ?').get(id).tags, 'worship,kids');
+});

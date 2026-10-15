@@ -2,7 +2,7 @@ import { act, renderHook } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../AuthContext';
 
 const searchKeys = [
-  'cv_browse_query', 'cv_browse_lang', 'cv_browse_show_filters', 'cv_browse_page',
+  'cv_browse_query', 'cv_browse_lang', 'cv_browse_tags', 'cv_browse_show_filters', 'cv_browse_page',
   'cv_mysongs_query', 'cv_mysongs_page',
   'cv_publicsetlists_query', 'cv_publicsetlists_date_from', 'cv_publicsetlists_date_to',
   'cv_publicsetlists_show_dates', 'cv_publicsetlists_page',

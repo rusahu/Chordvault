@@ -107,6 +107,7 @@ export function clearSearchSession(): void {
   [
     'cv_browse_query',
     'cv_browse_lang',
+    'cv_browse_tags',
     'cv_browse_show_filters',
     'cv_browse_page',
     'cv_mysongs_query',

@@ -322,8 +322,8 @@ A live format badge in the editor shows which format was detected. The editor it
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | `/api/songs` | Yes | List your songs (`?q=`, `?language=`, `?page=`, `?limit=`) |
-| GET | `/api/songs/public` | No | Browse public songs (`?q=`, `?language=`, `?page=`, `?limit=`) |
+| GET | `/api/songs` | Yes | List your songs (`?q=`, `?language=`, `?tags=`, `?page=`, `?limit=`) |
+| GET | `/api/songs/public` | No | Browse public songs (`?q=`, `?language=`, `?tags=`, `?page=`, `?limit=`) |
 | GET | `/api/users/:username/songs` | No | Public songs by username (`?page=`, `?limit=`) |
 | GET | `/api/songs/:id` | Optional | Get song (public or your own) |
 | POST | `/api/songs` | Yes | Create song |

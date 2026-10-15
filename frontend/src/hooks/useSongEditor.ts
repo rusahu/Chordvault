@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useDebouncedCallback } from '@mantine/hooks';
 import { extractDirective, updateDirective, detectFormat } from '../lib/chords';
+import { splitTags } from '../lib/tagName';
 
 export interface SongEditorState {
   title: string;
@@ -39,7 +40,7 @@ export function useSongEditor(initialContent: string = '') {
     setBpm(tempo && /^\d+$/.test(tempo) ? tempo : '');
     setYoutubeUrl(extractDirective(text, 'x_youtube') || '');
     const tagStr = extractDirective(text, 'x_tags');
-    setTags(tagStr ? [...new Set(tagStr.split(',').map(t => t.trim().toLowerCase()).filter(Boolean))] : []);
+    setTags(splitTags(tagStr));
     setLanguage(extractDirective(text, 'x_language') || '');
     updateBadge(text);
   }, [updateBadge]);
