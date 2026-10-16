@@ -67,7 +67,7 @@ export function useSetlistPlayer({
       newEntries[index] = { ...newEntries[index], ...updates };
       return { ...prev, entries: newEntries };
     });
-  }, [index]);
+  }, [index, setSetlist]);
 
   const exit = useCallback(() => {
     if (setlist) { navigate('setlist-edit', { id: String(setlist.id) }); }
