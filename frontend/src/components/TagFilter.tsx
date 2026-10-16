@@ -14,7 +14,9 @@ export function TagFilter({ value, onChange }: TagFilterProps) {
   const data = tags.map(name => ({ value: name, label: tagLabel(t, name) }));
   return (
     <MultiSelect
-      className="tag-filter"
+      flex={1}
+      miw={0}
+      maw={{ base: 'none', xs: 420 }}
       data={data}
       value={value}
       onChange={onChange}

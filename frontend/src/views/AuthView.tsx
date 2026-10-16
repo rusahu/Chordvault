@@ -1,6 +1,5 @@
 import { Anchor, Box, Center, Paper, Text, Tabs, Button, PasswordInput, TextInput } from '@mantine/core';
 import { useForm } from '@mantine/form';
-import { useMediaQuery } from '@mantine/hooks';
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
@@ -16,7 +15,6 @@ interface AuthViewProps {
 
 export function AuthView({ navigate }: AuthViewProps) {
   const { login } = useAuth();
-  const compact = useMediaQuery('(max-width: 600px)', undefined, { getInitialValueInEffect: false });
   const { t } = useI18n();
   const [tab, setTab] = useState<'login' | 'register' | 'invite'>('login');
   const form = useForm({ initialValues: { username: '', password: '', inviteCode: '' }, validate: { username: value => value ? null : t('auth.fillAllFields'), password: value => value ? null : t('auth.fillAllFields'), inviteCode: value => tab !== 'invite' || value ? null : t('auth.fillAllFields') } });
@@ -87,7 +85,7 @@ export function AuthView({ navigate }: AuthViewProps) {
 
   return (
     <Center mih="calc(100vh - 56px)">
-      <Paper component="form" w="100%" maw={400} py={compact ? 24 : 44} px={compact ? 24 : 40} radius={14} bg="var(--ui-modal-bg)" style={{ border: '1px solid var(--border)', boxShadow: 'var(--ui-shadow)' }} onSubmit={(event) => form.onSubmit(submit)(event)}>
+      <Paper component="form" w="100%" maw={400} py={{ base: 24, xs: 44 }} px={{ base: 24, xs: 40 }} radius={14} bg="var(--ui-modal-bg)" withBorder onSubmit={(event) => form.onSubmit(submit)(event)}>
         <Text fz={36} fw={700} c="var(--cv-brand)" ta="center" mb={6}>{t('auth.logo')}</Text>
         <Text fz={13} c="dimmed" ta="center" mb={28}>{t('auth.tagline')}</Text>
         {showTabs && (
@@ -112,7 +110,7 @@ export function AuthView({ navigate }: AuthViewProps) {
             <Anchor href="#" onClick={(e) => { e.preventDefault(); setTab('login'); }} fz={13} c="dimmed" underline="never">{t('auth.backToLogin')}</Anchor>
           </Box>
         )}
-        {error && <Text role="alert" c="var(--danger)" fz={13} mt={12} ta="center">{error}</Text>}
+        {error && <Text role="alert" c="red.6" fz={13} mt={12} ta="center">{error}</Text>}
       </Paper>
     </Center>
   );

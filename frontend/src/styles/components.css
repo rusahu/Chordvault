@@ -1,13 +1,3 @@
-/* -- Demo Banner -------------------------- */
-.demo-banner {
-  background: var(--surface2);
-  color: var(--text);
-  text-align: center;
-  padding: 6px 16px;
-  font-size: 13px;
-  line-height: 1.4;
-}
-
 /* -- Navigation and form layout -- */
 .nav-brand { font-family: var(--font-sans); font-size: 20px; font-weight: 700; letter-spacing: -0.01em; color: var(--cv-brand); display: flex; align-items: center; gap: 8px; white-space: nowrap; }
 .nav-logo { display: inline-flex; }
@@ -31,15 +21,6 @@
 .song-card-title { text-wrap: pretty; overflow-wrap: anywhere; }
 
 /* -- Search ------------------------------─ */
-.search-filters {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 16px;
-  margin-top: -12px;
-}
-.search-filters .language-filter { max-width: 220px; }
-.search-filters .tag-filter { flex: 1; min-width: 0; max-width: 420px; }
-
 input[type="search"]::-webkit-search-cancel-button {
   -webkit-appearance: none;
   appearance: none;

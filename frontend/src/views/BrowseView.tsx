@@ -1,4 +1,4 @@
-import { Button, NativeSelect, Box, Title, Text, Group } from '@mantine/core';
+import { Button, NativeSelect, Box, Title, Text, Group, Flex } from '@mantine/core';
 import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
 import { SearchField } from '../components/SearchField';
@@ -68,9 +68,9 @@ export function BrowseView({ navigate }: BrowseViewProps) {
             )}
           </SearchRow>
           {showFilters && (
-            <div className="search-filters">
+            <Flex direction={{ base: 'column', xs: 'row' }} gap={{ base: 8, xs: 10 }} mt={{ base: 0, xs: -12 }} mb={16}>
               <NativeSelect
-                className="language-filter"
+                maw={{ base: 'none', xs: 220 }}
                 aria-label={t('songs.language')}
                 value={langFilter}
                 onChange={(e) => { setLangFilter(e.target.value); refine({ language: e.target.value }); }}
@@ -81,7 +81,7 @@ export function BrowseView({ navigate }: BrowseViewProps) {
                 ))}
               </NativeSelect>
               <TagFilter value={tagFilter} onChange={next => { setTagFilter(next); refine({ tags: next }); }} />
-            </div>
+            </Flex>
           )}
           <CardGrid>
             {!loadError && loaded && songs.length === 0 ? (

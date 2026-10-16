@@ -7,7 +7,7 @@ export function DemoBanner() {
   if (!demoMode) return null;
 
   return (
-    <Alert className="demo-banner">
+    <Alert bg="var(--surface2)" c="var(--text)" ta="center" py={6} px={16} fz={13} lh={1.4}>
       Demo instance &middot; Login: <strong>{DEMO_ACCOUNT.username}</strong> / <strong>{DEMO_ACCOUNT.password}</strong> &middot; Data resets every 6 hours
     </Alert>
   );

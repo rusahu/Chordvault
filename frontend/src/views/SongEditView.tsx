@@ -166,7 +166,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
             </Box>
           )}
           <Tabs value={editorTab} onChange={(value) => { if (value === 'preview') { setEditorTab('preview'); setForceRender(n => n + 1); } else setEditorTab('edit'); }} keepMounted keepMountedMode="display-none">
-            <Tabs.List grow className="editor-tabs"><Tabs.Tab value="edit">{t('songView.edit')}</Tabs.Tab><Tabs.Tab value="preview">Preview</Tabs.Tab></Tabs.List>
+            <Tabs.List grow hiddenFrom="sm"><Tabs.Tab value="edit">{t('songView.edit')}</Tabs.Tab><Tabs.Tab value="preview">Preview</Tabs.Tab></Tabs.List>
             <div className="editor-split">
               <Tabs.Panel value="edit" className="cm-editor-wrap">
                 <CodeMirrorEditor

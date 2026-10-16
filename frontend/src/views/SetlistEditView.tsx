@@ -3,7 +3,7 @@ import { useOffline } from '../context/OfflineContext';
 import { useWriteLock } from '../hooks/useWriteLock';
 import { IconMusic } from '@tabler/icons-react';
 import { BackButton } from '../components/BackButton';
-import { Switch, Button, TextInput, Group, Box, Text } from '@mantine/core';
+import { Switch, Button, TextInput, Group, Box, Text, Title, Stack, Center } from '@mantine/core';
 import { useCopyNotification } from '../hooks/useCopyNotification';
 import { useForm } from '@mantine/form';
 import { useState, useEffect, useCallback } from 'react';
@@ -171,20 +171,21 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
             {isEditable && <Button color="red" size="xs" onClick={deleteSetlist}>{t('admin.delete')}</Button>}
           </Group>
         </Group>
-        <div className="setlist-name-row">
+        <Box mb={12}>
           {!isEditable ? (
-            <div className="setlist-name-input" style={{ border: 'none', background: 'none', padding: 0 }}>{setlist.name}</div>
+            <Title order={1} fz={32} lh={1.6} lts="-0.015em">{setlist.name}</Title>
           ) : (
             <TextInput
-              type="text"
+              variant="unstyled"
               id="setlist-name-input"
               className="setlist-name-input"
+              styles={{ input: { fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1.3, height: 'auto', minHeight: 0, paddingBlock: 4 } }}
               {...metadata.getInputProps('name')}
               onBlur={() => saveMeta()}
               onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
             />
           )}
-        </div>
+        </Box>
         <Group gap={16} mt={12} py={8}>
           {isLocal ? (
             <Text span fz={13} c="dimmed">Local Setlist (Saved in Browser)</Text>
@@ -205,7 +206,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
       {setlist.entries.length === 0 ? (
         <EmptyState icon={<IconMusic size={56} aria-hidden />} text={t('setlist.noSongsYet')} />
       ) : (
-        <div className="setlist-entries" id="setlist-entries">
+        <Stack gap={12} mt={24} id="setlist-entries">
           {reorderedEntries.map((entry, idx) => (
             <SetlistEntryCard
               key={entry.entry_id}
@@ -222,13 +223,13 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
               isDragging={draggedIdx === idx}
             />
           ))}
-        </div>
+        </Stack>
       )}
 
       {isEditable && (
-        <div style={{ marginTop: 20, textAlign: 'center' }}>
+        <Center mt={20}>
           <Button onClick={() => setPickerOpen(true)}>{t('setlist.addSongs')}</Button>
-        </div>
+        </Center>
       )}
 
       <SongPicker opened={pickerOpen} onPick={addSong} onClose={() => setPickerOpen(false)} />

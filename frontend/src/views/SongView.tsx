@@ -1,7 +1,7 @@
 import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
 import { useDisclosure } from '@mantine/hooks';
-import { Alert, Badge, Paper, Button, NativeSelect, Group, Box, Text } from '@mantine/core';
+import { Alert, Badge, Paper, Button, NativeSelect, Group, Box, Text, Divider, ScrollArea } from '@mantine/core';
 import { SectionTitle } from '../components/SectionTitle';
 import { IconBrandYoutube, IconLock, IconPencil, IconPlus } from '@tabler/icons-react';
 import { BackButton } from '../components/BackButton';
@@ -213,7 +213,8 @@ export function SongView({ songId, navigate }: SongViewProps) {
 
       {/* Corrections section */}
       {isOwner && corrections.length > 0 && (
-        <div className="corrections-section">
+        <Box mt={32}>
+          <Divider mb={16} />
           <SectionTitle>{tReplace('admin.pendingCorrections', { count: corrections.length })}</SectionTitle>
           {corrections.map((c) => (
             <Paper withBorder key={c.id} className="correction-card" bg="var(--ui-card-bg)" radius={12} p={16} mb={12} shadow="sm">
@@ -224,10 +225,14 @@ export function SongView({ songId, navigate }: SongViewProps) {
                   <Button color="red" size="xs" disabled={readOnly} onClick={() => rejectCorrection(c.id)}>Reject</Button>
                 </Group>
               </Group>
-              <div className="correction-preview" dangerouslySetInnerHTML={{ __html: renderChordPro(c.content, 0, false) }} />
+              <Paper withBorder radius={8} bg="var(--bg)">
+                <ScrollArea.Autosize mah={300}>
+                  <Box p={12} dangerouslySetInnerHTML={{ __html: renderChordPro(c.content, 0, false) }} />
+                </ScrollArea.Autosize>
+              </Paper>
             </Paper>
           ))}
-        </div>
+        </Box>
       )}
 
       <AddToSetlistModal

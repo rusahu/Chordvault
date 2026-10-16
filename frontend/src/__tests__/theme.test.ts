@@ -69,3 +69,9 @@ describe('selected-state text in dark mode', () => {
     expect(rootVars('Pagination')['--pagination-active-color']).toBe('var(--mantine-primary-color-contrast)');
   });
 });
+
+describe('fonts', () => {
+  it('uses JetBrains Mono for Mantine monospace text', () => {
+    expect(chordVaultTheme.fontFamilyMonospace).toMatch(/^"JetBrains Mono Variable"/);
+  });
+});

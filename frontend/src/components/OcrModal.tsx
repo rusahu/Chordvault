@@ -1,4 +1,4 @@
-import { Progress, Modal, Button, FileInput, TextInput, Textarea, Stack, Group, Text, Paper, Image } from '@mantine/core';
+import { Progress, Modal, Button, FileInput, TextInput, Textarea, Stack, Group, Text, Paper, Image, ScrollArea } from '@mantine/core';
 import { useTimeout } from '@mantine/hooks';
 import { IconFileText, IconSparkles } from '@tabler/icons-react';
 import { useState, useRef, useEffect } from 'react';
@@ -165,7 +165,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
               <Group gap={6} wrap="nowrap"><IconFileText size={18} aria-hidden /><Text c="dimmed" fz={13} style={{ overflowWrap: 'anywhere' }}>{preview}</Text></Group>
             </Paper>
           ) : (
-            <Image src={preview} alt="Preview" mah={200} w="auto" maw="100%" fit="contain" radius="md" style={{ border: '1px solid var(--border)' }} />
+            <Image src={preview} alt="Preview" mah={200} w="auto" maw="100%" fit="contain" radius="md" bd="1px solid var(--border)" />
           ))}
           {!hasGeminiKey && (
             <Paper p={10} bg="var(--surface)" radius="md">
@@ -184,17 +184,19 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
       {resultText && (
         <>
           {hasCorrections && (
-            <Stack gap={4} mah={120} mb="xs" style={{ overflowY: 'auto' }}>
-              {chatHistory.slice(1).map((m, i) => (
-                <Paper key={i} px="xs" py={6} radius="md" maw="85%" fz="xs"
-                  bg={m.role === 'user' ? 'var(--accent-bg)' : 'var(--surface2)'}
-                  c={m.role === 'user' ? 'var(--accent)' : 'dimmed'}
-                  style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', overflowWrap: 'anywhere' }}>
-                  {m.role === 'user' ? m.text : '\u2713 Fix applied'}
-                </Paper>
-              ))}
-              <div ref={chatEndRef} />
-            </Stack>
+            <ScrollArea.Autosize mah={120} mb="xs">
+              <Stack gap={4}>
+                {chatHistory.slice(1).map((m, i) => (
+                  <Paper key={i} px="xs" py={6} radius="md" maw="85%" fz="xs"
+                    bg={m.role === 'user' ? 'var(--accent-bg)' : 'var(--surface2)'}
+                    c={m.role === 'user' ? 'var(--accent)' : 'dimmed'}
+                    style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', overflowWrap: 'anywhere' }}>
+                    {m.role === 'user' ? m.text : '\u2713 Fix applied'}
+                  </Paper>
+                ))}
+                <div ref={chatEndRef} />
+              </Stack>
+            </ScrollArea.Autosize>
           )}
           <Textarea
             label={hasCorrections ? 'Corrected result' : 'Extracted text'}

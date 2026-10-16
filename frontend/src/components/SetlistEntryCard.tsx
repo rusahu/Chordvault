@@ -1,4 +1,4 @@
-import { Badge, Box, Button, VisuallyHidden, CloseButton, Flex, Group } from '@mantine/core';
+import { Badge, Box, Button, VisuallyHidden, CloseButton, Flex, Group, Text } from '@mantine/core';
 import { IconGripVertical, IconLock, IconPencil } from '@tabler/icons-react';
 import { getSongKey } from '../lib/chords';
 import { entryContent, entrySemitones, entryStartKey } from '../lib/setlistKeys';
@@ -66,7 +66,7 @@ export function SetlistEntryCard({
           <IconGripVertical size={20} aria-hidden />
         </Box>
       )}
-      <Box className="setlist-song-pos" mr={{ base: 4, xs: 16 }} w={{ base: 20, xs: 24 }}>{idx + 1}</Box>
+      <Text component="div" fz={15} fw={700} c="dimmed" ta="center" mr={{ base: 4, xs: 16 }} w={{ base: 20, xs: 24 }} style={{ fontVariantNumeric: 'tabular-nums' }}>{idx + 1}</Text>
       <Box className="song-card-info" flex={1} miw={0}>
         <CardTitle>
           {entry.title}
