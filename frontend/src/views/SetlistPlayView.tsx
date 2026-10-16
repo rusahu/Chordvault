@@ -1,10 +1,8 @@
-import { Alert, Button, Box, Text, Textarea } from '@mantine/core';
+import { Alert, Button, Box, Text } from '@mantine/core';
 import { useOffline } from '../context/OfflineContext';
 import { useState, useCallback, useMemo, useRef } from 'react';
-import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
-import { showStatusNotification as toast } from '../lib/notifications';
 import { useSwipe } from '../hooks/useSwipe';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { useLocalStorage } from '@mantine/hooks';
@@ -20,14 +18,13 @@ import { PlaybackDock, type PlaybackNav } from '../components/PlaybackDock';
 import { PlaybackMoreMenu } from '../components/PlaybackMoreMenu';
 import { SettingsPanel } from '../components/SettingsPanel';
 import { EmptyState } from '../components/EmptyState';
+import { SetlistEntryEditor } from '../components/SetlistEntryEditor';
 import { Loading } from '../components/Loading';
 import { renderChordPro, getSongKey, clampFontSize, songHasKey, autoFit } from '../lib/chords';
 import { useSetlistPreferences } from '../hooks/useSetlistPreferences';
 import { stepKey } from '../lib/keys';
 import { entryContent, entrySemitones, entryStartKey } from '../lib/setlistKeys';
 import { songEditFromSetlist } from '../lib/songEditRoute';
-import { createSongVersion } from '../lib/songSubmit';
-import { notifyError } from '../lib/errors';
 import { usePdfExport } from '../hooks/usePdfExport';
 
 interface SetlistPlayViewProps {
@@ -38,13 +35,11 @@ interface SetlistPlayViewProps {
 }
 
 export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialIndex, navigate }: SetlistPlayViewProps) {
-  const apiCall = useApi();
   const { t } = useI18n();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const { readOnly } = useOffline();
   const [editing, setEditing] = useState(false);
-  const [editContent, setEditContent] = useState('');
 
   // Global setlist settings
   const [slNashville, setSlNashville] = useState(false);
@@ -130,30 +125,8 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialIndex, na
   // Inline editor
   const openEditor = useCallback(() => {
     if (readOnly || !entry || setlist?.isLocal) return;
-    setEditContent(entryContent(entry));
     setEditing(true);
   }, [entry, setlist, readOnly]);
-
-  const saveEditorToSetlist = async () => {
-    if (!setlist || !entry) return;
-    try {
-      await apiCall('PUT', `/api/setlists/${setlist.id}/entries/${entry.entry_id}`, { content_override: editContent });
-      updateEntry({ content_override: editContent });
-      setEditing(false);
-      toast(t('setlist.editSaved'), 'success');
-    } catch (e) { notifyError(e); }
-  };
-
-  const saveEditorAsVersion = async () => {
-    if (!setlist || !entry) return;
-    try {
-      const { content: saved } = await createSongVersion(apiCall, entry.song_id, editContent, { requireLanguage: false });
-      await apiCall('PUT', `/api/setlists/${setlist.id}/entries/${entry.entry_id}`, { content_override: saved });
-      updateEntry({ content_override: saved });
-      setEditing(false);
-      toast(t('setlist.versionCreated'), 'success');
-    } catch (e) { notifyError(e); }
-  };
 
   // Swipe
   useSwipe({ onNext: next, onPrev: prev, enabled: !editing && !!setlist, containerRef });
@@ -254,22 +227,9 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialIndex, na
 
 
       {editing ? (
-        <div className="setlist-editor">
-          <Textarea
-            className="setlist-edit-textarea"
-            aria-label="Setlist chord sheet"
-            rows={12}
-            styles={{ input: { minHeight: 300, fontFamily: 'var(--font-mono)', lineHeight: 1.7 } }}
-            value={editContent}
-            onChange={(e) => setEditContent(e.target.value)}
-            autoFocus
-          />
-          <div className="setlist-editor-actions">
-            <Button size="xs" onClick={saveEditorToSetlist}>{t('setlist.saveToSetlist')}</Button>
-            <Button variant="default" size="xs" onClick={saveEditorAsVersion}>{t('setlist.saveAsVersion')}</Button>
-            <Button variant="default" size="xs" onClick={() => setEditing(false)}>{t('songEdit.cancel')}</Button>
-          </div>
-        </div>
+        <SetlistEntryEditor setlistId={setlist.id} entry={entry}
+          onSaved={(saved) => { updateEntry({ content_override: saved }); setEditing(false); }}
+          onCancel={() => setEditing(false)} />
       ) : (
         <>
           {entry?.is_private_placeholder ? (

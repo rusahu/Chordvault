@@ -102,7 +102,7 @@ describe('SetlistPlayView edit song', () => {
 describe('SetlistPlayView inline editor save as version', () => {
   const updateEntry = vi.fn();
 
-  function renderEditor(text: string) {
+  function renderEditor(text: string, button = 'setlist.saveAsVersion') {
     (useSetlistPlayer as Mock).mockReturnValue({
       setlist: { id: 4, entries: [] },
       entry: { entry_id: 7, song_id: 42, title: 'Song', content: '{title: Song}\n[C]a' },
@@ -114,7 +114,7 @@ describe('SetlistPlayView inline editor save as version', () => {
     const shortcuts = (useKeyboardShortcuts as Mock).mock.lastCall![0];
     act(() => shortcuts.e());
     fireEvent.change(screen.getByLabelText('Setlist chord sheet'), { target: { value: text } });
-    fireEvent.click(screen.getByRole('button', { name: 'setlist.saveAsVersion' }));
+    fireEvent.click(screen.getByRole('button', { name: button }));
   }
 
   beforeEach(() => { vi.clearAllMocks(); apiCall.mockResolvedValue({ id: 99 }); });
@@ -127,6 +127,14 @@ describe('SetlistPlayView inline editor save as version', () => {
     expect(saved).toContain('[G]Amazing');
     expect(apiCall).toHaveBeenCalledWith('POST', '/api/songs/42/version', { content: saved });
     expect(apiCall).toHaveBeenCalledWith('PUT', '/api/setlists/4/entries/7', { content_override: saved });
+  });
+
+  it('saves the edit to this setlist only and closes the editor', async () => {
+    renderEditor('{title: Song}\n[D]edited', 'setlist.saveToSetlist');
+    await waitFor(() => expect(updateEntry).toHaveBeenCalledWith({ content_override: '{title: Song}\n[D]edited' }));
+    expect(apiCall).toHaveBeenCalledWith('PUT', '/api/setlists/4/entries/7', { content_override: '{title: Song}\n[D]edited' });
+    expect(apiCall).not.toHaveBeenCalledWith('POST', expect.anything(), expect.anything());
+    await waitFor(() => expect(screen.queryByLabelText('Setlist chord sheet')).not.toBeInTheDocument());
   });
 
   it('rejects an invalid tempo without saving', async () => {
