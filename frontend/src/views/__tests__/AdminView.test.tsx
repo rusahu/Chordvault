@@ -64,6 +64,18 @@ it.each(['{Enter}', ' '])('navigates cards with %s and keeps nested Delete activ
   expect(api.mock.calls.filter(([method]) => method !== 'GET')).toHaveLength(0);
 });
 
+it('stays on the page when the invites or config request fails', async () => {
+  const read = api.getMockImplementation()!;
+  api.mockImplementation((method: string, path: string) =>
+    path.endsWith('/config') || path.endsWith('/invites') ? Promise.reject(new Error('down')) : read(method, path));
+  const navigate = vi.fn();
+  render(<AdminView navigate={navigate} />);
+  expect(await screen.findByRole('button', { name: 'admin.promote' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'admin.generateInvite' })).toBeInTheDocument();
+  expect(navigate).not.toHaveBeenCalled();
+  expect(showStatusNotification).not.toHaveBeenCalled();
+});
+
 it('reports a failed write once and frees the action for a retry', async () => {
   const read = api.getMockImplementation()!;
   api.mockImplementation((method: string, path: string) => method === 'GET' ? read(method, path) : Promise.reject(new Error('Write failed')));
