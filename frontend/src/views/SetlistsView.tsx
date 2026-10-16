@@ -1,10 +1,9 @@
-import { Button, TextInput, Group, Text } from '@mantine/core';
+import { Button, Group, Text } from '@mantine/core';
 import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
 import { SearchField } from '../components/SearchField';
 import { SearchRow } from '../components/SearchRow';
 import { IconCalendar, IconPlus, IconMusic } from '@tabler/icons-react';
-import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
@@ -22,8 +21,8 @@ import { SetlistTabs } from '../components/SetlistTabs';
 import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
 import { PageTitle } from '../components/PageTitle';
 import { setlistPlayParams, type Navigate } from '../lib/routes';
-import { MAX_SETLIST_NAME_LENGTH } from '../lib/constants';
 import { localSetlistToListItem } from '../lib/setlists';
+import { openSetlistNameModal } from '../components/appModals';
 
 interface SetlistsViewProps {
   navigate: Navigate;
@@ -37,22 +36,15 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
   const activeTab = user ? 'cloud' : 'local';
   const store = useSetlistStore(activeTab === 'local');
 
-  const [showNew, setShowNew] = useState(false);
-  const [newName, setNewName] = useState('');
   const { query, setQuery, dateFrom, dateTo, setDates, showDates, toggleDates, search: searchOptions } = useSetlistSearchFilters('setlists');
-  const nameRef = useRef<HTMLInputElement>(null);
   const { items: setlists, page, totalPages, loaded, loadError, search, refine, clear, goToPage } = usePaginatedSearch({
     ...searchOptions, listKey: 'setlists', fetchPage: querySetlists, enabled: activeTab === 'cloud',
   });
 
-  useEffect(() => { if (showNew && nameRef.current) nameRef.current.focus(); }, [showNew]);
-
-  const create = async () => {
+  const create = async (name: string) => {
     if (readOnly) return;
-    if (!newName.trim()) { toast(t('setlist.nameRequired'), 'error'); return; }
-    if (newName.length > MAX_SETLIST_NAME_LENGTH) { toast('Name too long', 'error'); return; }
     try {
-      const id = await store.create(newName.trim());
+      const id = await store.create(name);
       toast(t('setlist.created'), 'success');
       navigate('setlist-edit', { id });
     } catch (e) { notifyError(e); }
@@ -69,29 +61,13 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
       <LoadErrorAlert message={loadError} />
       <Group justify="space-between" mb="lg">
         <PageTitle className="view-title">{t('setlist.title')}</PageTitle>
-        <Button disabled={readOnly} size="xs" leftSection={<IconPlus size={14} aria-hidden />} onClick={() => setShowNew(true)}>{t('setlist.newSetlist')}</Button>
+        <Button disabled={readOnly} size="xs" leftSection={<IconPlus size={14} aria-hidden />} onClick={() => openSetlistNameModal(t('setlist.enterName'), create)}>{t('setlist.newSetlist')}</Button>
       </Group>
       <SetlistTabs value="mine" navigate={navigate} />
       {!user && (
         <Text fz={13} c="dimmed" mb={16}>
           These setlists are saved in your browser. Sign in to create server-synced setlists.
         </Text>
-      )}
-      {showNew && (
-        <SearchRow mb={16}>
-          <TextInput aria-label={t('setlist.namePlaceholder')}
-            flex={3}
-            miw={0}
-            ref={nameRef}
-            type="text"
-            placeholder={t('setlist.namePlaceholder')}
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') create(); }}
-          />
-          <Button size="xs" onClick={create}>{t('setlist.create')}</Button>
-          <Button variant="default" size="xs" onClick={() => setShowNew(false)}>{t('songEdit.cancel')}</Button>
-        </SearchRow>
       )}
       <SearchRow>
         <SearchField label={t('setlist.searchPlaceholder')} value={query} onSearch={search} onClear={clear}

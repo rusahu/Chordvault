@@ -2,7 +2,6 @@ import { Badge, Group, Modal } from '@mantine/core';
 import { IconPlus } from '@tabler/icons-react';
 import { ListCard } from './ListCard';
 import { CardGrid } from './CardGrid';
-import { modals } from '@mantine/modals';
 import { useFocusReturn } from '@mantine/hooks';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useApi } from '../hooks/useApi';
@@ -11,7 +10,9 @@ import { useI18n } from '../context/I18nContext';
 import { showStatusNotification as toast } from '../lib/notifications';
 import { useSetlistStore } from '../hooks/useSetlistStore';
 import { notifyError } from '../lib/errors';
+import { modals } from '@mantine/modals';
 import { useStackedModalProps } from '../hooks/useStackedModalProps';
+import { openSetlistNameModal } from './appModals';
 import type { SetlistListItem } from '../types';
 import { formatSongCount } from '../lib/format';
 import { VISIBILITY } from '../lib/constants';
@@ -90,10 +91,10 @@ export function AddToSetlistModal({
 
   const createAndAdd = () => {
     const session = openSession.current;
-    modals.openContextModal({ modal: 'setlistName', title: t('setlist.enterName'), innerProps: { onSubmit: async (name: string) => {
+    openSetlistNameModal(t('setlist.enterName'), async (name) => {
       if (session !== openSession.current) return;
       try {
-        const id = await store.create(name.trim());
+        const id = await store.create(name);
         await store.addSong(id, song, pick);
         if (session !== openSession.current) return;
         onClose();
@@ -101,7 +102,7 @@ export function AddToSetlistModal({
       } catch (e) {
         if (session === openSession.current) notifyError(e);
       }
-    } } });
+    });
   };
 
   return (

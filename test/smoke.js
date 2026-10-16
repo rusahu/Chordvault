@@ -63,7 +63,7 @@ async function run() {
   // 1. Navigate to local setlists tab via navigation bar and tabs
   await page.goto(baseUrl + '/', { waitUntil: 'domcontentloaded', timeout: 10000 });
   await page.locator('#nav-links').getByRole('button', { name: 'Setlists', exact: true }).click();
-  await page.getByRole('tab', { name: 'My Setlists', exact: true }).click();
+  await page.getByText('My Setlists', { exact: true }).click();
   await page.waitForSelector('button:has-text("New Setlist")', { state: 'visible', timeout: 10000 });
   
   // 2. Open new setlist dialog
@@ -72,8 +72,8 @@ async function run() {
   await btn.click();
   
   // 3. Fill and Create
-  await page.getByRole('textbox', { name: 'Setlist name...' }).fill('Smoke Test Local Setlist');
-  await page.getByRole('button', { name: 'Create', exact: true }).click();
+  await page.getByRole('dialog').getByRole('textbox', { name: 'Setlist name' }).fill('Smoke Test Local Setlist');
+  await page.getByRole('button', { name: 'Create setlist', exact: true }).click();
   
   // 4. Verify we navigated to the setlist edit page
   await page.waitForURL(/.*#setlist\/local_\w+$/, { timeout: 10000 });
