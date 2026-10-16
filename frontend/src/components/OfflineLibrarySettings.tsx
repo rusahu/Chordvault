@@ -1,4 +1,5 @@
 import { Alert, Button, Group, Loader, Stack, Switch, Text } from '@mantine/core';
+import { formatTimestamp } from '../lib/format';
 import { SettingsSection } from './SettingsSection';
 import { useOffline } from '../context/OfflineContext';
 import { useI18n } from '../context/I18nContext';
@@ -14,7 +15,7 @@ export function OfflineLibrarySettings() {
       <Text size="sm" c="dimmed">{t('offline.description', 'Download public songs, your private songs and your saved setlists for viewing. Stored on this device. Removed when you sign out.')}</Text>
       {busy && <Group gap="xs" role="status"><Loader size="xs" /><Text size="sm">{t('offline.downloading', 'Downloading library...')}</Text></Group>}
       {enabled && state?.revision && shellReady && <Text size="sm" role="status">
-        {state.songCount} {t('offline.songs', 'songs')} · {state.setlistCount} {t('offline.setlists', 'setlists')} · {t('offline.updated', 'Last downloaded')} {new Date(state.downloadedAt!).toLocaleString()}
+        {state.songCount} {t('offline.songs', 'songs')} · {state.setlistCount} {t('offline.setlists', 'setlists')} · {t('offline.updated', 'Last downloaded')} {formatTimestamp(state.downloadedAt!)}
       </Text>}
       {enabled && !shellReady && !busy && <Text size="sm" role="status">{t('offline.preparing', 'Preparing the app and fonts for offline use...')}</Text>}
       {shellError && <Alert color="red" role="alert">{shellError}</Alert>}

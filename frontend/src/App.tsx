@@ -4,7 +4,8 @@ import { Alert, Badge } from '@mantine/core';
 import { useOffline } from './context/OfflineContext';
 import { useWriteLock } from './hooks/useWriteLock';
 import { useState, useEffect, useCallback } from 'react';
-import { useWindowEvent } from '@mantine/hooks';
+import { shallowEqual, useWindowEvent } from '@mantine/hooks';
+import { formatTimestamp } from './lib/format';
 import { useAuth } from './context/AuthContext';
 import { useDemo } from './context/DemoContext';
 import { Nav } from './components/Nav';
@@ -47,12 +48,7 @@ export function App() {
   useWindowEvent('hashchange', () => {
     const newRoute = parseHash(location.hash);
     setRoute((prev) => {
-      const isSameView = prev.view === newRoute.view;
-      const isSameParams =
-        Object.keys(prev.params).length === Object.keys(newRoute.params).length &&
-        Object.keys(prev.params).every((k) => prev.params[k] === newRoute.params[k]);
-
-      return isSameView && isSameParams ? prev : newRoute;
+      return prev.view === newRoute.view && shallowEqual(prev.params, newRoute.params) ? prev : newRoute;
     });
   });
 
@@ -141,6 +137,6 @@ function OfflineStatus({ playback }: { playback: boolean }) {
   const layout = usePlaybackLayout();
   if (playback) return <Badge pos="fixed" bottom={layout === 'desktop' ? 12 : 90} right={12} style={{ zIndex: 61, pointerEvents: 'none' }} role="status">{t('offline.playbackStatus', 'Offline library · viewing only')}</Badge>;
   return <Alert py="xs" mb="sm" role="status" title={usingDownload ? t('offline.downloaded', 'Downloaded library') : t('offline.disconnected', 'Offline')}>
-    {t('offline.viewing', 'Viewing only.')} {state?.downloadedAt ? `${t('offline.updated', 'Last downloaded')} ${new Date(state.downloadedAt).toLocaleString()}.` : t('offline.onlyDownloaded', 'Only downloaded songs are available.')} {t('offline.connectToEdit', 'Connect to make changes.')}
+    {t('offline.viewing', 'Viewing only.')} {state?.downloadedAt ? `${t('offline.updated', 'Last downloaded')} ${formatTimestamp(state.downloadedAt)}.` : t('offline.onlyDownloaded', 'Only downloaded songs are available.')} {t('offline.connectToEdit', 'Connect to make changes.')}
   </Alert>;
 }

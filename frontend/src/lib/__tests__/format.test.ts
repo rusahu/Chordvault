@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseDbTime, formatDbDate, formatSongCount, versionLabel } from '../format';
+import { parseDbTime, formatDbDate, formatSongCount, versionLabel, formatTimestamp } from '../format';
 
 describe('database timestamps', () => {
   it('reads SQLite CURRENT_TIMESTAMP as UTC', () => {
@@ -29,5 +29,12 @@ describe('list labels', () => {
   it('labels a version by position, owner and video, as the selects show it', () => {
     expect(versionLabel({ username: 'amy', youtube_url: 'https://youtu.be/x' }, 0)).toBe('1 (@amy) ▶');
     expect(versionLabel({ username: 'bo', youtube_url: null }, 1)).toBe('2 (@bo) ');
+  });
+});
+
+describe('formatTimestamp', () => {
+  it('shows a millisecond timestamp in the local date and time format', () => {
+    const ms = Date.UTC(2026, 9, 16, 9, 30);
+    expect(formatTimestamp(ms)).toBe(new Date(ms).toLocaleString());
   });
 });

@@ -7,6 +7,8 @@ export function parseDbTime(s: string): Date {
 
 export const formatDbDate = (s: string | null | undefined) => (s ? parseDbTime(s).toLocaleDateString() : '');
 
+export const formatTimestamp = (ms: number) => new Date(ms).toLocaleString();
+
 export const formatSongCount = (count: number, t: (key: string) => string) =>
   `${count} ${count !== 1 ? t('admin.songPlural') : t('admin.song')}`;
 

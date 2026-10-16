@@ -10,7 +10,7 @@ import { useStatusMessage } from '../hooks/useStatusMessage';
 import { StatusText } from '../components/StatusText';
 import { downloadBlob } from '../lib/download';
 import { errorMessage } from '../lib/errors';
-import { LANGUAGES, languageName } from '../lib/languages';
+import { languageName, languageOptions } from '../lib/languages';
 import { useDemo } from '../context/DemoContext';
 import { useAuth } from '../context/AuthContext';
 import { exportSongsBlob } from '../lib/api';
@@ -155,7 +155,7 @@ export function SettingsView() {
               {preferredLangs.length === 0 && <Text size="sm" c="dimmed">No languages set</Text>}
             </Group>
             {preferredLangs.length < MAX_PREFERRED_LANGUAGES && (
-              <Select searchable label="Add a language" placeholder="Search languages" value={null} data={LANGUAGES.filter(language => !preferredLangs.includes(language.code)).map(language => ({ value: language.code, label: `${language.name} (${language.code})` }))} onChange={(value) => { if (value) addLang(value); }} />
+              <Select searchable label="Add a language" placeholder="Search languages" value={null} data={languageOptions(code => !preferredLangs.includes(code))} onChange={(value) => { if (value) addLang(value); }} />
             )}
             <StatusText status={langStatus.status} />
           </Stack>

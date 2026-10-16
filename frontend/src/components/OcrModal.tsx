@@ -7,6 +7,7 @@ import { showStatusNotification as toast } from '../lib/notifications';
 import { errorMessage } from '../lib/errors';
 import { useStackedModalProps } from '../hooks/useStackedModalProps';
 import { useActiveRef } from '../hooks/useActiveRef';
+import { readFile } from '../lib/files';
 import { DEFAULT_GEMINI_MODEL } from '../lib/constants';
 import { ModelSelect } from './ModelSelect';
 import { getOcrModels, type OcrModels } from '../lib/settingsApi';
@@ -23,15 +24,6 @@ interface ChatMessage {
   text: string;
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 export function OcrModal({ opened, hasGeminiKey, onResult, onClose }: OcrModalProps) {
   const stacked = useStackedModalProps();
   return (
@@ -45,7 +37,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
   const active = useActiveRef();
   const api = useApi();
   const [file, setFile] = useState<File | null>(null);
-  const previewReader = useRef<FileReader | null>(null);
+  const previewFile = useRef<File | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const { start: scrollToLatest } = useTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   const [preview, setPreview] = useState<string | null>(null);
@@ -72,8 +64,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
   const [refining, setRefining] = useState(false);
 
   const handleFile = (selected: File | null) => {
-    previewReader.current?.abort();
-    previewReader.current = null;
+    previewFile.current = selected;
     setFile(selected);
     setPreview(null);
     setIsPdf(selected?.type === 'application/pdf');
@@ -86,10 +77,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
     if (selected.type === 'application/pdf') {
       setPreview(selected.name);
     } else {
-      const reader = new FileReader();
-      previewReader.current = reader;
-      reader.onload = () => { if (active.current && previewReader.current === reader) setPreview(reader.result as string); };
-      reader.readAsDataURL(selected);
+      readFile(selected, 'dataURL').then(url => { if (active.current && previewFile.current === selected) setPreview(url); }, () => {});
     }
   };
 
@@ -103,7 +91,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
     setChatHistory([]);
     try {
       setProgress(10);
-      const base64 = await fileToBase64(file);
+      const base64 = await readFile(file, 'dataURL');
       if (!active.current) return;
       setImageBase64(base64);
       setProgress(30);

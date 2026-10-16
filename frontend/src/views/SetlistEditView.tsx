@@ -35,7 +35,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
   const isWriteLocked = useWriteLock();
   const { user } = useAuth();
   const { t } = useI18n();
-  const copyWithFeedback = useCopyNotification(t('setlist.linkCopied') || 'Link copied to clipboard');
+  const copyWithFeedback = useCopyNotification(t('setlist.linkCopied', 'Link copied to clipboard'));
   const isLocal = isLocalSetlistId(setlistId);
   const store = useSetlistStore(isLocal);
   const { getOne } = store;

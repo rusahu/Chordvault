@@ -19,7 +19,7 @@ export function AuthView({ navigate }: AuthViewProps) {
   const compact = useMediaQuery('(max-width: 600px)', undefined, { getInitialValueInEffect: false });
   const { t } = useI18n();
   const [tab, setTab] = useState<'login' | 'register' | 'invite'>('login');
-  const form = useForm({ initialValues: { username: '', password: '', inviteCode: '' }, validate: { username: value => value ? null : t('auth.fillAllFields'), password: value => value ? null : t('auth.fillAllFields') } });
+  const form = useForm({ initialValues: { username: '', password: '', inviteCode: '' }, validate: { username: value => value ? null : t('auth.fillAllFields'), password: value => value ? null : t('auth.fillAllFields'), inviteCode: value => tab !== 'invite' || value ? null : t('auth.fillAllFields') } });
   const { username, password, inviteCode } = form.values;
   const { setValues } = form;
   const { busy: submitting, run } = useBusyAction();
@@ -73,7 +73,6 @@ export function AuthView({ navigate }: AuthViewProps) {
 
   const submit = () => run(async () => {
     setError('');
-    if (tab === 'invite' && !inviteCode) { setError(t('auth.fillAllFields')); return; }
     const effectiveTab = !config.allowRegistration ? 'login' : tab;
     const endpoint = tab === 'invite' ? '/api/auth/redeem-invite' : effectiveTab === 'login' ? '/api/auth/login' : '/api/auth/register';
     const body = tab === 'invite' ? { code: inviteCode, username, password, turnstile_token: turnstileToken }
