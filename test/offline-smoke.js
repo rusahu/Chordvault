@@ -8,7 +8,8 @@ const { createServer } = require('node:net');
 const { createServer: createHttpsServer } = require('node:https');
 const { request: proxyRequest } = require('node:http');
 const { setTimeout: sleep } = require('node:timers/promises');
-const { chromium, webkit } = require('playwright');
+const { webkit } = require('playwright');
+const { launchBrowser } = require('../scripts/lib/browser.mjs');
 const { createHash } = require('node:crypto');
 const jwt = require('jsonwebtoken');
 
@@ -90,7 +91,7 @@ async function run() {
         db.prepare('UPDATE songs SET title=? WHERE id=127').run('Practice 1 alternate');
       }
     }
-    browser = await (process.env.OFFLINE_BROWSER === 'webkit' ? webkit : chromium).launch({ headless: true, ...(process.env.OFFLINE_BROWSER !== 'webkit' && process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) });
+    browser = await (process.env.OFFLINE_BROWSER === 'webkit' ? webkit.launch() : launchBrowser(process.env.PLAYWRIGHT_CHANNEL));
     const context = await browser.newContext({ viewport: { width: 768, height: 1024 }, acceptDownloads: true, ignoreHTTPSErrors: true });
     const tlsPort = tlsServer?.address().port;
     const setDisconnected = async offline => {

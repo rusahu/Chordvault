@@ -1,10 +1,10 @@
 /* global localStorage */
-const { chromium } = require('../frontend/node_modules/playwright');
+const { launchBrowser } = require('../scripts/lib/browser.mjs');
 const { setTimeout: sleep } = require('node:timers/promises');
 
 async function run() {
   const baseUrl = process.env.BASE_URL || 'http://localhost:3100';
-  const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHANNEL ? { channel: process.env.PLAYWRIGHT_CHANNEL } : {}) });
+  const browser = await launchBrowser(process.env.PLAYWRIGHT_CHANNEL);
   const page = await browser.newPage();
   const consoleErrors = [];
   const missingResources = [];
