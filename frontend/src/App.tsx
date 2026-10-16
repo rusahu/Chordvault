@@ -89,7 +89,7 @@ export function App() {
       case 'correction':
         return user && params.id ? <CorrectionView songId={parseInt(params.id)} navigate={navigate} /> : <BrowseView key={listIdentity} navigate={navigate} />;
       case 'auth':
-        return <AuthView navigate={navigate} />;
+        return user ? <BrowseView key={listIdentity} navigate={navigate} /> : <AuthView navigate={navigate} />;
       case 'setlists':
         return <SetlistsView key={listIdentity} navigate={navigate} />;
       case 'public-setlists':
@@ -116,7 +116,7 @@ export function App() {
       case 'admin':
         return <AdminView navigate={navigate} />;
       case 'settings':
-        return <SettingsView />;
+        return user ? <SettingsView /> : <BrowseView key={listIdentity} navigate={navigate} />;
       case 'about':
         return <AboutView navigate={navigate} />;
       default:
