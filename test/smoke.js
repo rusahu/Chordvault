@@ -156,7 +156,7 @@ async function run() {
   await page.getByRole('button', { name: 'Delete', exact: true }).click();
   const confirmation = page.getByRole('dialog').filter({ hasText: 'Delete this setlist?' });
   await confirmation.getByRole('button', { name: 'Confirm', exact: true }).click();
-  await page.waitForURL(baseUrl + '/', { timeout: 5000 });
+  await page.waitForURL(baseUrl + '/#public-setlists', { timeout: 5000 });
   console.log('Cleaned up smoke test local setlist.');
   
   // 11. Test Sign In Page Navigation
