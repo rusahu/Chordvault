@@ -1,7 +1,8 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { useSetlistPlayer } from '../useSetlistPlayer';
 import { resolveEffectivePreferences } from '../../lib/chords';
-import { getSetlistOverrides, saveSetlistOverride } from '../../lib/storage';
+import { getLocalSetlists, getSetlistOverrides, saveSetlistOverride } from '../../lib/storage';
+import { ApiError } from '../../lib/api';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 
 const mockApiCall = vi.fn();
@@ -25,6 +26,7 @@ vi.mock('../../lib/storage', async () => {
   return {
     getSetlistOverrides: vi.fn(),
     saveSetlistOverride: vi.fn(),
+    getLocalSetlists: vi.fn(() => []),
     migrateOverride: actual.migrateOverride,
   };
 });
@@ -61,6 +63,28 @@ describe('useSetlistPlayer Hook', () => {
     vi.clearAllMocks();
     mockApiCall.mockReset();
     mockGetOverrides.mockReturnValue({});
+  });
+
+  it('loads a local setlist with its songs fetched by id', async () => {
+    (getLocalSetlists as Mock).mockReturnValue([{ id: 'local_1', name: 'Mine', entries: [{ song_id: 101, title: 'Song 1', artist: '', target_key: null, nashville: 0 }] }]);
+    mockApiCall.mockResolvedValue({ id: 101, title: 'Song 1', artist: 'Artist 1', content: '{key: C}\n[C]a', visibility: 'public' });
+    const { result } = renderHook(() => useSetlistPlayer({ setlistId: 'local_1', isLocal: true, navigate }));
+    await waitFor(() => expect(result.current.setlist?.isLocal).toBe(true));
+    expect(result.current.entry?.content).toBe('{key: C}\n[C]a');
+    expect(mockApiCall).toHaveBeenCalledWith('GET', '/api/songs/101');
+  });
+
+  it('leaves for the setlists list when a local setlist is missing', async () => {
+    renderHook(() => useSetlistPlayer({ setlistId: 'local_missing', isLocal: true, navigate }));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('setlists'));
+    expect(mockToast).toHaveBeenCalledWith('Local setlist not found', 'error');
+  });
+
+  it('reports a failed online load instead of a setlist', async () => {
+    mockApiCall.mockRejectedValue(new ApiError('Setlist not found', 404));
+    const { result } = renderHook(() => useSetlistPlayer({ setlistId: 1, navigate }));
+    await waitFor(() => expect(result.current.loadError).toBe('Setlist not found'));
+    expect(result.current.setlist).toBeNull();
   });
 
   it('uses the current index for hash navigation and removes the listener on unmount', async () => {
