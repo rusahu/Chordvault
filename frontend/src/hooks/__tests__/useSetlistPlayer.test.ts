@@ -193,7 +193,7 @@ describe('useSetlistPlayer Hook', () => {
     mockApiCall.mockResolvedValueOnce({ success: true });
 
     await act(async () => {
-      await result.current.saveOnline(true);
+      await result.current.saveOnline();
     });
 
     // Verify PUT request only sends target_key
@@ -235,7 +235,7 @@ describe('useSetlistPlayer Hook', () => {
     });
 
     act(() => {
-      result.current.saveLocal(true);
+      result.current.saveLocal();
     });
 
     // Verify only target_key is stored

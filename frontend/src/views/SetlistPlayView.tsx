@@ -180,8 +180,8 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialIndex, na
     onReset: resetEntryLayout,
     onPickKey: pickKey,
     onAutoFit: doFit,
-    onSaveOnline: !readOnly && isOwner ? () => saveOnline(false) : undefined,
-    onSaveLocal: readOnly ? undefined : () => saveLocal(false),
+    onSaveOnline: !readOnly && isOwner ? saveOnline : undefined,
+    onSaveLocal: readOnly ? undefined : saveLocal,
     onExportPdf: handleExportAllPdf,
     settingsPanel: (
       <SettingsPanel

@@ -22,22 +22,22 @@ export function useEntryKeySave({ setlist, entry, savedTargetKeys, markSaved }: 
 
   const isModified = useMemo(() => !!entry && entry.target_key !== (savedTargetKeys[String(entry.entry_id)] ?? null), [entry, savedTargetKeys]);
 
-  const saveOnline = useCallback(async (silent = false) => {
+  const saveOnline = useCallback(async () => {
     if (readOnly || !setlist || !entry || !user || setlist.user_id !== user.id) return;
     try {
       await apiCall('PUT', `/api/setlists/${setlist.id}/entries/${entry.entry_id}`, { target_key: entry.target_key });
       markSaved(entry.entry_id, entry.target_key);
-      if (!silent) toast('Key saved to cloud', 'success');
+      toast('Key saved to cloud', 'success');
     } catch (e) {
-      if (!silent) notifyError(e);
+      notifyError(e);
     }
   }, [setlist, entry, apiCall, user, readOnly, markSaved]);
 
-  const saveLocal = useCallback((silent = false) => {
+  const saveLocal = useCallback(() => {
     if (readOnly || !setlist || !entry) return;
     saveSetlistOverride(setlist.id, entry.entry_id, { target_key: entry.target_key });
     markSaved(entry.entry_id, entry.target_key);
-    if (!silent) toast('Key saved locally', 'success');
+    toast('Key saved locally', 'success');
   }, [setlist, entry, readOnly, markSaved]);
 
   return { isModified, saveOnline, saveLocal };
