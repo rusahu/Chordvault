@@ -1,25 +1,3 @@
-/* -- Setlist Tabs -------------------------- */
-.setlist-tabs { margin-bottom: 16px; }
-.setlist-tabs .mantine-Tabs-list {
-  background: var(--ctrl);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 4px;
-}
-.setlist-tabs .mantine-Tabs-tab { border: 1px solid transparent; font-weight: 500; }
-.setlist-tabs .mantine-Tabs-tab[data-active] {
-  background: var(--bg);
-  border-color: var(--border);
-  color: var(--text);
-  box-shadow: 0 1px 2px rgba(29, 27, 25, 0.12);
-}
-@media (hover: hover) {
-  .setlist-tabs .mantine-Tabs-tab:not([data-disabled]):hover {
-    background: var(--ctrl-hover);
-    color: var(--text);
-  }
-}
-
 /* -- Settings ------------------------------ */
 /* Surface comes from Mantine Paper; this is the two-column masonry only. */
 .settings-grid { column-gap: 16px; }
@@ -102,9 +80,13 @@
 
   /* Negate #app padding (32px 24px) to go truly edge-to-edge */
   margin: -32px -24px;
+  /* useSwipe sees horizontal moves; the browser keeps vertical scroll and pinch zoom. */
+  touch-action: pan-y pinch-zoom;
 }
 
 .setlist-play-container .chord-sheet-wrap {
+  /* The wrap scrolls sideways (overflow-x: auto), which would otherwise turn horizontal panning back on. */
+  touch-action: pan-y pinch-zoom;
   margin: 0;
   padding: 28px 48px 48px;
   border-radius: 0;

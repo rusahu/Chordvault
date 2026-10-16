@@ -8,9 +8,10 @@ import { api } from '../lib/api';
 import { errorMessage } from '../lib/errors';
 import { DEMO_ACCOUNT } from '../lib/constants';
 import type { AuthConfig, AuthResponse } from '../types';
+import type { Navigate } from '../lib/routes';
 
 interface AuthViewProps {
-  navigate: (view: string) => void;
+  navigate: Navigate;
 }
 
 export function AuthView({ navigate }: AuthViewProps) {
@@ -77,7 +78,7 @@ export function AuthView({ navigate }: AuthViewProps) {
       : effectiveTab === 'login' ? { username, password } : { username, password, turnstile_token: turnstileToken };
     const data = await api<AuthResponse>('POST', endpoint, body);
     login(data);
-    navigate('browse');
+    navigate('browse', {}, { leave: true });
   }, (e) => setError(errorMessage(e)));
 
   const showTabs = config.allowRegistration;

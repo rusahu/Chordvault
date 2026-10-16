@@ -76,7 +76,7 @@ describe('useSetlistPlayer Hook', () => {
 
   it('leaves for the setlists list when a local setlist is missing', async () => {
     renderHook(() => useSetlistPlayer({ setlistId: 'local_missing', isLocal: true, navigate }));
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('setlists'));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('setlists', {}, { leave: true }));
     expect(mockToast).toHaveBeenCalledWith('Local setlist not found', 'error');
   });
 

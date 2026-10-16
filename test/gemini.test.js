@@ -244,3 +244,23 @@ test('callGemini gives up on a hung request with the network error', async () =>
     restore();
   }
 });
+
+test('callGemini reports a failure while reading the reply as the network error', async () => {
+  for (const error of [new DOMException('The operation was aborted due to timeout', 'TimeoutError'), new TypeError('terminated')]) {
+    const restore = stubFetch(async () => ({ ok: true, status: 200, json: async () => { throw error; } }));
+    try {
+      await assert.rejects(callGemini(ARGS), (e) => e.code === 'GEMINI_NETWORK' && e.status === 502);
+    } finally {
+      restore();
+    }
+  }
+});
+
+test('callGemini still reports an unparseable reply as an invalid response', async () => {
+  const restore = stubFetch(async () => ({ ok: true, status: 200, json: async () => JSON.parse('{nope') }));
+  try {
+    await assert.rejects(callGemini(ARGS), (e) => e.code === 'GEMINI_BAD_JSON');
+  } finally {
+    restore();
+  }
+});

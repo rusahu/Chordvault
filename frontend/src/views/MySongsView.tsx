@@ -16,9 +16,10 @@ import { LoadErrorAlert } from '../components/LoadErrorAlert';
 import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
 import type { LibraryQuery } from '../types/offline';
 import { PageTitle } from '../components/PageTitle';
+import type { Navigate } from '../lib/routes';
 
 interface MySongsViewProps {
-  navigate: (view: string, params?: Record<string, string>) => void;
+  navigate: Navigate;
 }
 
 export function MySongsView({ navigate }: MySongsViewProps) {

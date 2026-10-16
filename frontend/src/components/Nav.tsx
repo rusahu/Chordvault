@@ -4,10 +4,11 @@ import { IconMenu2, IconMoon, IconSun } from '@tabler/icons-react';
 import { useAuth } from '../context/AuthContext';
 import logoSvg from '../assets/logo.svg?raw';
 import { useI18n } from '../context/I18nContext';
+import type { Navigate } from '../lib/routes';
 
 interface NavProps {
   view: string;
-  navigate: (view: string, params?: Record<string, string>) => void;
+  navigate: Navigate;
 }
 
 export function Nav({ view, navigate }: NavProps) {

@@ -19,9 +19,10 @@ import { FilterToggle } from '../components/FilterToggle';
 import { splitTags } from '../lib/tagName';
 import { searchKey } from '../lib/storage';
 import { LoadErrorAlert } from '../components/LoadErrorAlert';
+import type { Navigate } from '../lib/routes';
 
 interface BrowseViewProps {
-  navigate: (view: string, params?: Record<string, string>) => void;
+  navigate: Navigate;
 }
 
 export function BrowseView({ navigate }: BrowseViewProps) {

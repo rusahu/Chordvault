@@ -130,11 +130,8 @@
 
   "setlist.title": "Setlists",
   "setlist.newSetlist": "New Setlist",
-  "setlist.namePlaceholder": "Setlist name...",
-  "setlist.create": "Create",
   "setlist.created": "Setlist created",
   "setlist.noSetlists": "No setlists yet",
-  "setlist.nameRequired": "Name is required",
   "setlist.confirmDelete": "Delete this setlist? This cannot be undone.",
   "setlist.deleted": "Setlist deleted",
   "setlist.play": "Open",

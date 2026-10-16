@@ -3,14 +3,14 @@ import { useState, useCallback } from 'react';
 import { useTimeout, useWindowEvent } from '@mantine/hooks';
 import { useSetlistLoader } from './useSetlistLoader';
 import { useEntryKeySave } from './useEntryKeySave';
-import { setlistPlayHash, parsePlayHash, replaceHash } from '../lib/routes';
+import { setlistPlayHash, parsePlayHash, replaceHash, type Navigate } from '../lib/routes';
 import type { SetlistEntry } from '../types';
 
 interface UseSetlistPlayerOptions {
   setlistId: number | string;
   isLocal?: boolean;
   initialIndex?: number;
-  navigate: (view: string, params?: Record<string, string>) => void;
+  navigate: Navigate;
   onNavigate?: () => void;
 }
 

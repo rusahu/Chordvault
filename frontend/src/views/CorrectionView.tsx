@@ -8,10 +8,11 @@ import { notifyError } from '../lib/errors';
 import { CodeMirrorEditor } from '../components/CodeMirrorEditor';
 import { requirePreparedSong } from '../lib/songSubmit';
 import type { Song } from '../types';
+import type { Navigate } from '../lib/routes';
 
 interface CorrectionViewProps {
   songId: number;
-  navigate: (view: string, params?: Record<string, string>) => void;
+  navigate: Navigate;
 }
 
 export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
@@ -24,7 +25,7 @@ export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
   useEffect(() => {
     apiCall<Song>('GET', `/api/songs/${songId}`)
       .then((s) => setContent(s.content))
-      .catch((e) => { notifyError(e); navigate('browse'); });
+      .catch((e) => { notifyError(e); navigate('browse', {}, { leave: true }); });
   }, [songId, apiCall, navigate]);
 
   const submit = async () => {
@@ -33,14 +34,14 @@ export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
       const prepared = requirePreparedSong(content, { requireLanguage: false });
       await apiCall('POST', `/api/songs/${songId}/correction`, { content: prepared.content });
       toast('Correction submitted for review', 'success');
-      navigate('song-view', { id: String(songId) });
+      navigate('song-view', { id: String(songId) }, { leave: true });
     } catch (e) { notifyError(e); }
   };
 
   return (
     <>
       <Group mb="lg">
-        <BackButton onClick={() => navigate('song-view', { id: String(songId) })}>Cancel</BackButton>
+        <BackButton onClick={() => navigate('song-view', { id: String(songId) }, { leave: true })}>Cancel</BackButton>
         <Title order={2} size="h3" flex="1 1 160px">Submit Correction</Title>
         <Button size="xs" disabled={readOnly} onClick={submit}>Submit</Button>
       </Group>

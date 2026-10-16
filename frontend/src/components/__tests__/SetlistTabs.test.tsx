@@ -4,9 +4,11 @@ import { SetlistTabs } from '../SetlistTabs';
 it('switches between my and public setlists', () => {
   const navigate = vi.fn();
   const { rerender } = render(<SetlistTabs value="mine" navigate={navigate} />);
-  fireEvent.click(screen.getByRole('tab', { name: 'Public Setlists' }));
+  expect(screen.getByRole('radiogroup')).toHaveAccessibleName();
+  expect(screen.getByRole('radio', { name: 'My Setlists' })).toBeChecked();
+  fireEvent.click(screen.getByRole('radio', { name: 'Public Setlists' }));
   expect(navigate).toHaveBeenLastCalledWith('public-setlists');
   rerender(<SetlistTabs value="public" navigate={navigate} />);
-  fireEvent.click(screen.getByRole('tab', { name: 'My Setlists' }));
+  fireEvent.click(screen.getByRole('radio', { name: 'My Setlists' }));
   expect(navigate).toHaveBeenLastCalledWith('setlists');
 });

@@ -21,9 +21,10 @@ import { StatCard } from '../components/StatCard';
 import { StatGrid } from '../components/StatGrid';
 import { ROLES } from '../lib/constants';
 import { formatDbDate } from '../lib/format';
+import type { Navigate } from '../lib/routes';
 
 interface AdminViewProps {
-  navigate: (view: string, params?: Record<string, string>) => void;
+  navigate: Navigate;
 }
 
 export function AdminView({ navigate }: AdminViewProps) {
@@ -43,11 +44,11 @@ export function AdminView({ navigate }: AdminViewProps) {
         apiCall<Correction[]>('GET', '/api/admin/corrections'),
       ]);
       setStats(s); setUsers(u); setCorrections(c);
-    } catch (e) { notifyError(e); navigate('my-songs'); }
+    } catch (e) { notifyError(e); navigate('my-songs', {}, { leave: true }); }
   }, [apiCall, navigate]);
 
   useEffect(() => {
-    if (!isAdmin) { navigate('my-songs'); return; }
+    if (!isAdmin) { navigate('my-songs', {}, { leave: true }); return; }
     load();
   }, [isAdmin, navigate, load]);
 
