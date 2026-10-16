@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Button, Code, Divider, Group, Paper, Stack, Switch } from '@mantine/core';
+import { Box, Button, CloseButton, Code, Divider, Group, Paper, Stack, Switch, Text } from '@mantine/core';
 import { useApi } from '../hooks/useApi';
 import { useBusyAction } from '../hooks/useBusyAction';
 import { useCopyNotification } from '../hooks/useCopyNotification';
@@ -49,36 +49,36 @@ export function AdminInvites() {
     <>
       <h3 className="admin-section-title">{t('admin.inviteUsers')}</h3>
       <Paper withBorder bg="var(--surface)" radius="var(--radius)" py={16} px={20} mb={20}>
-        <div style={{ marginBottom: 14 }}>
+        <Box mb={14}>
           {config && (
             <>
               <Switch mb="sm" label="Open Registration" checked={config.allowRegistration} onChange={(e) => toggleReg(e.target.checked)} disabled={disabled} />
-              <div className="muted-text" style={{ marginTop: 4 }}>
+              <Text fz={13} c="var(--muted)" mt={4}>
                 {config.allowRegistration ? 'Anyone can create an account — no email verification, so open to spam. Use invite codes instead.' : 'Registration is closed. Use invite codes to add new users.'}
-              </div>
+              </Text>
             </>
           )}
-          {demoMode && <div className="muted-text" style={{ fontSize: 12, marginTop: 4 }}>{t('common.demoDisabled')}</div>}
-        </div>
+          {demoMode && <Text fz={12} c="var(--muted)" mt={4}>{t('common.demoDisabled')}</Text>}
+        </Box>
         <Stack gap={14}><Divider />
           <Group gap={12}>
             <Button onClick={generateInvite} disabled={disabled} title={demoMode ? t('common.demoDisabled') : ''}>{t('admin.generateInvite')}</Button>
             {inviteCode && (
               <Group gap={8}>
-                <Code fz={18} fw={600} py={6} px={14} bg="var(--accent-bg)" style={{ userSelect: 'all', letterSpacing: '0.08em' }}>{inviteCode}</Code>
+                <Code fz={18} fw={600} py={6} px={14} bg="var(--accent-bg)" lts="0.08em" style={{ userSelect: 'all' }}>{inviteCode}</Code>
                 <Button variant="default" size="xs" onClick={() => copyWithFeedback(inviteCode)}>{t('admin.copy')}</Button>
               </Group>
             )}
           </Group>
-          <div className="muted-text" style={{ marginTop: 8 }}>Generate a single-use code and share it. The person enters it on the sign-in page to create their account.</div>
+          <Text fz={13} c="var(--muted)" mt={8}>Generate a single-use code and share it. The person enters it on the sign-in page to create their account.</Text>
           {pending.length > 0 && (
             <Stack gap={6} mt={12}><Divider />
-              <div className="muted-text" style={{ fontSize: 12, marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>{t('admin.pendingInvites')}</div>
+              <Text fz={12} c="var(--muted)" mb={6} tt="uppercase" lts="0.06em" fw={600}>{t('admin.pendingInvites')}</Text>
               {pending.map((inv) => (
                 <Group key={inv.id} gap={8} mb={4}>
-                  <code style={{ fontSize: 13 }}>{inv.code}</code>
-                  <span className="muted-text" style={{ fontSize: 12 }}>{formatDbDate(inv.created_at)}</span>
-                  <Button variant="default" size="xs" style={{ fontSize: 11, padding: '2px 6px' }} onClick={() => deleteInvite(inv.id)} disabled={disabled}>&#10005;</Button>
+                  <Text span ff="monospace" fz={13}>{inv.code}</Text>
+                  <Text span fz={12} c="var(--muted)">{formatDbDate(inv.created_at)}</Text>
+                  <CloseButton aria-label={t('admin.delete')} onClick={() => deleteInvite(inv.id)} disabled={disabled} />
                 </Group>
               ))}
             </Stack>

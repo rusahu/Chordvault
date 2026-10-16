@@ -22,7 +22,7 @@ beforeEach(() => {
     return Promise.resolve(invites);
   });
 });
-const deleteButtons = () => screen.queryAllByRole('button', { name: '✕' });
+const deleteButtons = () => screen.queryAllByRole('button', { name: 'admin.delete' });
 
 it('lists only pending invites, generates a code and reloads the list', async () => {
   render(<AdminInvites />);

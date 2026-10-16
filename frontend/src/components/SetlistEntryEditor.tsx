@@ -1,4 +1,4 @@
-import { Button, Textarea } from '@mantine/core';
+import { Button, Group, Stack, Textarea } from '@mantine/core';
 import { useState } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useI18n } from '../context/I18nContext';
@@ -41,7 +41,7 @@ export function SetlistEntryEditor({ setlistId, entry, onSaved, onCancel }: Setl
   };
 
   return (
-    <div>
+    <Stack gap="sm">
       <Textarea
         aria-label="Setlist chord sheet"
         rows={12}
@@ -50,11 +50,11 @@ export function SetlistEntryEditor({ setlistId, entry, onSaved, onCancel }: Setl
         onChange={(e) => setContent(e.target.value)}
         autoFocus
       />
-      <div>
+      <Group gap="xs">
         <Button size="xs" onClick={saveToSetlist}>{t('setlist.saveToSetlist')}</Button>
         <Button variant="default" size="xs" onClick={saveAsVersion}>{t('setlist.saveAsVersion')}</Button>
         <Button variant="default" size="xs" onClick={onCancel}>{t('songEdit.cancel')}</Button>
-      </div>
-    </div>
+      </Group>
+    </Stack>
   );
 }
