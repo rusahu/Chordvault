@@ -20,10 +20,11 @@ import { SettingsPanel } from '../components/SettingsPanel';
 import { EmptyState } from '../components/EmptyState';
 import { SetlistEntryEditor } from '../components/SetlistEntryEditor';
 import { Loading } from '../components/Loading';
-import { renderChordPro, getSongKey, clampFontSize, songHasKey, autoFit } from '../lib/chords';
+import { clampFontSize, autoFit } from '../lib/chords';
+import { useRenderedChords } from '../hooks/useRenderedChords';
 import { useSetlistPreferences } from '../hooks/useSetlistPreferences';
 import { stepKey } from '../lib/keys';
-import { entryContent, entrySemitones, entryStartKey } from '../lib/setlistKeys';
+import { entryContent, entryStartKey } from '../lib/setlistKeys';
 import { songEditFromSetlist } from '../lib/songEditRoute';
 import { usePdfExport } from '../hooks/usePdfExport';
 
@@ -78,14 +79,7 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialIndex, na
   const effTwoCol = effectivePrefs.twoCol;
   const effFont = effectivePrefs.fontSize;
   const hideYt = effectivePrefs.hideYt;
-  const semitones = useMemo(() => entrySemitones(content, entry?.target_key), [entry?.target_key, content]);
-
-  const keyDisplay = entry ? getSongKey(content, semitones) : '';
-
-  const renderedHtml = useMemo(() => {
-    if (!entry) return '';
-    return renderChordPro(content, semitones, !!effNum);
-  }, [content, effNum, entry, semitones]);
+  const { renderedHtml, currentKey: keyDisplay, hasKey } = useRenderedChords(content, entry?.target_key, !!effNum);
 
   // Key stepping
   const stepEntryKey = useCallback((direction: 1 | -1) => {
@@ -177,7 +171,7 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialIndex, na
   const toolbar: ToolbarProps = {
     currentKey: keyDisplay,
     nashville: !!effNum,
-    nashvilleDisabled: !songHasKey(content, semitones),
+    nashvilleDisabled: !hasKey,
     onNashvilleChange: toggleEntryNum,
     twoCol: !!effTwoCol,
     onTwoColToggle: toggleEntryTwoCol,

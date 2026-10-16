@@ -1,22 +1,14 @@
 import { useState, useCallback, useMemo } from 'react';
-import { renderChordPro, getSongKey, songHasKey } from '../lib/chords';
+import { getSongKey } from '../lib/chords';
 import { stepKey } from '../lib/keys';
-import { entrySemitones } from '../lib/setlistKeys';
+import { useRenderedChords } from './useRenderedChords';
 
 export function useChordRenderer(content: string) {
   const [targetKey, setTargetKey] = useState<string | null>(null);
   const [nashville, setNashville] = useState(false);
 
   const sourceKey = useMemo(() => getSongKey(content, 0), [content]);
-  const transpose = useMemo(() => entrySemitones(content, targetKey), [content, targetKey]);
-
-  const renderedHtml = useMemo(
-    () => renderChordPro(content, transpose, nashville),
-    [content, transpose, nashville]
-  );
-
-  const currentKey = useMemo(() => getSongKey(content, transpose), [content, transpose]);
-  const hasKey = useMemo(() => songHasKey(content, transpose), [content, transpose]);
+  const { transpose, renderedHtml, currentKey, hasKey } = useRenderedChords(content, targetKey, nashville);
 
   const stepCurrentKey = useCallback((direction: 1 | -1) => {
     setTargetKey((prev) => {
