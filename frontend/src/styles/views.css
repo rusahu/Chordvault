@@ -72,21 +72,6 @@
 }
 .setlist-name-input:focus { border-bottom-color: var(--text); }
 
-/* -- Admin -------------------------------- */
-
-
-
-
-.admin-section-title {
-  font-family: var(--font-sans);
-  font-size: 20px;
-  font-weight: 700;
-  margin-top: 28px;
-  margin-bottom: 12px;
-}
-
-
-
 /* -- Setlist Edit View --------------------- */
 .setlist-entries {
   display: flex;

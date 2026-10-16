@@ -1,4 +1,5 @@
 import { Badge, Box, Button, Group } from '@mantine/core';
+import { SectionTitle } from '../components/SectionTitle';
 import { ListCard } from '../components/ListCard';
 import { CardGrid } from '../components/CardGrid';
 import { modals } from '@mantine/modals';
@@ -91,7 +92,7 @@ export function AdminView({ navigate }: AdminViewProps) {
 
       {stats.languageDistribution && stats.languageDistribution.length > 0 && (
         <Box mt={16}>
-          <h3 className="admin-section-title">Languages</h3>
+          <SectionTitle>Languages</SectionTitle>
           <StatGrid>
             {stats.languageDistribution.map(({ language, count }) => (
               <StatCard key={language} value={count} label={language ? languageName(language) : 'Not set'} />
@@ -104,7 +105,7 @@ export function AdminView({ navigate }: AdminViewProps) {
 
       <AdminTags />
 
-      <h3 className="admin-section-title">{t('admin.users')}</h3>
+      <SectionTitle>{t('admin.users')}</SectionTitle>
 
       <CardGrid mb={28}>
         {users.map((u) => (
@@ -115,12 +116,11 @@ export function AdminView({ navigate }: AdminViewProps) {
 
       {stats.recentSongs.length > 0 && (
         <>
-          <h3 className="admin-section-title">{t('admin.recentSongs')}</h3>
+          <SectionTitle>{t('admin.recentSongs')}</SectionTitle>
           <CardGrid>
             {stats.recentSongs.map((s) => (
               <ListCard
                 key={s.id}
-                className="mantine-focus-auto"
                 title={s.title}
                 meta={<>{s.artist ? `${s.artist} · ` : ''}@{s.username} &middot; {formatDbDate(s.created_at)}</>}
                 onClick={() => navigate('song-view', { id: String(s.id) })}
@@ -133,12 +133,11 @@ export function AdminView({ navigate }: AdminViewProps) {
 
       {corrections.length > 0 && (
         <>
-          <h3 className="admin-section-title">{tReplace('admin.pendingCorrections', { count: corrections.length })}</h3>
+          <SectionTitle>{tReplace('admin.pendingCorrections', { count: corrections.length })}</SectionTitle>
           <CardGrid>
             {corrections.map((c) => (
               <ListCard
                 key={c.id}
-                className="mantine-focus-auto"
                 title={c.title}
                 meta={<>by @{c.submitter} &middot; {formatDbDate(c.created_at)}</>}
                 onClick={() => navigate('song-view', { id: String(c.parent_id) })}

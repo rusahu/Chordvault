@@ -89,7 +89,7 @@ export function AuthView({ navigate }: AuthViewProps) {
     <Center mih="calc(100vh - 56px)">
       <Paper component="form" w="100%" maw={400} py={compact ? 24 : 44} px={compact ? 24 : 40} radius={14} bg="var(--ui-modal-bg)" style={{ border: '1px solid var(--border)', boxShadow: 'var(--ui-shadow)' }} onSubmit={(event) => form.onSubmit(submit)(event)}>
         <Text fz={36} fw={700} c="var(--cv-brand)" ta="center" mb={6}>{t('auth.logo')}</Text>
-        <Text fz={13} c="var(--muted)" ta="center" mb={28}>{t('auth.tagline')}</Text>
+        <Text fz={13} c="dimmed" ta="center" mb={28}>{t('auth.tagline')}</Text>
         {showTabs && (
           <Tabs value={tab === 'login' ? 'login' : 'register'} onChange={(value) => setTab(value === 'login' ? 'login' : 'register')} mb={24}>
             <Tabs.List grow><Tabs.Tab value="login">{t('auth.signIn')}</Tabs.Tab><Tabs.Tab value="register">{t('auth.register')}</Tabs.Tab></Tabs.List>
@@ -109,7 +109,7 @@ export function AuthView({ navigate }: AuthViewProps) {
         )}
         {tab === 'invite' && (
           <Box ta="center" mt={12}>
-            <Anchor href="#" onClick={(e) => { e.preventDefault(); setTab('login'); }} fz={13} c="var(--muted)" underline="never">{t('auth.backToLogin')}</Anchor>
+            <Anchor href="#" onClick={(e) => { e.preventDefault(); setTab('login'); }} fz={13} c="dimmed" underline="never">{t('auth.backToLogin')}</Anchor>
           </Box>
         )}
         {error && <Text role="alert" c="var(--danger)" fz={13} mt={12} ta="center">{error}</Text>}

@@ -27,19 +27,8 @@
   .song-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-lift); }
   .song-card:hover .song-card-meta { color: var(--text); }
 }
-.song-card:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
 
-.song-card-title {
-  font-family: var(--font-sans);
-  font-size: 17px;
-  font-weight: 650;
-  line-height: 1.3;
-  color: var(--text);
-  text-wrap: pretty;
-  overflow-wrap: anywhere;
-}
-
-.song-card-meta { font-size: 14px; color: var(--muted); margin-top: 2px; }
+.song-card-title { text-wrap: pretty; overflow-wrap: anywhere; }
 
 /* -- Search ------------------------------─ */
 .search-filters {
@@ -51,11 +40,6 @@
 .search-filters .language-filter { max-width: 220px; }
 .search-filters .tag-filter { flex: 1; min-width: 0; max-width: 420px; }
 
-/* -- General Utility Classes -- */
-.muted-text {
-  color: var(--muted);
-  font-size: 13px;
-}
 input[type="search"]::-webkit-search-cancel-button {
   -webkit-appearance: none;
   appearance: none;

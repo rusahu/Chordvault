@@ -1,4 +1,6 @@
-import { Badge, Box, Button, Divider, Group, Paper, Stack } from '@mantine/core';
+import { Badge, Box, Button, Divider, Group, Paper, Stack, Text } from '@mantine/core';
+import { CardTitle } from './CardTitle';
+import { CardMeta } from './CardMeta';
 import { useDemo } from '../context/DemoContext';
 import { useI18n } from '../context/I18nContext';
 import { ROLES, manageUserError } from '../lib/constants';
@@ -25,8 +27,8 @@ export function AdminUserCard({ target, actor, busy, onSetRole, onResetPassword,
     <Paper withBorder bg="var(--ui-card-bg)" radius="var(--radius)" py={16} px={20} shadow="sm">
       <Group justify="space-between" gap={12}>
         <Box flex="1 1 180px" miw={0}>
-          <div className="song-card-title">@{target.username}{target.id === actor?.id && <span className="muted-text"> {t('admin.you')}</span>}</div>
-          <div className="song-card-meta">{formatSongCount(target.song_count, t)} &middot; {t('admin.joined')} {formatDbDate(target.created_at)}</div>
+          <CardTitle>@{target.username}{target.id === actor?.id && <Text span inherit c="dimmed" fz={13}> {t('admin.you')}</Text>}</CardTitle>
+          <CardMeta>{formatSongCount(target.song_count, t)} &middot; {t('admin.joined')} {formatDbDate(target.created_at)}</CardMeta>
         </Box>
         <Group gap={6}>
           {target.role === ROLES.OWNER && <Badge>owner</Badge>}

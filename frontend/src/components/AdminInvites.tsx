@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Box, Button, CloseButton, Code, Divider, Group, Paper, Stack, Switch, Text } from '@mantine/core';
+import { SectionTitle } from './SectionTitle';
 import { useApi } from '../hooks/useApi';
 import { useBusyAction } from '../hooks/useBusyAction';
 import { useCopyNotification } from '../hooks/useCopyNotification';
@@ -47,18 +48,18 @@ export function AdminInvites() {
 
   return (
     <>
-      <h3 className="admin-section-title">{t('admin.inviteUsers')}</h3>
+      <SectionTitle>{t('admin.inviteUsers')}</SectionTitle>
       <Paper withBorder bg="var(--surface)" radius="var(--radius)" py={16} px={20} mb={20}>
         <Box mb={14}>
           {config && (
             <>
               <Switch mb="sm" label="Open Registration" checked={config.allowRegistration} onChange={(e) => toggleReg(e.target.checked)} disabled={disabled} />
-              <Text fz={13} c="var(--muted)" mt={4}>
+              <Text fz={13} c="dimmed" mt={4}>
                 {config.allowRegistration ? 'Anyone can create an account — no email verification, so open to spam. Use invite codes instead.' : 'Registration is closed. Use invite codes to add new users.'}
               </Text>
             </>
           )}
-          {demoMode && <Text fz={12} c="var(--muted)" mt={4}>{t('common.demoDisabled')}</Text>}
+          {demoMode && <Text fz={12} c="dimmed" mt={4}>{t('common.demoDisabled')}</Text>}
         </Box>
         <Stack gap={14}><Divider />
           <Group gap={12}>
@@ -70,14 +71,14 @@ export function AdminInvites() {
               </Group>
             )}
           </Group>
-          <Text fz={13} c="var(--muted)" mt={8}>Generate a single-use code and share it. The person enters it on the sign-in page to create their account.</Text>
+          <Text fz={13} c="dimmed" mt={8}>Generate a single-use code and share it. The person enters it on the sign-in page to create their account.</Text>
           {pending.length > 0 && (
             <Stack gap={6} mt={12}><Divider />
-              <Text fz={12} c="var(--muted)" mb={6} tt="uppercase" lts="0.06em" fw={600}>{t('admin.pendingInvites')}</Text>
+              <Text fz={12} c="dimmed" mb={6} tt="uppercase" lts="0.06em" fw={600}>{t('admin.pendingInvites')}</Text>
               {pending.map((inv) => (
                 <Group key={inv.id} gap={8} mb={4}>
                   <Text span ff="monospace" fz={13}>{inv.code}</Text>
-                  <Text span fz={12} c="var(--muted)">{formatDbDate(inv.created_at)}</Text>
+                  <Text span fz={12} c="dimmed">{formatDbDate(inv.created_at)}</Text>
                   <CloseButton aria-label={t('admin.delete')} onClick={() => deleteInvite(inv.id)} disabled={disabled} />
                 </Group>
               ))}

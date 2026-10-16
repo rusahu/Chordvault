@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActionIcon, Box, Button, Divider, Flex, Group, Paper, Stack, Text, TextInput } from '@mantine/core';
+import { SectionTitle } from './SectionTitle';
 import { IconCheck, IconGripVertical, IconPencil, IconTrash, IconX } from '@tabler/icons-react';
 import { useApi } from '../hooks/useApi';
 import { useBusyAction } from '../hooks/useBusyAction';
@@ -76,12 +77,12 @@ export function AdminTags() {
   return (
     <>
       <Group justify="space-between" align="center">
-        <h3 className="admin-section-title">{t('admin.songTags')}</h3>
+        <SectionTitle>{t('admin.songTags')}</SectionTitle>
         {!data.isDefault && <Button variant="subtle" size="xs" onClick={reset} disabled={disabled}>{t('admin.resetTags')}</Button>}
       </Group>
       <Paper withBorder bg="var(--surface)" radius="var(--radius)" py={16} px={20} mb={20}>
-        <div className="muted-text">{t('admin.songTagsHelp')}</div>
-        {demoMode && <div className="muted-text" style={{ fontSize: 12, marginTop: 4 }}>{t('common.demoDisabled')}</div>}
+        <Text fz={13} c="dimmed">{t('admin.songTagsHelp')}</Text>
+        {demoMode && <Text fz={12} c="dimmed" mt={4}>{t('common.demoDisabled')}</Text>}
         <Stack gap={0} mt={12}>
           {items.map((name, idx) => (
             <Box key={name}>

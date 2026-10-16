@@ -2,7 +2,7 @@ import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
 import { useWriteLock } from '../hooks/useWriteLock';
 import { IconMusic } from '@tabler/icons-react';
-import { Switch, Button, TextInput, Group, Box } from '@mantine/core';
+import { Switch, Button, TextInput, Group, Box, Text } from '@mantine/core';
 import { useCopyNotification } from '../hooks/useCopyNotification';
 import { useForm } from '@mantine/form';
 import { useState, useEffect, useCallback } from 'react';
@@ -186,11 +186,11 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
         </div>
         <Group gap={16} mt={12} py={8}>
           {isLocal ? (
-            <span style={{ fontSize: 13, color: 'var(--muted)' }}>Local Setlist (Saved in Browser)</span>
+            <Text span fz={13} c="dimmed">Local Setlist (Saved in Browser)</Text>
           ) : !isEditable ? (
             <>
-              {setlist.username && <span style={{ fontSize: 13, color: 'var(--muted)' }}>By @{setlist.username}</span>}
-              {setlist.event_date && <span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 8 }}>{t('setlist.date')}: {setlist.event_date}</span>}
+              {setlist.username && <Text span fz={13} c="dimmed">By @{setlist.username}</Text>}
+              {setlist.event_date && <Text span fz={13} c="dimmed" ml={8}>{t('setlist.date')}: {setlist.event_date}</Text>}
             </>
           ) : (
             <>

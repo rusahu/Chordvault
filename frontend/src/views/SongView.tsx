@@ -2,6 +2,7 @@ import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
 import { useDisclosure } from '@mantine/hooks';
 import { Alert, Badge, Paper, Button, NativeSelect, Group, Box, Text } from '@mantine/core';
+import { SectionTitle } from '../components/SectionTitle';
 import { IconLock } from '@tabler/icons-react';
 import { useState, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
@@ -211,7 +212,7 @@ export function SongView({ songId, navigate }: SongViewProps) {
       {/* Corrections section */}
       {isOwner && corrections.length > 0 && (
         <div className="corrections-section">
-          <h3 className="admin-section-title">{tReplace('admin.pendingCorrections', { count: corrections.length })}</h3>
+          <SectionTitle>{tReplace('admin.pendingCorrections', { count: corrections.length })}</SectionTitle>
           {corrections.map((c) => (
             <Paper withBorder key={c.id} className="correction-card" bg="var(--ui-card-bg)" radius={12} p={16} mb={12} shadow="sm">
               <Group justify="space-between" gap={8} mb={12} c="dimmed" fz={13}>

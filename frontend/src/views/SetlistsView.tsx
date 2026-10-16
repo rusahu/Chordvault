@@ -1,4 +1,4 @@
-import { Button, TextInput, Group } from '@mantine/core';
+import { Button, TextInput, Group, Text } from '@mantine/core';
 import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
 import { SearchField } from '../components/SearchField';
@@ -73,9 +73,9 @@ export function SetlistsView({ navigate }: SetlistsViewProps) {
       </Group>
       <SetlistTabs value="mine" navigate={navigate} />
       {!user && (
-        <p style={{ color: 'var(--muted)', fontSize: 13, marginBottom: 16 }}>
+        <Text fz={13} c="dimmed" mb={16}>
           These setlists are saved in your browser. Sign in to create server-synced setlists.
-        </p>
+        </Text>
       )}
       {showNew && (
         <SearchRow mb={16}>
