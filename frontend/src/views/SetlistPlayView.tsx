@@ -1,7 +1,7 @@
 import { Alert, Button, Box, Text } from '@mantine/core';
 import { IconLock } from '@tabler/icons-react';
 import { useOffline } from '../context/OfflineContext';
-import { useState, useCallback, useMemo, useRef } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
 import { useSwipe } from '../hooks/useSwipe';
@@ -39,7 +39,6 @@ interface SetlistPlayViewProps {
 
 export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialIndex, navigate }: SetlistPlayViewProps) {
   const { t } = useI18n();
-  const containerRef = useRef<HTMLDivElement>(null);
 
   const { readOnly } = useOffline();
   const [editing, setEditing] = useState(false);
@@ -125,7 +124,7 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialIndex, na
   }, [entry, setlist, readOnly]);
 
   // Swipe
-  useSwipe({ onNext: next, onPrev: prev, enabled: !editing && !!setlist, containerRef });
+  const swipeRef = useSwipe({ onNext: next, onPrev: prev, enabled: !editing && !!setlist });
 
   // Keyboard shortcuts
   const shortcuts = useMemo(() => ({
@@ -216,7 +215,7 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialIndex, na
   );
 
   return (
-    <div ref={containerRef} className={`setlist-play-container${layout === 'desktop' ? '' : ' has-dock'}`}>
+    <div ref={swipeRef} className={`setlist-play-container${layout === 'desktop' ? '' : ' has-dock'}`}>
       <PlaybackTopBar layout={layout} title={entry.title} position={`${index + 1} of ${total}, ${setlist.name}`}
         nav={nav} onExit={exit} toolbar={toolbar} more={more}
         bpm={entry.bpm} youtubeUrl={hideYt ? null : entry.youtube_url} onEdit={editSong} />

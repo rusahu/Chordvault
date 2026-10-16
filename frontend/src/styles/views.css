@@ -80,9 +80,13 @@
 
   /* Negate #app padding (32px 24px) to go truly edge-to-edge */
   margin: -32px -24px;
+  /* useSwipe sees horizontal moves; the browser keeps vertical scroll and pinch zoom. */
+  touch-action: pan-y pinch-zoom;
 }
 
 .setlist-play-container .chord-sheet-wrap {
+  /* The wrap scrolls sideways (overflow-x: auto), which would otherwise turn horizontal panning back on. */
+  touch-action: pan-y pinch-zoom;
   margin: 0;
   padding: 28px 48px 48px;
   border-radius: 0;
