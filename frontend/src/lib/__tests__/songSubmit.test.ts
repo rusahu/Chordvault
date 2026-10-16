@@ -1,4 +1,4 @@
-import { prepareSongForSave } from '../songSubmit';
+import { createSongVersion, prepareSongForSave, requirePreparedSong } from '../songSubmit';
 import { SONG_ERRORS } from '../../../../shared/song-errors.mjs';
 
 const ok = '{title: T}\n{x_language: en}\n[C]Amazing [G]grace';
@@ -34,4 +34,23 @@ it('converts to ChordPro and adds a key', () => {
 it('converts chords over lyrics to inline ChordPro', () => {
   const r = prepareSongForSave('{title: T}\n{x_language: en}\nG       C\nAmazing grace');
   expect(r).toEqual({ content: expect.stringContaining('[G]Amazing'), format: expect.any(String) });
+});
+
+it('throws the save-check message, or returns the prepared song', () => {
+  expect(() => requirePreparedSong('{title: T}\n{tempo: 120bpm}\n{x_language: en}\n[C]a')).toThrow(SONG_ERRORS.bpmRange);
+  expect(() => requirePreparedSong('{title: T}\n[C]a', { requireLanguage: false })).not.toThrow();
+  expect(requirePreparedSong(ok).content).toContain('{key: C}');
+});
+
+it('posts a version of the prepared song and returns its id and content', async () => {
+  const call = vi.fn().mockResolvedValue({ id: 7 });
+  const result = await createSongVersion(call, 3, '{title: T}\n[C]a', { requireLanguage: false });
+  expect(call).toHaveBeenCalledWith('POST', '/api/songs/3/version', { content: result.content });
+  expect(result).toEqual({ id: 7, content: expect.stringContaining('[C]a') });
+});
+
+it('does not post a version that fails the save checks', async () => {
+  const call = vi.fn();
+  await expect(createSongVersion(call, 3, '{title: T}\n[C]a')).rejects.toThrow(SONG_ERRORS.languageRequired);
+  expect(call).not.toHaveBeenCalled();
 });

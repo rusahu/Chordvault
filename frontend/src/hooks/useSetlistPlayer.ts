@@ -6,9 +6,8 @@ import { useApi } from './useApi';
 import { useAuth } from '../context/AuthContext';
 import { showStatusNotification as toast } from '../lib/notifications';
 import { errorMessage, notifyError } from '../lib/errors';
-import { getSetlistOverrides, saveSetlistOverride, migrateOverride } from '../lib/storage';
-import { enrichLocalSetlistSongs, localSetlistToSetlist } from '../lib/setlists';
-import { entryContent } from '../lib/setlistKeys';
+import { saveSetlistOverride } from '../lib/storage';
+import { applyStoredOverrides, enrichLocalSetlistSongs, localSetlistToSetlist } from '../lib/setlists';
 import { setlistPlayHash, parsePlayHash, replaceHash } from '../lib/routes';
 import type { Setlist, SetlistEntry } from '../types';
 
@@ -18,32 +17,6 @@ interface UseSetlistPlayerOptions {
   initialIndex?: number;
   navigate: (view: string, params?: Record<string, string>) => void;
   onNavigate?: () => void;
-}
-
-/**
- * Merges the browser's stored overrides onto freshly loaded entries.
- *
- * A stored override wins even when its target_key is null: null means "play as
- * written", which is a choice the user saved, so it must not fall back to the
- * server's pinned key. An override holding no key decision at all (only layout
- * fields) leaves the entry's own key alone. Legacy records are converted to a
- * target key and written back.
- */
-function applyStoredOverrides(setlistId: number | string, entries: SetlistEntry[]) {
-  const overrides = getSetlistOverrides(setlistId);
-  const targetKeys: Record<string, string | null> = {};
-  const merged = entries.map((en) => {
-    const raw = overrides[String(en.entry_id)];
-    const ov = raw ? migrateOverride(raw, entryContent(en)) : undefined;
-    if (raw && raw.transpose !== undefined) {
-      saveSetlistOverride(setlistId, en.entry_id, ov!);
-    }
-    const storedKey = raw && ('target_key' in raw || 'transpose' in raw);
-    const targetKey = (storedKey ? ov!.target_key : en.target_key) ?? null;
-    targetKeys[String(en.entry_id)] = targetKey;
-    return { ...en, target_key: targetKey, nashville: 0 };
-  });
-  return { entries: merged, targetKeys };
 }
 
 export function useSetlistPlayer({

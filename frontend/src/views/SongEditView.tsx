@@ -14,7 +14,7 @@ import { OcrModal } from '../components/OcrModal';
 import { CodeMirrorEditor } from '../components/CodeMirrorEditor';
 import { EditorPreview } from '../components/EditorPreview';
 import { extractDirective, updateDirective } from '../lib/chords';
-import { prepareSongForSave } from '../lib/songSubmit';
+import { createSongVersion, requirePreparedSong } from '../lib/songSubmit';
 import type { Song } from '../types';
 import { EditorActionBar } from '../components/EditorActionBar';
 import type { Destination } from '../lib/songEditRoute';
@@ -82,11 +82,9 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
   };
 
   const save = async () => {
-    const prepared = prepareSongForSave(state.content);
-    if ('error' in prepared) { toast(prepared.error, 'error'); return; }
-    const body = { content: prepared.content, format_detected: prepared.format, visibility };
-
     try {
+      const prepared = requirePreparedSong(state.content);
+      const body = { content: prepared.content, format_detected: prepared.format, visibility };
       if (song) {
         await apiCall('PUT', `/api/songs/${song.id}`, body);
         toast(t('songEdit.saved'), 'success');
@@ -118,13 +116,8 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
   const saveAsVersion = async () => {
     const targetId = songId || (song?.id);
     if (!targetId) return;
-    const prepared = prepareSongForSave(state.content);
-    if ('error' in prepared) { toast(prepared.error, 'error'); return; }
-
     try {
-      const result = await apiCall<{ id: number }>('POST', `/api/songs/${targetId}/version`, {
-        content: prepared.content
-      });
+      const result = await createSongVersion(apiCall, targetId, state.content);
       toast(t('setlist.versionCreated'), 'success');
       leave('song-view', { id: String(result.id) });
     } catch (e) { notifyError(e); }

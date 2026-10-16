@@ -1,4 +1,5 @@
-import { legacyTransposeToTargetKey } from './setlistKeys';
+import { entryContent, legacyTransposeToTargetKey } from './setlistKeys';
+import { getSetlistOverrides, migrateOverride, saveSetlistOverride } from './storage';
 import { VISIBILITY } from './constants';
 import type { LocalSetlist, LocalSetlistEntry, Setlist, SetlistEntry, SetlistListItem, Song } from '../types';
 
@@ -86,4 +87,30 @@ export function localSetlistToSetlist(sl: LocalSetlist, entries: SetlistEntry[])
 
 export function localSetlistToListItem(sl: LocalSetlist): SetlistListItem {
   return { id: sl.id, name: sl.name, visibility: VISIBILITY.PRIVATE, song_count: sl.entries.length, event_date: null };
+}
+
+/**
+ * Merges the browser's stored overrides onto freshly loaded entries.
+ *
+ * A stored override wins even when its target_key is null: null means "play as
+ * written", which is a choice the user saved, so it must not fall back to the
+ * server's pinned key. An override holding no key decision at all (only layout
+ * fields) leaves the entry's own key alone. Legacy records are converted to a
+ * target key and written back.
+ */
+export function applyStoredOverrides(setlistId: number | string, entries: SetlistEntry[]) {
+  const overrides = getSetlistOverrides(setlistId);
+  const targetKeys: Record<string, string | null> = {};
+  const merged = entries.map((en) => {
+    const raw = overrides[String(en.entry_id)];
+    const ov = raw ? migrateOverride(raw, entryContent(en)) : undefined;
+    if (raw && raw.transpose !== undefined) {
+      saveSetlistOverride(setlistId, en.entry_id, ov!);
+    }
+    const storedKey = raw && ('target_key' in raw || 'transpose' in raw);
+    const targetKey = (storedKey ? ov!.target_key : en.target_key) ?? null;
+    targetKeys[String(en.entry_id)] = targetKey;
+    return { ...en, target_key: targetKey, nashville: 0 };
+  });
+  return { entries: merged, targetKeys };
 }

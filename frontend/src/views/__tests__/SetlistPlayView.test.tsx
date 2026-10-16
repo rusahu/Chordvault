@@ -117,7 +117,7 @@ describe('SetlistPlayView inline editor save as version', () => {
     fireEvent.click(screen.getByRole('button', { name: 'setlist.saveAsVersion' }));
   }
 
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => { vi.clearAllMocks(); apiCall.mockResolvedValue({ id: 99 }); });
 
   it('saves chords over lyrics as ChordPro with a key', async () => {
     renderEditor('{title: Song}\nG       C\nAmazing grace');
@@ -129,9 +129,9 @@ describe('SetlistPlayView inline editor save as version', () => {
     expect(apiCall).toHaveBeenCalledWith('PUT', '/api/setlists/4/entries/7', { content_override: saved });
   });
 
-  it('rejects an invalid tempo without saving', () => {
+  it('rejects an invalid tempo without saving', async () => {
     renderEditor('{title: Song}\n{tempo: 120bpm}\n[C]a');
-    expect(showStatusNotification).toHaveBeenCalledWith(SONG_ERRORS.bpmRange, 'error');
+    await waitFor(() => expect(showStatusNotification).toHaveBeenCalledWith(SONG_ERRORS.bpmRange, 'error'));
     expect(apiCall).not.toHaveBeenCalled();
   });
 });

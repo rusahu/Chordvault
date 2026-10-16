@@ -26,7 +26,7 @@ import { useSetlistPreferences } from '../hooks/useSetlistPreferences';
 import { stepKey } from '../lib/keys';
 import { entryContent, entrySemitones, entryStartKey } from '../lib/setlistKeys';
 import { songEditFromSetlist } from '../lib/songEditRoute';
-import { prepareSongForSave } from '../lib/songSubmit';
+import { createSongVersion } from '../lib/songSubmit';
 import { notifyError } from '../lib/errors';
 import { usePdfExport } from '../hooks/usePdfExport';
 
@@ -146,12 +146,10 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialIndex, na
 
   const saveEditorAsVersion = async () => {
     if (!setlist || !entry) return;
-    const prepared = prepareSongForSave(editContent, { requireLanguage: false });
-    if ('error' in prepared) { toast(prepared.error, 'error'); return; }
     try {
-      await apiCall('POST', `/api/songs/${entry.song_id}/version`, { content: prepared.content });
-      await apiCall('PUT', `/api/setlists/${setlist.id}/entries/${entry.entry_id}`, { content_override: prepared.content });
-      updateEntry({ content_override: prepared.content });
+      const { content: saved } = await createSongVersion(apiCall, entry.song_id, editContent, { requireLanguage: false });
+      await apiCall('PUT', `/api/setlists/${setlist.id}/entries/${entry.entry_id}`, { content_override: saved });
+      updateEntry({ content_override: saved });
       setEditing(false);
       toast(t('setlist.versionCreated'), 'success');
     } catch (e) { notifyError(e); }

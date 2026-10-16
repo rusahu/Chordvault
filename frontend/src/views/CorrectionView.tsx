@@ -5,7 +5,7 @@ import { useApi } from '../hooks/useApi';
 import { showStatusNotification as toast } from '../lib/notifications';
 import { notifyError } from '../lib/errors';
 import { CodeMirrorEditor } from '../components/CodeMirrorEditor';
-import { prepareSongForSave } from '../lib/songSubmit';
+import { requirePreparedSong } from '../lib/songSubmit';
 import type { Song } from '../types';
 
 interface CorrectionViewProps {
@@ -28,9 +28,8 @@ export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
 
   const submit = async () => {
     if (readOnly) return;
-    const prepared = prepareSongForSave(content, { requireLanguage: false });
-    if ('error' in prepared) { toast(prepared.error, 'error'); return; }
     try {
+      const prepared = requirePreparedSong(content, { requireLanguage: false });
       await apiCall('POST', `/api/songs/${songId}/correction`, { content: prepared.content });
       toast('Correction submitted for review', 'success');
       navigate('song-view', { id: String(songId) });
