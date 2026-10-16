@@ -112,7 +112,7 @@ describe('SetlistPlayView inline editor save as version', () => {
     });
     render(<SetlistPlayView setlistId={4} navigate={vi.fn()} />);
     const shortcuts = (useKeyboardShortcuts as Mock).mock.lastCall![0];
-    act(() => shortcuts.e());
+    act(() => shortcuts.e(new KeyboardEvent('keydown', { key: 'e' })));
     fireEvent.change(screen.getByLabelText('Setlist chord sheet'), { target: { value: text } });
     fireEvent.click(screen.getByRole('button', { name: button }));
   }
@@ -127,6 +127,14 @@ describe('SetlistPlayView inline editor save as version', () => {
     expect(saved).toContain('[G]Amazing');
     expect(apiCall).toHaveBeenCalledWith('POST', '/api/songs/42/version', { content: saved });
     expect(apiCall).toHaveBeenCalledWith('PUT', '/api/setlists/4/entries/7', { content_override: saved });
+  });
+
+  it.each(['e', 'E'])('opening the editor with %s keeps the key out of the sheet', (key) => {
+    renderEditor('{title: Song}\n[C]a');
+    const shortcuts = (useKeyboardShortcuts as Mock).mock.lastCall![0];
+    const event = new KeyboardEvent('keydown', { key, cancelable: true });
+    act(() => shortcuts[key](event));
+    expect(event.defaultPrevented).toBe(true);
   });
 
   it('saves the edit to this setlist only and closes the editor', async () => {

@@ -133,8 +133,8 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialIndex, na
     'ArrowDown': (e: KeyboardEvent) => { e.preventDefault(); stepEntryKey(-1); },
     'n': () => { if (entry) toggleEntryNum(!effNum); },
     'N': () => { if (entry) toggleEntryNum(!effNum); },
-    'e': () => openEditor(),
-    'E': () => openEditor(),
+    'e': (e: KeyboardEvent) => { e.preventDefault(); openEditor(); },
+    'E': (e: KeyboardEvent) => { e.preventDefault(); openEditor(); },
     'Escape': () => { if (editing) setEditing(false); else exit(); },
   }), [prev, next, stepEntryKey, entry, effNum, toggleEntryNum, openEditor, editing, exit]);
 
