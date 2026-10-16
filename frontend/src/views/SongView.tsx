@@ -27,10 +27,11 @@ import { VISIBILITY } from '../lib/constants';
 import { formatDbDate, versionLabel } from '../lib/format';
 import { errorMessage, confirmAction } from '../lib/errors';
 import { usePdfExport } from '../hooks/usePdfExport';
+import type { Navigate } from '../lib/routes';
 
 interface SongViewProps {
   songId: number;
-  navigate: (view: string, params?: Record<string, string>) => void;
+  navigate: Navigate;
 }
 
 export function SongView({ songId, navigate }: SongViewProps) {

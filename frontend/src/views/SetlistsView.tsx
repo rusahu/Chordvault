@@ -21,12 +21,12 @@ import { DateRangeFilter, type DateRange } from '../components/DateRangeFilter';
 import { SetlistTabs } from '../components/SetlistTabs';
 import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
 import { PageTitle } from '../components/PageTitle';
-import { setlistPlayParams } from '../lib/routes';
+import { setlistPlayParams, type Navigate } from '../lib/routes';
 import { MAX_SETLIST_NAME_LENGTH } from '../lib/constants';
 import { localSetlistToListItem } from '../lib/setlists';
 
 interface SetlistsViewProps {
-  navigate: (view: string, params?: Record<string, string>) => void;
+  navigate: Navigate;
 }
 
 export function SetlistsView({ navigate }: SetlistsViewProps) {

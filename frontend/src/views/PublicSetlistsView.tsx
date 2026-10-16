@@ -20,9 +20,10 @@ import { usePaginatedSearch } from '../hooks/usePaginatedSearch';
 import { libraryQueryString } from '../lib/libraryQuery';
 import type { LibraryPage, LibraryQuery } from '../types/offline';
 import { PageTitle } from '../components/PageTitle';
+import type { Navigate } from '../lib/routes';
 
 interface PublicSetlistsViewProps {
-  navigate: (view: string, params?: Record<string, string>) => void;
+  navigate: Navigate;
 }
 
 export function PublicSetlistsView({ navigate }: PublicSetlistsViewProps) {

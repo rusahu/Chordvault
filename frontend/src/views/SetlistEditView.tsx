@@ -22,12 +22,12 @@ import { SetlistEntryCard } from '../components/SetlistEntryCard';
 import type { Setlist, SongListItem } from '../types';
 import { useDragReorder } from '../hooks/useDragReorder';
 import { songEditFromSetlist } from '../lib/songEditRoute';
-import { isLocalSetlistId, setlistHash, setlistPlayParams } from '../lib/routes';
+import { isLocalSetlistId, setlistHash, setlistPlayParams, type Navigate } from '../lib/routes';
 import { VISIBILITY, MAX_SETLIST_NAME_LENGTH } from '../lib/constants';
 
 interface SetlistEditViewProps {
   setlistId: number | string;
-  navigate: (view: string, params?: Record<string, string>) => void;
+  navigate: Navigate;
 }
 
 export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
@@ -49,7 +49,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
   const load = useCallback(async () => {
     if (isLocal) {
       const sl = getOne(String(setlistId));
-      if (!sl) { navigate(user ? 'setlists' : 'public-setlists'); return; }
+      if (!sl) { navigate(user ? 'setlists' : 'public-setlists', {}, { replace: true }); return; }
       setMetadata({ name: sl.name, visibility: false, event_date: '' });
       setSetlist(localSetlistToSetlist(sl, sl.entries.map(formatLocalEntry)));
       return;
@@ -61,7 +61,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
       setSetlist(sl);
     } catch (e) {
       notifyError(e);
-      navigate(user ? 'setlists' : 'public-setlists');
+      navigate(user ? 'setlists' : 'public-setlists', {}, { replace: true });
     }
   }, [getSetlistForViewer, navigate, setlistId, user, isLocal, getOne, setMetadata]);
 
@@ -102,7 +102,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
     confirmAction(t('setlist.confirmDelete'), async () => {
       await store.remove(id);
       toast(t('setlist.deleted'), 'success');
-      navigate(isLocal && !user ? 'public-setlists' : 'setlists');
+      navigate(isLocal && !user ? 'public-setlists' : 'setlists', {}, { replace: true });
     });
   };
 

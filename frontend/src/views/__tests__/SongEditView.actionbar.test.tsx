@@ -135,13 +135,13 @@ describe('SongEditView opened from a setlist', () => {
 
   it('save goes back to the setlist instead of the song page', async () => {
     fireEvent.click(screen.getByRole('button', { name: 'songEdit.save' }));
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('setlist-play', { id: '7', index: '2' }));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('setlist-play', { id: '7', index: '2' }, { replace: true }));
     expect(navigate).not.toHaveBeenCalledWith('song-view', expect.anything());
   });
 
   it('leaving goes back to the setlist', () => {
     fireEvent.click(screen.getByRole('button', { name: 'songEdit.back' }));
-    expect(navigate).toHaveBeenCalledWith('setlist-play', { id: '7', index: '2' });
+    expect(navigate).toHaveBeenCalledWith('setlist-play', { id: '7', index: '2' }, { replace: true });
   });
 });
 

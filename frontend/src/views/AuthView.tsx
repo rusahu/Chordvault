@@ -8,9 +8,10 @@ import { api } from '../lib/api';
 import { errorMessage } from '../lib/errors';
 import { DEMO_ACCOUNT } from '../lib/constants';
 import type { AuthConfig, AuthResponse } from '../types';
+import type { Navigate } from '../lib/routes';
 
 interface AuthViewProps {
-  navigate: (view: string) => void;
+  navigate: Navigate;
 }
 
 export function AuthView({ navigate }: AuthViewProps) {

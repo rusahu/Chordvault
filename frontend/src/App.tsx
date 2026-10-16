@@ -26,7 +26,7 @@ import { SettingsView } from './views/SettingsView';
 import { AboutView } from './views/AboutView';
 import { api } from './lib/api';
 import { songEditReturn, type Destination } from './lib/songEditRoute';
-import { parseHash, parseSetlistId, isLocalSetlistId, routeHash, replaceHash } from './lib/routes';
+import { parseHash, parseSetlistId, isLocalSetlistId, routeHash, replaceHash, WRITE_LOCKED_VIEWS, type Navigate } from './lib/routes';
 import type { AuthConfig } from './types';
 
 export function App() {
@@ -35,7 +35,14 @@ export function App() {
   const { setDemoMode } = useDemo();
   const isWriteLocked = useWriteLock();
   const listIdentity = user?.id ?? 'guest';
-  const [route, setRoute] = useState<Destination>(() => parseHash(location.hash));
+  // An address can name a page the write lock refuses, or nothing at all; both settle on Browse with a clean address.
+  const settle = (hash: string): Destination => {
+    const dest = parseHash(hash);
+    const next = isWriteLocked() && WRITE_LOCKED_VIEWS.includes(dest.view) ? { view: 'browse', params: {} } : dest;
+    if (next.view === 'browse' && hash) replaceHash('');
+    return next;
+  };
+  const [route, setRoute] = useState<Destination>(() => settle(location.hash));
   const [animClass, setAnimClass] = useState('');
 
   useEffect(() => {
@@ -46,14 +53,14 @@ export function App() {
 
   // Listen for hash changes
   useWindowEvent('hashchange', () => {
-    const newRoute = parseHash(location.hash);
+    const newRoute = settle(location.hash);
     setRoute((prev) => {
       return prev.view === newRoute.view && shallowEqual(prev.params, newRoute.params) ? prev : newRoute;
     });
   });
 
-  const navigate = useCallback((view: string, params: Record<string, string> = {}) => {
-    if (isWriteLocked() && ['song-edit', 'correction', 'admin', 'auth'].includes(view)) return;
+  const navigate = useCallback<Navigate>((view, params = {}, { replace = false } = {}) => {
+    if (isWriteLocked() && WRITE_LOCKED_VIEWS.includes(view)) return;
     // Trigger animation
     setAnimClass('');
     requestAnimationFrame(() => {
@@ -62,9 +69,13 @@ export function App() {
     });
 
     const hash = routeHash(view, params);
-    if (hash) location.hash = hash;
-    // replaceState clears the hash without a hashchange, which would race the rAF setRoute above.
-    else if (hash === '') replaceHash('');
+    if (hash === null) return;
+    if (replace) {
+      if (hash) location.replace(hash);
+      else replaceHash('');
+    } else if (hash) location.hash = hash;
+    // pushState gives Browse its own entry without a hashchange, which would race the rAF setRoute above.
+    else if (location.hash) history.pushState(null, '', location.pathname + location.search);
   }, [isWriteLocked]);
 
 

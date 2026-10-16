@@ -1,7 +1,8 @@
 import { Button, Box, Stack, Title, Text, Group } from '@mantine/core';
 import { BackButton } from '../components/BackButton';
+import type { Navigate } from '../lib/routes';
 interface AboutViewProps {
-  navigate: (view: string) => void;
+  navigate: Navigate;
 }
 
 export function AboutView({ navigate }: AboutViewProps) {

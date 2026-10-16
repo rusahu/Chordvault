@@ -28,12 +28,13 @@ import { stepKey } from '../lib/keys';
 import { entryContent, entryStartKey } from '../lib/setlistKeys';
 import { songEditFromSetlist } from '../lib/songEditRoute';
 import { usePdfExport } from '../hooks/usePdfExport';
+import type { Navigate } from '../lib/routes';
 
 interface SetlistPlayViewProps {
   setlistId: number | string;
   isLocal?: boolean;
   initialIndex?: number;
-  navigate: (view: string, params?: Record<string, string>) => void;
+  navigate: Navigate;
 }
 
 export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialIndex, navigate }: SetlistPlayViewProps) {

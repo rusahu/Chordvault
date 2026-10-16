@@ -21,11 +21,12 @@ import { EditorActionBar } from '../components/EditorActionBar';
 import type { Destination } from '../lib/songEditRoute';
 import { VISIBILITY, MIN_BPM, MAX_BPM, normalizeVisibility, type Visibility } from '../lib/constants';
 import { getGeminiKeySaved, getLanguages } from '../lib/settingsApi';
+import type { Navigate } from '../lib/routes';
 
 interface SongEditViewProps {
   songId?: number;
   returnTo?: Destination;
-  navigate: (view: string, params?: Record<string, string>) => void;
+  navigate: Navigate;
 }
 
 export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) {
@@ -66,7 +67,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
           setInitialContent(c);
           setSaved({ content: c, visibility: normalizeVisibility(s.visibility) });
         })
-        .catch((e) => { notifyError(e); navigate('my-songs'); });
+        .catch((e) => { notifyError(e); navigate('my-songs', {}, { replace: true }); });
     }
   }, [songId, apiCall, navigate, setInitialContent]);
 
@@ -77,9 +78,10 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
     }
   }, [apiCall, user]);
 
-  const leave = (view: string, params?: Record<string, string>) => {
-    if (returnTo) navigate(returnTo.view, returnTo.params);
-    else navigate(view, params);
+  // Leaving the editor replaces its history entry, so Back does not reopen it.
+  const leave = (view: string, params: Record<string, string> = {}) => {
+    const dest = returnTo ?? { view, params };
+    navigate(dest.view, dest.params, { replace: true });
   };
 
   const save = async () => {
@@ -93,7 +95,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
       } else {
         const result = await apiCall<{ id: number }>('POST', '/api/songs', body);
         toast(t('songEdit.created'), 'success');
-        navigate('song-view', { id: String(result.id) });
+        navigate('song-view', { id: String(result.id) }, { replace: true });
       }
     } catch (e) { notifyError(e); }
   };

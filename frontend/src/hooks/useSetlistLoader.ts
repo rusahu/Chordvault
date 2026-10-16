@@ -5,11 +5,12 @@ import { errorMessage, notifyError } from '../lib/errors';
 import { getLocalSetlists } from '../lib/storage';
 import { applyStoredOverrides, enrichLocalSetlistSongs, localSetlistToSetlist } from '../lib/setlists';
 import type { Setlist } from '../types';
+import type { Navigate } from '../lib/routes';
 
 interface SetlistLoaderOptions {
   setlistId: number | string;
   isLocal?: boolean;
-  navigate: (view: string, params?: Record<string, string>) => void;
+  navigate: Navigate;
 }
 
 /** Loads a local or online setlist with the browser's stored key overrides applied. */
