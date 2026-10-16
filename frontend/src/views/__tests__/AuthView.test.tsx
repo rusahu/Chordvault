@@ -38,7 +38,7 @@ it('keeps invite redemption distinct when registration is closed', async () => {
   fireEvent.change(screen.getByLabelText('auth.username'), { target: { value: 'preview' } });
   fireEvent.change(screen.getByLabelText('auth.password'), { target: { value: 'password' } });
   fireEvent.click(document.querySelector('#auth-submit')!);
-  await waitFor(() => expect(navigate).toHaveBeenCalledWith('browse'));
+  await waitFor(() => expect(navigate).toHaveBeenCalledWith('browse', {}, { leave: true }));
   expect(api).toHaveBeenCalledWith('POST', '/api/auth/redeem-invite', {
     code: 'local-invite', username: 'preview', password: 'password', turnstile_token: null,
   });

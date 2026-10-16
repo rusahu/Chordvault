@@ -25,7 +25,7 @@ export function useSetlistLoader({ setlistId, isLocal, navigate }: SetlistLoader
       const sl = getLocalSetlists().find((s) => s.id === setlistId);
       if (!sl) {
         toast('Local setlist not found', 'error');
-        navigate('setlists');
+        navigate('setlists', {}, { leave: true });
         return;
       }
       enrichLocalSetlistSongs(sl.entries, getSong)
@@ -36,7 +36,7 @@ export function useSetlistLoader({ setlistId, isLocal, navigate }: SetlistLoader
         })
         .catch((err) => {
           notifyError(err);
-          navigate('setlists');
+          navigate('setlists', {}, { leave: true });
         });
       return;
     }

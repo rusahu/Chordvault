@@ -122,14 +122,14 @@ export function SongView({ songId, navigate }: SongViewProps) {
     setCorrections((prev) => prev.filter((c) => c.id !== id));
   });
 
-  if (loadError) return <Alert title="Song unavailable" color="red">{loadError}<Button mt="sm" display="block" onClick={() => navigate('browse')}>Back to songs</Button></Alert>;
+  if (loadError) return <Alert title="Song unavailable" color="red">{loadError}<Button mt="sm" display="block" onClick={() => navigate('browse', {}, { leave: true })}>Back to songs</Button></Alert>;
   if (!song) return <Loading />;
 
   return (
     <div lang={song.language || undefined}>
       <Box mb="lg">
         <Group justify="space-between" mb="md">
-          <BackButton onClick={() => navigate(user ? 'my-songs' : 'browse')}>{t('songView.back')}</BackButton>
+          <BackButton onClick={() => navigate(user ? 'my-songs' : 'browse', {}, { leave: true })}>{t('songView.back')}</BackButton>
           <Group gap="xs">
             {isOwner && (
               <Button disabled={readOnly} variant="default" size="xs" leftSection={<IconPencil size={14} aria-hidden />} onClick={() => navigate('song-edit', { id: String(song.id) })}>

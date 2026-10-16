@@ -44,11 +44,11 @@ export function AdminView({ navigate }: AdminViewProps) {
         apiCall<Correction[]>('GET', '/api/admin/corrections'),
       ]);
       setStats(s); setUsers(u); setCorrections(c);
-    } catch (e) { notifyError(e); navigate('my-songs', {}, { replace: true }); }
+    } catch (e) { notifyError(e); navigate('my-songs', {}, { leave: true }); }
   }, [apiCall, navigate]);
 
   useEffect(() => {
-    if (!isAdmin) { navigate('my-songs', {}, { replace: true }); return; }
+    if (!isAdmin) { navigate('my-songs', {}, { leave: true }); return; }
     load();
   }, [isAdmin, navigate, load]);
 

@@ -8,7 +8,7 @@ interface AboutViewProps {
 export function AboutView({ navigate }: AboutViewProps) {
   return (
     <Box maw={600} mx="auto">
-      <BackButton onClick={() => navigate('browse')} mb="md">Back</BackButton>
+      <BackButton onClick={() => navigate('browse', {}, { leave: true })} mb="md">Back</BackButton>
       <Title order={1} size={36} c="var(--cv-brand)" ta="center">&#9833; ChordVault</Title>
       <Text ta="center" c="dimmed" mb="xl">Your chord sheet library</Text>
 

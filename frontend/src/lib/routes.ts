@@ -13,7 +13,8 @@ export const PAGE_VIEWS: readonly string[] = ['my-songs', 'setlists', 'public-se
 /** Views that are refused while writes are locked (offline), whether reached by the nav or by address. */
 export const WRITE_LOCKED_VIEWS: readonly string[] = ['song-edit', 'correction', 'admin', 'auth'];
 
-export type Navigate = (view: string, params?: Record<string, string>, options?: { replace?: boolean }) => void;
+/** `leave` moves off the current page for good (save, cancel, back, redirect) rather than adding a history step. */
+export type Navigate = (view: string, params?: Record<string, string>, options?: { leave?: boolean }) => void;
 
 export const isLocalSetlistId = (id: number | string): id is string => typeof id === 'string' && id.startsWith(LOCAL_PREFIX);
 export const parseSetlistId = (id: string): number | string => (isLocalSetlistId(id) ? id : parseInt(id));
@@ -71,6 +72,25 @@ export function routeHash(view: string, params: Record<string, string>): string 
   if (view === 'setlist-edit') return setlistHash(params.id);
   if (view === 'setlist-play') return setlistPlayHash(params.id, Number(params.index) || 0);
   return null;
+}
+
+/**
+ * Writes a navigation's address. A push remembers the address it came from, so leaving can step
+ * back to it instead of stacking a duplicate entry that would cost an extra Back press.
+ */
+export function writeHash(hash: string, leave: boolean) {
+  const from = location.hash;
+  if (hash === from) return;
+  if (leave) {
+    if (history.state?.from === hash) history.back();
+    else if (hash) location.replace(hash);
+    else replaceHash('');
+    return;
+  }
+  if (hash) location.hash = hash;
+  // pushState gives Browse its own entry without a hashchange, which would race App's rAF route update.
+  else history.pushState(null, '', location.pathname + location.search);
+  history.replaceState({ from }, '');
 }
 
 /** Changes the hash without a hashchange event or a history entry. */

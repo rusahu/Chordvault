@@ -23,7 +23,6 @@ const create = async (name: string) => {
 it('asks for the name in a dialog that refuses a blank or overlong name', async () => {
   render(<SetlistsView navigate={vi.fn()} />);
   expect(screen.queryByLabelText('Setlist name')).toBeNull();
-  expect(screen.queryByPlaceholderText('setlist.namePlaceholder')).toBeNull();
   fireEvent.click(screen.getByRole('button', { name: 'setlist.newSetlist' }));
   const dialog = await screen.findByRole('dialog');
   const input = within(dialog).getByLabelText('Setlist name');

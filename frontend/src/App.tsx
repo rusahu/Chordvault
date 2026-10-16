@@ -26,7 +26,7 @@ import { SettingsView } from './views/SettingsView';
 import { AboutView } from './views/AboutView';
 import { api } from './lib/api';
 import { songEditReturn, type Destination } from './lib/songEditRoute';
-import { parseHash, parseSetlistId, isLocalSetlistId, routeHash, replaceHash, WRITE_LOCKED_VIEWS, type Navigate } from './lib/routes';
+import { parseHash, parseSetlistId, isLocalSetlistId, routeHash, replaceHash, writeHash, WRITE_LOCKED_VIEWS, type Navigate } from './lib/routes';
 import type { AuthConfig } from './types';
 
 export function App() {
@@ -59,7 +59,7 @@ export function App() {
     });
   });
 
-  const navigate = useCallback<Navigate>((view, params = {}, { replace = false } = {}) => {
+  const navigate = useCallback<Navigate>((view, params = {}, { leave = false } = {}) => {
     if (isWriteLocked() && WRITE_LOCKED_VIEWS.includes(view)) return;
     // Trigger animation
     setAnimClass('');
@@ -69,13 +69,7 @@ export function App() {
     });
 
     const hash = routeHash(view, params);
-    if (hash === null) return;
-    if (replace) {
-      if (hash) location.replace(hash);
-      else replaceHash('');
-    } else if (hash) location.hash = hash;
-    // pushState gives Browse its own entry without a hashchange, which would race the rAF setRoute above.
-    else if (location.hash) history.pushState(null, '', location.pathname + location.search);
+    if (hash !== null) writeHash(hash, leave);
   }, [isWriteLocked]);
 
 
@@ -91,9 +85,9 @@ export function App() {
       case 'song-view':
         return params.id ? <SongView songId={parseInt(params.id)} navigate={navigate} /> : <BrowseView key={listIdentity} navigate={navigate} />;
       case 'song-edit':
-        return <SongEditView songId={params.id ? parseInt(params.id) : undefined} returnTo={songEditReturn(params)} navigate={navigate} />;
+        return user ? <SongEditView songId={params.id ? parseInt(params.id) : undefined} returnTo={songEditReturn(params)} navigate={navigate} /> : <BrowseView key={listIdentity} navigate={navigate} />;
       case 'correction':
-        return params.id ? <CorrectionView songId={parseInt(params.id)} navigate={navigate} /> : <BrowseView key={listIdentity} navigate={navigate} />;
+        return user && params.id ? <CorrectionView songId={parseInt(params.id)} navigate={navigate} /> : <BrowseView key={listIdentity} navigate={navigate} />;
       case 'auth':
         return <AuthView navigate={navigate} />;
       case 'setlists':

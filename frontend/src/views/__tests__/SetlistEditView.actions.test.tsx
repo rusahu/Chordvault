@@ -76,7 +76,7 @@ describe('cloud setlist', () => {
     const navigate = await open(1, 'Sunday');
     await confirmDelete();
     await waitFor(() => expect(api).toHaveBeenCalledWith('DELETE', '/api/setlists/1'));
-    await waitFor(() => expect(navigate).toHaveBeenLastCalledWith('setlists', {}, { replace: true }));
+    await waitFor(() => expect(navigate).toHaveBeenLastCalledWith('setlists', {}, { leave: true }));
   });
 
   it('reports a failed write with the server message', async () => {
@@ -120,7 +120,7 @@ describe('local setlist', () => {
       auth.user = user;
       const navigate = await open('local_1', 'Mine');
       await confirmDelete();
-      await waitFor(() => expect(navigate).toHaveBeenLastCalledWith(view, {}, { replace: true }));
+      await waitFor(() => expect(navigate).toHaveBeenLastCalledWith(view, {}, { leave: true }));
       expect(stored()).toEqual([]);
     });
 });

@@ -67,7 +67,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
           setInitialContent(c);
           setSaved({ content: c, visibility: normalizeVisibility(s.visibility) });
         })
-        .catch((e) => { notifyError(e); navigate('my-songs', {}, { replace: true }); });
+        .catch((e) => { notifyError(e); navigate('my-songs', {}, { leave: true }); });
     }
   }, [songId, apiCall, navigate, setInitialContent]);
 
@@ -81,7 +81,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
   // Leaving the editor replaces its history entry, so Back does not reopen it.
   const leave = (view: string, params: Record<string, string> = {}) => {
     const dest = returnTo ?? { view, params };
-    navigate(dest.view, dest.params, { replace: true });
+    navigate(dest.view, dest.params, { leave: true });
   };
 
   const save = async () => {
@@ -95,7 +95,7 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
       } else {
         const result = await apiCall<{ id: number }>('POST', '/api/songs', body);
         toast(t('songEdit.created'), 'success');
-        navigate('song-view', { id: String(result.id) }, { replace: true });
+        navigate('song-view', { id: String(result.id) }, { leave: true });
       }
     } catch (e) { notifyError(e); }
   };

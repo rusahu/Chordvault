@@ -25,7 +25,7 @@ export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
   useEffect(() => {
     apiCall<Song>('GET', `/api/songs/${songId}`)
       .then((s) => setContent(s.content))
-      .catch((e) => { notifyError(e); navigate('browse', {}, { replace: true }); });
+      .catch((e) => { notifyError(e); navigate('browse', {}, { leave: true }); });
   }, [songId, apiCall, navigate]);
 
   const submit = async () => {
@@ -34,14 +34,14 @@ export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
       const prepared = requirePreparedSong(content, { requireLanguage: false });
       await apiCall('POST', `/api/songs/${songId}/correction`, { content: prepared.content });
       toast('Correction submitted for review', 'success');
-      navigate('song-view', { id: String(songId) }, { replace: true });
+      navigate('song-view', { id: String(songId) }, { leave: true });
     } catch (e) { notifyError(e); }
   };
 
   return (
     <>
       <Group mb="lg">
-        <BackButton onClick={() => navigate('song-view', { id: String(songId) }, { replace: true })}>Cancel</BackButton>
+        <BackButton onClick={() => navigate('song-view', { id: String(songId) }, { leave: true })}>Cancel</BackButton>
         <Title order={2} size="h3" flex="1 1 160px">Submit Correction</Title>
         <Button size="xs" disabled={readOnly} onClick={submit}>Submit</Button>
       </Group>

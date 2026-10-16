@@ -49,7 +49,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
   const load = useCallback(async () => {
     if (isLocal) {
       const sl = getOne(String(setlistId));
-      if (!sl) { navigate(user ? 'setlists' : 'public-setlists', {}, { replace: true }); return; }
+      if (!sl) { navigate(user ? 'setlists' : 'public-setlists', {}, { leave: true }); return; }
       setMetadata({ name: sl.name, visibility: false, event_date: '' });
       setSetlist(localSetlistToSetlist(sl, sl.entries.map(formatLocalEntry)));
       return;
@@ -61,7 +61,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
       setSetlist(sl);
     } catch (e) {
       notifyError(e);
-      navigate(user ? 'setlists' : 'public-setlists', {}, { replace: true });
+      navigate(user ? 'setlists' : 'public-setlists', {}, { leave: true });
     }
   }, [getSetlistForViewer, navigate, setlistId, user, isLocal, getOne, setMetadata]);
 
@@ -102,7 +102,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
     confirmAction(t('setlist.confirmDelete'), async () => {
       await store.remove(id);
       toast(t('setlist.deleted'), 'success');
-      navigate(isLocal && !user ? 'public-setlists' : 'setlists', {}, { replace: true });
+      navigate(isLocal && !user ? 'public-setlists' : 'setlists', {}, { leave: true });
     });
   };
 
@@ -160,7 +160,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
     <>
       <Box mb="lg">
         <Group justify="space-between" mb="md">
-          <BackButton onClick={() => navigate(isEditable ? 'setlists' : 'public-setlists')}>{t('songView.back')}</BackButton>
+          <BackButton onClick={() => navigate(isEditable ? 'setlists' : 'public-setlists', {}, { leave: true })}>{t('songView.back')}</BackButton>
           <Group gap="xs">
             {setlist.entries.length > 0 && (
               <Button size="xs" onClick={() => play(0)}>{t('setlist.play')}</Button>

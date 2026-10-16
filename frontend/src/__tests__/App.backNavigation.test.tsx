@@ -27,7 +27,8 @@ vi.mock('../views/MySongsView', () => ({
   MySongsView: ({ navigate }: { navigate: Navigate }) => (
     <>
       <p>My Songs view</p>
-      <button onClick={() => navigate('song-view', { id: '1' }, { replace: true })}>replace with song</button>
+      <button onClick={() => navigate('song-view', { id: '1' })}>open song</button>
+      <button onClick={() => navigate('song-view', { id: '1' }, { leave: true })}>leave for song</button>
       <button onClick={() => navigate('browse')}>go browse</button>
     </>
   ),
@@ -76,12 +77,12 @@ it('opens a page from its typed address and follows hash changes', async () => {
   await screen.findByText('My Songs view');
 });
 
-it('replace swaps the history entry while a normal navigation adds one', async () => {
+it('leaving replaces the entry when the page before it is somewhere else', async () => {
   auth.user = { id: 1 };
   history.replaceState(null, '', '#my-songs');
   renderApp();
   const entries = history.length;
-  await userEvent.click(await screen.findByRole('button', { name: 'replace with song' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'leave for song' }));
   await waitFor(() => expect(location.hash).toBe('#song/1'));
   expect(history.length).toBe(entries);
 });
@@ -110,4 +111,26 @@ it('a write-locked page reached by address while offline falls back to Browse', 
   await act(async () => { location.hash = '#song/1/edit'; await new Promise(r => setTimeout(r, 20)); });
   expect(location.hash).toBe('');
   expect(screen.getByText('Browse view')).toBeInTheDocument();
+});
+
+it('leaving steps back when the page before it is the destination, so one Back is enough', async () => {
+  auth.user = { id: 1 };
+  history.replaceState(null, '', '#my-songs');
+  renderApp();
+  await userEvent.click(await screen.findByRole('button', { name: 'open song' }));
+  await waitFor(() => expect(location.hash).toBe('#song/1'));
+  const back = vi.spyOn(history, 'back');
+  await userEvent.click(await screen.findByRole('button', { name: /back/i }));
+  await screen.findByText('My Songs view');
+  expect(location.hash).toBe('#my-songs');
+  expect(back).toHaveBeenCalledOnce();
+});
+
+it('a signed-out visitor who types an editor address gets Browse, not the editor', async () => {
+  for (const hash of ['#song/new', '#song/1/edit', '#song/1/correct']) {
+    history.replaceState(null, '', hash);
+    const { unmount } = renderApp();
+    await screen.findByText('Browse view');
+    unmount();
+  }
 });

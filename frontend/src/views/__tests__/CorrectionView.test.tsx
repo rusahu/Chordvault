@@ -16,7 +16,7 @@ it('reports a load failure and leaves', async () => {
   api.mockRejectedValue(new Error('Song not found'));
   const navigate = vi.fn();
   render(<CorrectionView songId={3} navigate={navigate} />);
-  await waitFor(() => expect(navigate).toHaveBeenCalledWith('browse', {}, { replace: true }));
+  await waitFor(() => expect(navigate).toHaveBeenCalledWith('browse', {}, { leave: true }));
   expect(toast).toHaveBeenCalledWith('Song not found', 'error');
 });
 
