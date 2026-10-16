@@ -126,11 +126,18 @@ it('leaving steps back when the page before it is the destination, so one Back i
   expect(back).toHaveBeenCalledOnce();
 });
 
-it('a signed-out visitor who types an editor address gets Browse, not the editor', async () => {
-  for (const hash of ['#song/new', '#song/1/edit', '#song/1/correct']) {
+it('a signed-out visitor who types an editor or settings address gets Browse', async () => {
+  for (const hash of ['#song/new', '#song/1/edit', '#song/1/correct', '#settings']) {
     history.replaceState(null, '', hash);
     const { unmount } = renderApp();
     await screen.findByText('Browse view');
     unmount();
   }
+});
+
+it('a signed-in user who types the sign-in address gets Browse', async () => {
+  auth.user = { id: 1 };
+  history.replaceState(null, '', '#auth');
+  renderApp();
+  await screen.findByText('Browse view');
 });
