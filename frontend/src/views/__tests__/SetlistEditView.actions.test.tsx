@@ -113,7 +113,7 @@ describe('local setlist', () => {
     await open('local_1', 'Mine');
     pickSong();
     await waitFor(() => expect(toast).toHaveBeenCalledWith('Failed to add song', 'error'));
-  });
+  }, 15_000); // renders 100 entries; near 5s on CI runners
 
   it.each<[{ id: number } | null, string]>([[null, 'public-setlists'], [{ id: 1 }, 'setlists']])(
     'deletes and, with user %o, returns to %s (owner decision 4)', async (user, view) => {
