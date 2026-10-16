@@ -10,7 +10,8 @@ import { showStatusNotification as toast } from '../lib/notifications';
 import { formatDbDate } from '../lib/format';
 import type { AdminConfig, InviteCode } from '../types';
 
-export function AdminInvites() {
+/** `refreshKey` changes when the admin view reloads, since deleting a user also deletes their pending invites. */
+export function AdminInvites({ refreshKey }: { refreshKey?: unknown }) {
   const apiCall = useApi();
   const { demoMode } = useDemo();
   const { t } = useI18n();
@@ -24,10 +25,11 @@ export function AdminInvites() {
 
   const loadInvites = useCallback(() => apiCall<InviteCode[]>('GET', '/api/admin/invites').then(setInvites).catch(() => {}), [apiCall]);
 
+  useEffect(() => { loadInvites(); }, [loadInvites, refreshKey]);
+
   useEffect(() => {
-    loadInvites();
     apiCall<AdminConfig>('GET', '/api/admin/config').then(setConfig).catch(() => {});
-  }, [apiCall, loadInvites]);
+  }, [apiCall]);
 
   const toggleReg = (allowRegistration: boolean) => run(async () => {
     await apiCall('PUT', '/api/admin/config', { allowRegistration });

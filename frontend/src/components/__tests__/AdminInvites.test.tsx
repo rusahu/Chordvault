@@ -70,3 +70,11 @@ it('disables the switch, generate and invite delete in demo mode', async () => {
   expect(deleteButtons()[0]).toBeDisabled();
   expect(screen.getByText('common.demoDisabled')).toBeInTheDocument();
 });
+
+it('reloads the invite list when refreshKey changes', async () => {
+  const { rerender } = render(<AdminInvites refreshKey={1} />);
+  await screen.findByText('OLDCODE');
+  invites = invites.filter(i => i.id !== 1);
+  rerender(<AdminInvites refreshKey={2} />);
+  await waitFor(() => expect(screen.queryByText('OLDCODE')).not.toBeInTheDocument());
+});

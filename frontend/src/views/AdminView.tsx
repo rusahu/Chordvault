@@ -101,7 +101,7 @@ export function AdminView({ navigate }: AdminViewProps) {
         </Box>
       )}
 
-      <AdminInvites />
+      <AdminInvites refreshKey={users} />
 
       <AdminTags />
 
