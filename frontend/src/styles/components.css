@@ -13,6 +13,8 @@
   transition: box-shadow 0.15s, border-color 0.15s;
 }
 
+.song-card-meta { color: var(--muted); }
+
 @media (hover: hover) {
   .song-card:hover { border-color: var(--line-strong); box-shadow: var(--shadow-lift); }
   .song-card:hover .song-card-meta { color: var(--text); }

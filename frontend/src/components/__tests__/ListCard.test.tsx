@@ -9,6 +9,11 @@ const renderCard = (props: Partial<React.ComponentProps<typeof ListCard>> = {}) 
 };
 
 describe('ListCard', () => {
+  it('leaves the meta colour to CSS so a hovered card can brighten it', () => {
+    renderCard();
+    expect(screen.getByText('John Newton').style.color).toBe('');
+  });
+
   it('shows the title and meta', () => {
     renderCard();
     expect(screen.getByText('Amazing Grace')).toBeInTheDocument();

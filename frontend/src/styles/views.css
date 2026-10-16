@@ -40,7 +40,7 @@
   flex-wrap: wrap;
 }
 
-/* -- Editor hint and setlist name -------- */
+/* Editor hint and setlist name */
 .chordpro-hint code { font-family: var(--font-mono); background: var(--surface2); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
 
 .setlist-name-input { border-bottom: 1px solid transparent; transition: border-color 0.2s; }
