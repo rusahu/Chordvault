@@ -2,6 +2,7 @@ import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
 import { useWriteLock } from '../hooks/useWriteLock';
 import { IconMusic } from '@tabler/icons-react';
+import { BackButton } from '../components/BackButton';
 import { Switch, Button, TextInput, Group, Box, Text } from '@mantine/core';
 import { useCopyNotification } from '../hooks/useCopyNotification';
 import { useForm } from '@mantine/form';
@@ -159,7 +160,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
     <>
       <Box mb="lg">
         <Group justify="space-between" mb="md">
-          <Button variant="default" size="xs" onClick={() => navigate(isEditable ? 'setlists' : 'public-setlists')}>&#8592; {t('songView.back')}</Button>
+          <BackButton onClick={() => navigate(isEditable ? 'setlists' : 'public-setlists')}>{t('songView.back')}</BackButton>
           <Group gap="xs">
             {setlist.entries.length > 0 && (
               <Button size="xs" onClick={() => play(0)}>{t('setlist.play')}</Button>
@@ -194,7 +195,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
             </>
           ) : (
             <>
-              <Switch label={t('setlist.visibility')} type="checkbox" id="setlist-visibility" checked={metadata.values.visibility} onChange={(event) => { metadata.setFieldValue('visibility', event.currentTarget.checked); void saveMeta({ ...metadata.values, visibility: event.currentTarget.checked }); }}  />
+              <Switch label={t('setlist.visibility')} id="setlist-visibility" checked={metadata.values.visibility} onChange={(event) => { metadata.setFieldValue('visibility', event.currentTarget.checked); void saveMeta({ ...metadata.values, visibility: event.currentTarget.checked }); }}  />
               <TextInput aria-label={t('setlist.date')} type="date" id="setlist-date" value={metadata.values.event_date} onChange={(event) => { metadata.setFieldValue('event_date', event.currentTarget.value); void saveMeta({ ...metadata.values, event_date: event.currentTarget.value }); }} />
             </>
           )}

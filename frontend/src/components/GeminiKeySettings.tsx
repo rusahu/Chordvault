@@ -58,7 +58,6 @@ export function GeminiKeySettings() {
       </div>
               <PasswordInput label={<>{hasKey ? 'Replace Gemini API Key' : 'Gemini API Key'}</>}
           id="gemini-api-key"
-          type="password"
           value={geminiKey}
           onChange={(event) => setGeminiKey(event.target.value)}
           placeholder={hasKey ? '•••••••••••• (saved key)' : 'Paste your Gemini API key here'}

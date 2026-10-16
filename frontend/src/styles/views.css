@@ -55,13 +55,6 @@
 }
 
 /* -- YouTube Link ----------------------─ */
-.yt-link {
-  display: inline-block; margin-left: 6px; padding: 2px 8px; font-size: 12px; font-weight: 500;
-  color: #ff4444; background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); text-decoration: none; vertical-align: middle;
-}
-.yt-link:hover { background: var(--border); }
-
 .chordpro-hint code { font-family: var(--font-mono); background: var(--surface2); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
 
 .setlist-name-row { margin-bottom: 12px; }

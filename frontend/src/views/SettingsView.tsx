@@ -132,9 +132,9 @@ export function SettingsView() {
             <Text size="sm" c="dimmed">{t('common.demoDisabled')}</Text>
           ) : (
             <Stack gap="sm" renderRoot={(props) => <form {...props} onSubmit={passwordForm.onSubmit(changePassword)} />}>
-              <PasswordInput label={<>Current Password</>} type="password" {...passwordForm.getInputProps('currentPw')} autoComplete="current-password" />
-              <PasswordInput label={<>New Password</>} type="password" {...passwordForm.getInputProps('newPw')} autoComplete="new-password" />
-              <PasswordInput label={<>Confirm New Password</>} type="password" {...passwordForm.getInputProps('confirmPw')} autoComplete="new-password" />
+              <PasswordInput label={<>Current Password</>} {...passwordForm.getInputProps('currentPw')} autoComplete="current-password" />
+              <PasswordInput label={<>New Password</>} {...passwordForm.getInputProps('newPw')} autoComplete="new-password" />
+              <PasswordInput label={<>Confirm New Password</>} {...passwordForm.getInputProps('confirmPw')} autoComplete="new-password" />
               <Button style={{ alignSelf: 'flex-start' }} type="submit" loading={passwordAction.busy} disabled={passwordAction.busy}>Change Password</Button>
               <StatusText status={pwStatus.status} />
             </Stack>
@@ -204,7 +204,7 @@ export function SettingsView() {
                 placeholder={defaultPrompt}
                 rows={7}
                 maxLength={MAX_OCR_PROMPT}
-                styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 12, resize: 'vertical' } }}
+                resize="vertical" styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 12 } }}
               />
               <Text size="xs" c="dimmed" ta="right" mt={4}>
                 {ocrPrompt.length} / {MAX_OCR_PROMPT}
@@ -213,7 +213,7 @@ export function SettingsView() {
             <Group gap="xs">
               <Button size="xs" onClick={saveOcrPrompt}>Save Prompt</Button>
               {!ocrPrompt && (
-                <Button size="xs" style={{ background: 'var(--surface-alt, var(--surface))' }} onClick={() => setOcrPrompt(defaultPrompt)}>
+                <Button size="xs" variant="default" onClick={() => setOcrPrompt(defaultPrompt)}>
                   Copy Default
                 </Button>
               )}

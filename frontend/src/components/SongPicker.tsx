@@ -1,4 +1,5 @@
-import { Badge, Flex, Modal, Button, NativeSelect, TextInput, Group, Text } from '@mantine/core';
+import { Badge, Flex, Modal, Button, NativeSelect, Group, Text } from '@mantine/core';
+import { SearchField } from './SearchField';
 import { EmptyState } from './EmptyState';
 import { ListCard } from './ListCard';
 import { CardGrid } from './CardGrid';
@@ -66,19 +67,9 @@ function SongPickerContent({ onPick }: Pick<SongPickerProps, 'onPick'>) {
 
   return (
     <>
-
-
         <SearchRow mb={8}>
-          <TextInput aria-label={t('songs.searchPlaceholder')}
-            flex={3}
-            miw={0}
-            type="search"
-            placeholder={t('songs.searchPlaceholder')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') load(search); }}
-            data-autofocus
-          />
+          <SearchField label={t('songs.searchPlaceholder')} value={search} onChange={setSearch}
+            onSearch={() => load(search)} onClear={() => { setSearch(''); load(''); }} modalAutoFocus />
           <Button variant="default" size="xs" onClick={() => load(search)}>{t('songs.search')}</Button>
         </SearchRow>
         <CardGrid>

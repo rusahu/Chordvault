@@ -3,7 +3,8 @@ import { useOffline } from '../context/OfflineContext';
 import { useDisclosure } from '@mantine/hooks';
 import { Alert, Badge, Paper, Button, NativeSelect, Group, Box, Text } from '@mantine/core';
 import { SectionTitle } from '../components/SectionTitle';
-import { IconLock } from '@tabler/icons-react';
+import { IconBrandYoutube, IconLock, IconPencil, IconPlus } from '@tabler/icons-react';
+import { BackButton } from '../components/BackButton';
 import { useState, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
@@ -127,27 +128,25 @@ export function SongView({ songId, navigate }: SongViewProps) {
     <div lang={song.language || undefined}>
       <Box mb="lg">
         <Group justify="space-between" mb="md">
-          <Button variant="default" size="xs" onClick={() => navigate(user ? 'my-songs' : 'browse')}>
-            &#8592; {t('songView.back')}
-          </Button>
+          <BackButton onClick={() => navigate(user ? 'my-songs' : 'browse')}>{t('songView.back')}</BackButton>
           <Group gap="xs">
             {isOwner && (
-              <Button disabled={readOnly} variant="default" size="xs" onClick={() => navigate('song-edit', { id: String(song.id) })}>
-                &#9998; {t('songView.edit')}
+              <Button disabled={readOnly} variant="default" size="xs" leftSection={<IconPencil size={14} aria-hidden />} onClick={() => navigate('song-edit', { id: String(song.id) })}>
+                {t('songView.edit')}
               </Button>
             )}
             {user && !isOwner && song.visibility !== VISIBILITY.PRIVATE && (
               <>
-                <Button disabled={readOnly} variant="default" size="xs" onClick={() => navigate('song-edit', { id: String(song.id) })}>
-                  &#43; {t('songEdit.createVersion')}
+                <Button disabled={readOnly} variant="default" size="xs" leftSection={<IconPlus size={14} aria-hidden />} onClick={() => navigate('song-edit', { id: String(song.id) })}>
+                  {t('songEdit.createVersion')}
                 </Button>
-                <Button variant="default" size="xs" disabled={readOnly} onClick={() => navigate('correction', { id: String(song.id) })}>
-                  &#9998; Correction
+                <Button variant="default" size="xs" disabled={readOnly} leftSection={<IconPencil size={14} aria-hidden />} onClick={() => navigate('correction', { id: String(song.id) })}>
+                  Correction
                 </Button>
               </>
             )}
-            <Button variant="default" size="xs" disabled={readOnly} onClick={addToSetlist.open}>
-              &#43; {t('songView.addToSetlist')}
+            <Button variant="default" size="xs" disabled={readOnly} leftSection={<IconPlus size={14} aria-hidden />} onClick={addToSetlist.open}>
+              {t('songView.addToSetlist')}
             </Button>
           </Group>
         </Group>
@@ -205,7 +204,10 @@ export function SongView({ songId, navigate }: SongViewProps) {
       {(song.tags || song.youtube_url) && (
         <Group gap="xs" mt="xs">
           <TagBadges tags={song.tags} />
-          {song.youtube_url && <a href={song.youtube_url} target="_blank" rel="noopener" className="yt-link">&#9654; YouTube</a>}
+          {song.youtube_url && (
+            <Button component="a" href={song.youtube_url} target="_blank" rel="noopener" variant="default" size="xs"
+              leftSection={<IconBrandYoutube size={16} color="var(--mantine-color-red-6)" aria-hidden />}>YouTube</Button>
+          )}
         </Group>
       )}
 

@@ -1,6 +1,6 @@
 import { Progress, Modal, Button, FileInput, TextInput, Textarea, Stack, Group, Text, Paper, Image } from '@mantine/core';
 import { useTimeout } from '@mantine/hooks';
-import { IconFileText } from '@tabler/icons-react';
+import { IconFileText, IconSparkles } from '@tabler/icons-react';
 import { useState, useRef, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { showStatusNotification as toast } from '../lib/notifications';
@@ -175,8 +175,8 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
           {models.length > 0 && (
             <ModelSelect label="Model" models={models} value={selectedModel} onChange={setSelectedModel} disabled={processing} />
           )}
-          <Button onClick={process} loading={processing} disabled={processing} fullWidth size="md">
-            {processing ? 'Processing...' : '\u2728 Extract text'}
+          <Button onClick={process} loading={processing} disabled={processing} fullWidth size="md" leftSection={<IconSparkles size={18} aria-hidden />}>
+            {processing ? 'Processing...' : 'Extract text'}
           </Button>
           {(processing || progress > 0) && <Progress value={progress} aria-label="OCR progress" />}
         </>
