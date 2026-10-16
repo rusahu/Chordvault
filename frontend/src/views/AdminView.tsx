@@ -1,4 +1,4 @@
-import { Badge, Button, Group } from '@mantine/core';
+import { Badge, Box, Button, Group } from '@mantine/core';
 import { ListCard } from '../components/ListCard';
 import { CardGrid } from '../components/CardGrid';
 import { modals } from '@mantine/modals';
@@ -90,14 +90,14 @@ export function AdminView({ navigate }: AdminViewProps) {
       </StatGrid>
 
       {stats.languageDistribution && stats.languageDistribution.length > 0 && (
-        <div style={{ marginTop: 16 }}>
+        <Box mt={16}>
           <h3 className="admin-section-title">Languages</h3>
           <StatGrid>
             {stats.languageDistribution.map(({ language, count }) => (
               <StatCard key={language} value={count} label={language ? languageName(language) : 'Not set'} />
             ))}
           </StatGrid>
-        </div>
+        </Box>
       )}
 
       <AdminInvites />
