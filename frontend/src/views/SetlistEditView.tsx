@@ -2,7 +2,8 @@ import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
 import { useWriteLock } from '../hooks/useWriteLock';
 import { IconMusic } from '@tabler/icons-react';
-import { Switch, Button, TextInput, Group, Box } from '@mantine/core';
+import { BackButton } from '../components/BackButton';
+import { Switch, Button, TextInput, Group, Box, Text, Title, Stack, Center } from '@mantine/core';
 import { useCopyNotification } from '../hooks/useCopyNotification';
 import { useForm } from '@mantine/form';
 import { useState, useEffect, useCallback } from 'react';
@@ -35,7 +36,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
   const isWriteLocked = useWriteLock();
   const { user } = useAuth();
   const { t } = useI18n();
-  const copyWithFeedback = useCopyNotification(t('setlist.linkCopied') || 'Link copied to clipboard');
+  const copyWithFeedback = useCopyNotification(t('setlist.linkCopied', 'Link copied to clipboard'));
   const isLocal = isLocalSetlistId(setlistId);
   const store = useSetlistStore(isLocal);
   const { getOne } = store;
@@ -159,7 +160,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
     <>
       <Box mb="lg">
         <Group justify="space-between" mb="md">
-          <Button variant="default" size="xs" onClick={() => navigate(isEditable ? 'setlists' : 'public-setlists')}>&#8592; {t('songView.back')}</Button>
+          <BackButton onClick={() => navigate(isEditable ? 'setlists' : 'public-setlists')}>{t('songView.back')}</BackButton>
           <Group gap="xs">
             {setlist.entries.length > 0 && (
               <Button size="xs" onClick={() => play(0)}>{t('setlist.play')}</Button>
@@ -170,31 +171,32 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
             {isEditable && <Button color="red" size="xs" onClick={deleteSetlist}>{t('admin.delete')}</Button>}
           </Group>
         </Group>
-        <div className="setlist-name-row">
+        <Box mb={12}>
           {!isEditable ? (
-            <div className="setlist-name-input" style={{ border: 'none', background: 'none', padding: 0 }}>{setlist.name}</div>
+            <Title order={1} fz={32} lh={1.6} lts="-0.015em">{setlist.name}</Title>
           ) : (
             <TextInput
-              type="text"
+              variant="unstyled"
               id="setlist-name-input"
               className="setlist-name-input"
+              styles={{ input: { fontSize: 32, fontWeight: 700, letterSpacing: '-0.015em', lineHeight: 1.3, height: 'auto', minHeight: 0, paddingBlock: 4 } }}
               {...metadata.getInputProps('name')}
               onBlur={() => saveMeta()}
               onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
             />
           )}
-        </div>
+        </Box>
         <Group gap={16} mt={12} py={8}>
           {isLocal ? (
-            <span style={{ fontSize: 13, color: 'var(--muted)' }}>Local Setlist (Saved in Browser)</span>
+            <Text span fz={13} c="dimmed">Local Setlist (Saved in Browser)</Text>
           ) : !isEditable ? (
             <>
-              {setlist.username && <span style={{ fontSize: 13, color: 'var(--muted)' }}>By @{setlist.username}</span>}
-              {setlist.event_date && <span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 8 }}>{t('setlist.date')}: {setlist.event_date}</span>}
+              {setlist.username && <Text span fz={13} c="dimmed">By @{setlist.username}</Text>}
+              {setlist.event_date && <Text span fz={13} c="dimmed" ml={8}>{t('setlist.date')}: {setlist.event_date}</Text>}
             </>
           ) : (
             <>
-              <Switch label={t('setlist.visibility')} type="checkbox" id="setlist-visibility" checked={metadata.values.visibility} onChange={(event) => { metadata.setFieldValue('visibility', event.currentTarget.checked); void saveMeta({ ...metadata.values, visibility: event.currentTarget.checked }); }}  />
+              <Switch label={t('setlist.visibility')} id="setlist-visibility" checked={metadata.values.visibility} onChange={(event) => { metadata.setFieldValue('visibility', event.currentTarget.checked); void saveMeta({ ...metadata.values, visibility: event.currentTarget.checked }); }}  />
               <TextInput aria-label={t('setlist.date')} type="date" id="setlist-date" value={metadata.values.event_date} onChange={(event) => { metadata.setFieldValue('event_date', event.currentTarget.value); void saveMeta({ ...metadata.values, event_date: event.currentTarget.value }); }} />
             </>
           )}
@@ -204,7 +206,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
       {setlist.entries.length === 0 ? (
         <EmptyState icon={<IconMusic size={56} aria-hidden />} text={t('setlist.noSongsYet')} />
       ) : (
-        <div className="setlist-entries" id="setlist-entries">
+        <Stack gap={12} mt={24} id="setlist-entries">
           {reorderedEntries.map((entry, idx) => (
             <SetlistEntryCard
               key={entry.entry_id}
@@ -221,13 +223,13 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
               isDragging={draggedIdx === idx}
             />
           ))}
-        </div>
+        </Stack>
       )}
 
       {isEditable && (
-        <div style={{ marginTop: 20, textAlign: 'center' }}>
+        <Center mt={20}>
           <Button onClick={() => setPickerOpen(true)}>{t('setlist.addSongs')}</Button>
-        </div>
+        </Center>
       )}
 
       <SongPicker opened={pickerOpen} onPick={addSong} onClose={() => setPickerOpen(false)} />

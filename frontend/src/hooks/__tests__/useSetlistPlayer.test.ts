@@ -87,6 +87,19 @@ describe('useSetlistPlayer Hook', () => {
     expect(result.current.setlist).toBeNull();
   });
 
+  it('does not scroll after unmounting during a song change', async () => {
+    const entries = [0, 1].map(i => ({ ...mockSetlist.entries[0], entry_id: `entry_${i}` }));
+    mockApiCall.mockResolvedValue({ ...mockSetlist, entries });
+    const scrollTo = vi.spyOn(window, 'scrollTo').mockImplementation(() => {});
+    const { result, unmount } = renderHook(() => useSetlistPlayer({ setlistId: 1, navigate }));
+    await waitFor(() => expect(result.current.setlist).not.toBeNull());
+    scrollTo.mockClear();
+    act(() => result.current.next());
+    unmount();
+    await new Promise(resolve => setTimeout(resolve, 80));
+    expect(scrollTo).not.toHaveBeenCalled();
+  });
+
   it('uses the current index for hash navigation and removes the listener on unmount', async () => {
     const onNavigate = vi.fn();
     const entries = [0, 1, 2].map(i => ({ ...mockSetlist.entries[0], entry_id: `entry_${i}` }));

@@ -1,5 +1,8 @@
 import { Children, type CSSProperties, type ReactNode } from 'react';
 import { Box, Flex, Group } from '@mantine/core';
+import { cardButtonProps } from '../lib/cardButton';
+import { CardTitle } from './CardTitle';
+import { CardMeta } from './CardMeta';
 
 interface ListCardProps {
   title: ReactNode;
@@ -16,14 +19,9 @@ export function ListCard({ title, meta, children, actions, onClick, className, s
   const hasActions = Children.toArray(actions).length > 0;
   return (
     <Flex
-      className={className ? `song-card ${className}` : 'song-card'}
+      className={['song-card mantine-focus-auto', className].filter(Boolean).join(' ')}
       style={style}
-      role="button"
-      tabIndex={0}
-      onClick={onClick}
-      onKeyDown={(event) => {
-        if (event.target === event.currentTarget && (event.key === 'Enter' || event.key === ' ')) { event.preventDefault(); onClick(); }
-      }}
+      {...cardButtonProps(onClick)}
       align="center"
       justify="space-between"
       wrap="wrap"
@@ -33,8 +31,8 @@ export function ListCard({ title, meta, children, actions, onClick, className, s
       mih={72}
     >
       <Box className="song-card-info" flex="1 1 220px" miw={0}>
-        <div className="song-card-title">{title}</div>
-        {meta && <div className="song-card-meta">{meta}</div>}
+        <CardTitle>{title}</CardTitle>
+        {meta && <CardMeta>{meta}</CardMeta>}
         {children}
       </Box>
       {hasActions && (

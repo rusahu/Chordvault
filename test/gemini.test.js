@@ -230,3 +230,17 @@ test('imageTurn puts the prompt before the decoded image', () => {
     parts: [{ text: 'Read' }, { inline_data: { mime_type: 'image/png', data: 'QUJD' } }],
   });
 });
+
+test('callGemini gives up on a hung request with the network error', async () => {
+  let seen;
+  const restore = stubFetch(async (_url, init) => {
+    seen = init.signal;
+    throw new DOMException('The operation was aborted due to timeout', 'TimeoutError');
+  });
+  try {
+    await assert.rejects(callGemini(ARGS), (e) => e.code === 'GEMINI_NETWORK' && e.status === 502);
+    assert.ok(seen instanceof AbortSignal);
+  } finally {
+    restore();
+  }
+});

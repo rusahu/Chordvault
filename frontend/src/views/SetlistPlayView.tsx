@@ -1,4 +1,5 @@
 import { Alert, Button, Box, Text } from '@mantine/core';
+import { IconLock } from '@tabler/icons-react';
 import { useOffline } from '../context/OfflineContext';
 import { useState, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
@@ -228,7 +229,7 @@ export function SetlistPlayView({ setlistId, isLocal: _isLocal, initialIndex, na
         <>
           {entry?.is_private_placeholder ? (
             <Box mt={40}>
-              <EmptyState icon={<Text span fz={56} aria-hidden>🔒</Text>} text={entry.not_downloaded ? "This song is not downloaded. Connect and refresh your library." : <>This song is private<Text span display="block" size="sm" mt="xs">The song owner has marked it as private.</Text></>} />
+              <EmptyState icon={<IconLock size={56} aria-hidden />} text={entry.not_downloaded ? "This song is not downloaded. Connect and refresh your library." : <>This song is private<Text span display="block" size="sm" mt="xs">The song owner has marked it as private.</Text></>} />
             </Box>
           ) : (
             <ChordSheet

@@ -4,6 +4,7 @@ import type { CatalogSong, LibraryQuery, OfflineSnapshot, OfflineSong, OfflineSt
 import { splitTags } from './tagName';
 import { STATUS, VISIBILITY } from './constants';
 import { pageMeta, pageOffset } from '../../../shared/paging.mjs';
+import { normalizeSearchText, pinyinKey } from '../../../shared/search.mjs';
 
 type Database = Dexie & {
   songs: Table<OfflineSong, number>;
@@ -138,7 +139,7 @@ export function createOfflineLibrary(name = 'chordvault-offline') {
   const getSetlist = (accountId: number, id: number) => read(accountId, () => need(db.setlists, id));
   const querySongs = (accountId: number, query: LibraryQuery) => read(accountId, async () => {
     const terms = (query.q || '').trim().toLowerCase().split(/\s+/).filter(Boolean);
-    const pinyin = terms.join('');
+    const pinyin = pinyinKey(query.q || '');
     const tags = query.tags ?? [];
     const groups = new Map<number, { row: CatalogSong; score: number; familyUpdated: string }>();
     const counts = new Map<number, number>();
@@ -168,7 +169,7 @@ export function createOfflineLibrary(name = 'chordvault-offline') {
     return { ...meta, songs };
   });
   const querySetlists = (accountId: number, query: LibraryQuery) => read(accountId, async () => {
-    const q = (query.q || '').toLowerCase().replace(/\s+/g, ' ').trim();
+    const q = normalizeSearchText(query.q || '');
     const day = (s: Setlist) => s.event_date || (s.created_at || '').slice(0, 10);
     const rows = (await db.setlists.toArray()).filter(s => (!q || (s.search ?? [s.name.toLowerCase()]).some(form => form.includes(q))) &&
       (!query.dateFrom || day(s) >= query.dateFrom) && (!query.dateTo || (!!day(s) && day(s) <= query.dateTo)))

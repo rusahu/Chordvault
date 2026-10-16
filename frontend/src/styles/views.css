@@ -28,20 +28,6 @@
   .settings-grid { column-count: 2; }
 }
 
-/* -- Corrections -------------------------- */
-.corrections-section { margin-top: 32px; border-top: 1px solid var(--border); padding-top: 16px; }
-.correction-preview {
-  max-height: 300px;
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  background: var(--bg);
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.correction-preview::-webkit-scrollbar { display: none; }
-
 /* -- Toolbar / Transpose Bar -------------- */
 .transpose-bar {
   display: flex;
@@ -54,57 +40,14 @@
   flex-wrap: wrap;
 }
 
-/* -- YouTube Link ----------------------─ */
-.yt-link {
-  display: inline-block; margin-left: 6px; padding: 2px 8px; font-size: 12px; font-weight: 500;
-  color: #ff4444; background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); text-decoration: none; vertical-align: middle;
-}
-.yt-link:hover { background: var(--border); }
-
+/* Editor hint and setlist name */
 .chordpro-hint code { font-family: var(--font-mono); background: var(--surface2); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
 
-.setlist-name-row { margin-bottom: 12px; }
-.setlist-name-input {
-  font-family: var(--font-sans); font-size: 32px; font-weight: 700; letter-spacing: -0.015em;
-  color: var(--text); border: none; background: none; width: 100%; outline: none;
-  padding: 4px 0; border-bottom: 1px solid transparent; transition: all 0.2s;
-}
-.setlist-name-input:focus { border-bottom-color: var(--text); }
-
-/* -- Admin -------------------------------- */
-
-
-
-
-.admin-section-title {
-  font-family: var(--font-sans);
-  font-size: 20px;
-  font-weight: 700;
-  margin-top: 28px;
-  margin-bottom: 12px;
-}
-
-
+.setlist-name-input { border-bottom: 1px solid transparent; transition: border-color 0.2s; }
+.setlist-name-input:focus-within { border-bottom-color: var(--text); }
 
 /* -- Setlist Edit View --------------------- */
-.setlist-entries {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-top: 24px;
-}
-
 .setlist-song-item { transition: all 0.2s ease; }
-
-.setlist-song-pos {
-  font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-  text-align: center;
-}
 
 .setlist-drag-handle {
   display: flex;
@@ -202,21 +145,6 @@
   #app { padding: 16px 12px 100px 12px; overflow-x: hidden; overflow-x: clip; }
   .transpose-bar { margin: 8px 0; padding: 6px 8px; gap: 4px; }
   }
-
-@media (max-width: 600px) {
-  .search-filters { flex-direction: column; gap: 8px; margin-top: 0; }
-  .search-filters .language-filter, .search-filters .tag-filter { max-width: none; }
-}
-
-/* Pagination */
-.pagination-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
-  margin-top: 24px;
-  margin-bottom: 12px;
-}
 
 /* Mantine's md controls are 42px; touch screens need 44. */
 @media (pointer: coarse) {

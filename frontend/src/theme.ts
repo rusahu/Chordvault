@@ -1,9 +1,10 @@
-import { Chip, createTheme, defaultVariantColorsResolver, localStorageColorSchemeManager, Pagination, type CSSVariablesResolver } from '@mantine/core';
+import { Chip, createTheme, defaultVariantColorsResolver, Divider, localStorageColorSchemeManager, Pagination, Paper, Tabs, type CSSVariablesResolver } from '@mantine/core';
 
 const fontFamily = '"Source Sans 3 Variable", "Noto Sans TC Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
 export const chordVaultTheme = createTheme({
   fontFamily,
+  fontFamilyMonospace: '"JetBrains Mono Variable", ui-monospace, SFMono-Regular, Consolas, monospace',
   headings: { fontFamily, fontWeight: '700' },
   primaryColor: 'ink',
   colors: {
@@ -29,6 +30,10 @@ export const chordVaultTheme = createTheme({
     // Mantine works these out once from the light shade; dark mode's selected fill is light, so follow the scheme.
     Chip: Chip.extend({ vars: () => ({ root: { '--chip-color': 'var(--mantine-primary-color-contrast)' } }) }),
     Pagination: Pagination.extend({ vars: () => ({ root: { '--pagination-active-color': 'var(--mantine-primary-color-contrast)' } }) }),
+    // Borders in the app's line colour rather than Mantine's grey.
+    Paper: Paper.extend({ styles: { root: { '--paper-border-color': 'var(--border)' } } }),
+    Divider: Divider.extend({ vars: (_, props) => ({ root: { '--divider-color': props.color ? undefined : 'var(--border)' } }) }),
+    Tabs: Tabs.extend({ styles: { root: { '--tab-border-color': 'var(--border)' } } }),
     Modal: { defaultProps: { centered: true, size: 'lg', overlayProps: { backgroundOpacity: 0.5, blur: 0 } } },
   },
 });

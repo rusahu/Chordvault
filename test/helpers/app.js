@@ -1,22 +1,17 @@
 process.env.DB_PATH = ':memory:';
 process.env.JWT_SECRET = 'backend-cleanup-test';
-const express = require('express');
 const jwt = require('jsonwebtoken');
 const { db } = require('../../lib/db');
-const { errorHandler } = require('../../lib/errors');
-const { LIMITS } = require('../../lib/constants');
+const { createApp } = require('../../lib/app');
+const User = require('../../lib/models/user');
 
 function user(name, role = 'user') {
-  const id = Number(db.prepare('INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)').run(name, 'unused', role).lastInsertRowid);
+  const { id } = User.create(name, 'unused', role);
   return { id, token: jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: '1h' }) };
 }
 
 async function serve(t, mount) {
-  const app = express();
-  app.set('trust proxy', 1);
-  app.use(express.json({ limit: LIMITS.MAX_BODY_JSON }));
-  mount(app);
-  app.use(errorHandler);
+  const app = createApp(mount);
   const server = await new Promise(resolve => {
     const listener = app.listen(0, '127.0.0.1', () => resolve(listener));
   });

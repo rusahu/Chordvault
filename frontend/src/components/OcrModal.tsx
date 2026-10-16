@@ -1,12 +1,13 @@
-import { Progress, Modal, Button, FileInput, TextInput, Textarea, Stack, Group, Text, Paper, Image } from '@mantine/core';
+import { Progress, Modal, Button, FileInput, TextInput, Textarea, Stack, Group, Text, Paper, Image, ScrollArea } from '@mantine/core';
 import { useTimeout } from '@mantine/hooks';
-import { IconFileText } from '@tabler/icons-react';
+import { IconFileText, IconSparkles } from '@tabler/icons-react';
 import { useState, useRef, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { showStatusNotification as toast } from '../lib/notifications';
 import { errorMessage } from '../lib/errors';
 import { useStackedModalProps } from '../hooks/useStackedModalProps';
 import { useActiveRef } from '../hooks/useActiveRef';
+import { readFile } from '../lib/files';
 import { DEFAULT_GEMINI_MODEL } from '../lib/constants';
 import { ModelSelect } from './ModelSelect';
 import { getOcrModels, type OcrModels } from '../lib/settingsApi';
@@ -23,15 +24,6 @@ interface ChatMessage {
   text: string;
 }
 
-function fileToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
-
 export function OcrModal({ opened, hasGeminiKey, onResult, onClose }: OcrModalProps) {
   const stacked = useStackedModalProps();
   return (
@@ -45,7 +37,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
   const active = useActiveRef();
   const api = useApi();
   const [file, setFile] = useState<File | null>(null);
-  const previewReader = useRef<FileReader | null>(null);
+  const previewFile = useRef<File | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const { start: scrollToLatest } = useTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
   const [preview, setPreview] = useState<string | null>(null);
@@ -72,8 +64,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
   const [refining, setRefining] = useState(false);
 
   const handleFile = (selected: File | null) => {
-    previewReader.current?.abort();
-    previewReader.current = null;
+    previewFile.current = selected;
     setFile(selected);
     setPreview(null);
     setIsPdf(selected?.type === 'application/pdf');
@@ -86,10 +77,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
     if (selected.type === 'application/pdf') {
       setPreview(selected.name);
     } else {
-      const reader = new FileReader();
-      previewReader.current = reader;
-      reader.onload = () => { if (active.current && previewReader.current === reader) setPreview(reader.result as string); };
-      reader.readAsDataURL(selected);
+      readFile(selected, 'dataURL').then(url => { if (active.current && previewFile.current === selected) setPreview(url); }, () => {});
     }
   };
 
@@ -103,7 +91,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
     setChatHistory([]);
     try {
       setProgress(10);
-      const base64 = await fileToBase64(file);
+      const base64 = await readFile(file, 'dataURL');
       if (!active.current) return;
       setImageBase64(base64);
       setProgress(30);
@@ -177,7 +165,7 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
               <Group gap={6} wrap="nowrap"><IconFileText size={18} aria-hidden /><Text c="dimmed" fz={13} style={{ overflowWrap: 'anywhere' }}>{preview}</Text></Group>
             </Paper>
           ) : (
-            <Image src={preview} alt="Preview" mah={200} w="auto" maw="100%" fit="contain" radius="md" style={{ border: '1px solid var(--border)' }} />
+            <Image src={preview} alt="Preview" mah={200} w="auto" maw="100%" fit="contain" radius="md" bd="1px solid var(--border)" />
           ))}
           {!hasGeminiKey && (
             <Paper p={10} bg="var(--surface)" radius="md">
@@ -187,8 +175,8 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
           {models.length > 0 && (
             <ModelSelect label="Model" models={models} value={selectedModel} onChange={setSelectedModel} disabled={processing} />
           )}
-          <Button onClick={process} loading={processing} disabled={processing} fullWidth size="md">
-            {processing ? 'Processing...' : '\u2728 Extract text'}
+          <Button onClick={process} loading={processing} disabled={processing} fullWidth size="md" leftSection={<IconSparkles size={18} aria-hidden />}>
+            {processing ? 'Processing...' : 'Extract text'}
           </Button>
           {(processing || progress > 0) && <Progress value={progress} aria-label="OCR progress" />}
         </>
@@ -196,17 +184,19 @@ function OcrContent({ hasGeminiKey, onResult, onClose }: Omit<OcrModalProps, 'op
       {resultText && (
         <>
           {hasCorrections && (
-            <Stack gap={4} mah={120} mb="xs" style={{ overflowY: 'auto' }}>
-              {chatHistory.slice(1).map((m, i) => (
-                <Paper key={i} px="xs" py={6} radius="md" maw="85%" fz="xs"
-                  bg={m.role === 'user' ? 'var(--accent-bg)' : 'var(--surface2)'}
-                  c={m.role === 'user' ? 'var(--accent)' : 'dimmed'}
-                  style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', overflowWrap: 'anywhere' }}>
-                  {m.role === 'user' ? m.text : '\u2713 Fix applied'}
-                </Paper>
-              ))}
-              <div ref={chatEndRef} />
-            </Stack>
+            <ScrollArea.Autosize mah={120} mb="xs">
+              <Stack gap={4}>
+                {chatHistory.slice(1).map((m, i) => (
+                  <Paper key={i} px="xs" py={6} radius="md" maw="85%" fz="xs"
+                    bg={m.role === 'user' ? 'var(--accent-bg)' : 'var(--surface2)'}
+                    c={m.role === 'user' ? 'var(--accent)' : 'dimmed'}
+                    style={{ alignSelf: m.role === 'user' ? 'flex-end' : 'flex-start', overflowWrap: 'anywhere' }}>
+                    {m.role === 'user' ? m.text : '\u2713 Fix applied'}
+                  </Paper>
+                ))}
+                <div ref={chatEndRef} />
+              </Stack>
+            </ScrollArea.Autosize>
           )}
           <Textarea
             label={hasCorrections ? 'Corrected result' : 'Extracted text'}

@@ -135,11 +135,7 @@ function createSettingsRouter() {
 
     // Refine always uses text-based prompt for context (even if initial extraction used JSON mode)
     const contents = [{ role: 'user', ...imageTurn(user.gemini_prompt || OCR_REFINE_PROMPT, image) }];
-    for (const msg of history) {
-      if (msg.role === 'model' || msg.role === 'user') {
-        contents.push({ role: msg.role, parts: [{ text: msg.text }] });
-      }
-    }
+    contents.push(...history.map(({ role, text }) => ({ role, parts: [{ text }] })));
     contents.push({
       role: 'user',
       parts: [{ text: `The user wants to fix the chord sheet. Here is their correction:\n\n${message}\n\nApply the correction and return the FULL corrected ChordPro text. Do not include explanations, just the corrected text.` }]

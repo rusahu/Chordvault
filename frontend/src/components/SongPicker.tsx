@@ -1,4 +1,5 @@
-import { Badge, Flex, Modal, Button, NativeSelect, TextInput, Group, Text } from '@mantine/core';
+import { Badge, Flex, Modal, Button, NativeSelect, Group, Text } from '@mantine/core';
+import { SearchField } from './SearchField';
 import { EmptyState } from './EmptyState';
 import { ListCard } from './ListCard';
 import { CardGrid } from './CardGrid';
@@ -66,19 +67,9 @@ function SongPickerContent({ onPick }: Pick<SongPickerProps, 'onPick'>) {
 
   return (
     <>
-
-
         <SearchRow mb={8}>
-          <TextInput aria-label={t('songs.searchPlaceholder')}
-            flex={3}
-            miw={0}
-            type="search"
-            placeholder={t('songs.searchPlaceholder')}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') load(search); }}
-            data-autofocus
-          />
+          <SearchField label={t('songs.searchPlaceholder')} value={search} onChange={setSearch}
+            onSearch={() => load(search)} onClear={() => { setSearch(''); load(''); }} modalAutoFocus />
           <Button variant="default" size="xs" onClick={() => load(search)}>{t('songs.search')}</Button>
         </SearchRow>
         <CardGrid>
@@ -87,7 +78,6 @@ function SongPickerContent({ onPick }: Pick<SongPickerProps, 'onPick'>) {
           ) : songs.map((s) => (
             <div key={s.id} className="song-picker-item" style={{ display: 'contents' }}>
               <ListCard
-                className="mantine-focus-auto"
                 title={s.title}
                 meta={<>
                   {s.artist || ''}
@@ -99,9 +89,9 @@ function SongPickerContent({ onPick }: Pick<SongPickerProps, 'onPick'>) {
                 style={expandedId === s.id ? { borderColor: 'var(--accent)', boxShadow: '0 0 0 1px var(--accent)' } : undefined}
               />
               {expandedId === s.id && (
-                <Flex className="song-card version-list-card" align="center" justify="space-between" wrap="wrap" gap={12} px={16} py={12} mt={-12} style={{ gridColumn: '1 / -1', borderTopLeftRadius: 0, borderTopRightRadius: 0, background: 'var(--bg-alt)' }}>
+                <Flex className="song-card version-list-card" align="center" justify="space-between" wrap="wrap" gap={12} px={16} py={12} mt={-12} bg="var(--bg-alt)" bdrs="0 0 14px 14px" style={{ gridColumn: '1 / -1' }}>
                   {loadingVersions ? (
-                    <div style={{ padding: 8, color: 'var(--muted)', fontSize: 13 }}>Loading versions...</div>
+                    <Text p={8} fz={13} c="dimmed">Loading versions...</Text>
                   ) : (
                     <>
                       <Group gap="xs" wrap="nowrap" maw="100%">
@@ -123,9 +113,9 @@ function SongPickerContent({ onPick }: Pick<SongPickerProps, 'onPick'>) {
                           ))}
                         </NativeSelect>
                       </Group>
-                      <div style={{ fontSize: 12, color: 'var(--muted)', fontWeight: 500 }}>
+                      <Text fz={12} c="dimmed" fw={500}>
                         {versions.length} {t('setlist.versions').toLowerCase()}
-                      </div>
+                      </Text>
                     </>
                   )}
                 </Flex>

@@ -1,4 +1,5 @@
 import { Button, Box, Stack, Title, Text, Group } from '@mantine/core';
+import { BackButton } from '../components/BackButton';
 interface AboutViewProps {
   navigate: (view: string) => void;
 }
@@ -6,7 +7,7 @@ interface AboutViewProps {
 export function AboutView({ navigate }: AboutViewProps) {
   return (
     <Box maw={600} mx="auto">
-      <Button variant="default" size="xs" onClick={() => navigate('browse')} mb="md">&#8592; Back</Button>
+      <BackButton onClick={() => navigate('browse')} mb="md">Back</BackButton>
       <Title order={1} size={36} c="var(--cv-brand)" ta="center">&#9833; ChordVault</Title>
       <Text ta="center" c="dimmed" mb="xl">Your chord sheet library</Text>
 

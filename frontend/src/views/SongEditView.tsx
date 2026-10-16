@@ -1,6 +1,7 @@
 import { useOffline, useOfflineActivity } from '../context/OfflineContext';
 import { useDisclosure } from '@mantine/hooks';
-import { Badge, Tabs, Switch, Button, TextInput, useComputedColorScheme, SimpleGrid, Stack, Group, Text, Box, Input } from '@mantine/core';
+import { Badge, Tabs, Switch, Button, TextInput, useComputedColorScheme, SimpleGrid, Stack, Group, Text, Box, Input, NumberInput } from '@mantine/core';
+import { IconCamera, IconLock } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
@@ -143,14 +144,13 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
           <TextInput label={<>{t('songEdit.titleLabel')}</>} type="text" value={state.title} onChange={(e) => handleFieldChange('title', e.target.value, editor.setTitle)} placeholder={t('songEdit.titlePlaceholder')} />
           <TextInput label={<>{t('songEdit.artistLabel')}</>} type="text" value={state.artist} onChange={(e) => handleFieldChange('artist', e.target.value, editor.setArtist)} placeholder={t('songEdit.artistPlaceholder')} />
           <LanguagePicker value={state.language} onChange={handleLanguageChange} preferredLanguages={preferredLanguages} />
-          <TextInput label={<>BPM</>} type="number" value={state.bpm} onChange={(e) => handleFieldChange('tempo', e.target.value, editor.setBpm)} placeholder="e.g. 120" min={MIN_BPM} max={MAX_BPM} />
+          <NumberInput label={<>BPM</>} value={state.bpm} onChange={(value) => handleFieldChange('tempo', String(value), editor.setBpm)} placeholder="e.g. 120" min={MIN_BPM} max={MAX_BPM} clampBehavior="none" allowDecimal={false} allowNegative={false} />
         </SimpleGrid>
         <TextInput label={<>YouTube URL</>} type="url" value={state.youtubeUrl} onChange={(e) => handleFieldChange('x_youtube', e.target.value, editor.setYoutubeUrl)} placeholder="https://youtube.com/watch?v=..." />
         <Input.Wrapper label={t('songs.tags')} labelElement="div">
           <TagPicker label={t('songs.tags')} selected={state.tags} onChange={handleTagsChange} />
         </Input.Wrapper>
-        <Switch label={<>Public {visibility === VISIBILITY.PRIVATE && <Text span size="xs" c="dimmed">&#128274; {t('songEdit.privateOnly')}</Text>}</>}
-                type="checkbox"
+        <Switch label={<>Public {visibility === VISIBILITY.PRIVATE && <Text span size="xs" c="dimmed"><IconLock size={12} aria-hidden /> {t('songEdit.privateOnly')}</Text>}</>}
                 disabled={!isOwner}
                 checked={visibility === VISIBILITY.PUBLIC}
                 onChange={(e) => setVisibility(e.target.checked ? VISIBILITY.PUBLIC : VISIBILITY.PRIVATE)}
@@ -162,11 +162,11 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
           </Group>
           {user && (
             <Box mb="xs">
-              <Button variant="default" size="xs" disabled={readOnly} onClick={ocr.open}>&#128247; Import from image or PDF</Button>
+              <Button variant="default" size="xs" disabled={readOnly} leftSection={<IconCamera size={14} aria-hidden />} onClick={ocr.open}>Import from image or PDF</Button>
             </Box>
           )}
           <Tabs value={editorTab} onChange={(value) => { if (value === 'preview') { setEditorTab('preview'); setForceRender(n => n + 1); } else setEditorTab('edit'); }} keepMounted keepMountedMode="display-none">
-            <Tabs.List grow className="editor-tabs"><Tabs.Tab value="edit">{t('songView.edit')}</Tabs.Tab><Tabs.Tab value="preview">Preview</Tabs.Tab></Tabs.List>
+            <Tabs.List grow hiddenFrom="sm"><Tabs.Tab value="edit">{t('songView.edit')}</Tabs.Tab><Tabs.Tab value="preview">Preview</Tabs.Tab></Tabs.List>
             <div className="editor-split">
               <Tabs.Panel value="edit" className="cm-editor-wrap">
                 <CodeMirrorEditor

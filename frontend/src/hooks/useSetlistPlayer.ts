@@ -1,6 +1,6 @@
 import { useOfflineActivity } from '../context/OfflineContext';
 import { useState, useCallback } from 'react';
-import { useWindowEvent } from '@mantine/hooks';
+import { useTimeout, useWindowEvent } from '@mantine/hooks';
 import { useSetlistLoader } from './useSetlistLoader';
 import { useEntryKeySave } from './useEntryKeySave';
 import { setlistPlayHash, parsePlayHash, replaceHash } from '../lib/routes';
@@ -29,6 +29,12 @@ export function useSetlistPlayer({
   const total = setlist?.entries.length || 0;
   const { isModified, saveOnline, saveLocal } = useEntryKeySave({ setlist, entry, savedTargetKeys, markSaved });
 
+  // Scroll once React has rendered the new song; cleared on unmount.
+  const { clear: clearScroll, start: startScroll } = useTimeout(() => {
+    window.scrollTo(0, 0);
+    document.querySelector('.chord-sheet-wrap')?.scrollTo(0, 0);
+  }, 40);
+
   const goTo = useCallback((newIdx: number) => {
     if (!setlist) return;
 
@@ -42,15 +48,9 @@ export function useSetlistPlayer({
     onNavigate?.();
 
     if (!setlist.isLocal) replaceHash(setlistPlayHash(setlistId, newIdx));
-
-    // Scroll after React re-renders the new song content
-    // We use a small timeout to ensure the DOM has actually updated and stabilized
-    setTimeout(() => {
-      window.scrollTo(0, 0);
-      const output = document.querySelector('.chord-sheet-wrap');
-      if (output) output.scrollTo(0, 0);
-    }, 40);
-  }, [setlist, onNavigate, setlistId, index]);
+    clearScroll();
+    startScroll();
+  }, [setlist, onNavigate, setlistId, index, clearScroll, startScroll]);
 
   useWindowEvent('hashchange', () => {
     const play = parsePlayHash(location.hash);

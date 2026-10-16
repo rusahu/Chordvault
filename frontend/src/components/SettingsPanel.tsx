@@ -1,6 +1,8 @@
 import { ActionIcon, Button, Group, Stack, Switch, Text } from '@mantine/core';
 import { IconRestore } from '@tabler/icons-react';
 
+const switchStyles = { body: { justifyContent: 'space-between' } };
+
 interface SettingsPanelProps {
   nashville: boolean;
   onNashvilleChange: (val: boolean) => void;
@@ -33,11 +35,11 @@ export function SettingsPanel({
       <Text size="sm" fw={600} c="dimmed" mb="md">Setlist defaults for all songs</Text>
       <Stack gap="md">
         {keepScreenOn !== undefined && onKeepScreenOnChange && (
-          <Switch labelPosition="left" label="Keep screen on" checked={keepScreenOn} onChange={(e) => onKeepScreenOnChange(e.target.checked)} styles={{ body: { justifyContent: 'space-between' } }} />
+          <Switch labelPosition="left" label="Keep screen on" checked={keepScreenOn} onChange={(e) => onKeepScreenOnChange(e.target.checked)} styles={switchStyles} />
         )}
-        <Switch labelPosition="left" label="Number notation" checked={nashville} onChange={(e) => onNashvilleChange(e.target.checked)} styles={{ body: { justifyContent: 'space-between' } }} />
-        <Switch labelPosition="left" label="Hide YouTube" checked={hideYt} onChange={(e) => onHideYtChange(e.target.checked)} styles={{ body: { justifyContent: 'space-between' } }} />
-        <Switch labelPosition="left" label="Multi-column layout" checked={twoCol} onChange={(e) => onTwoColChange(e.target.checked)} styles={{ body: { justifyContent: 'space-between' } }} />
+        <Switch labelPosition="left" label="Number notation" checked={nashville} onChange={(e) => onNashvilleChange(e.target.checked)} styles={switchStyles} />
+        <Switch labelPosition="left" label="Hide YouTube" checked={hideYt} onChange={(e) => onHideYtChange(e.target.checked)} styles={switchStyles} />
+        <Switch labelPosition="left" label="Multi-column layout" checked={twoCol} onChange={(e) => onTwoColChange(e.target.checked)} styles={switchStyles} />
         <Group justify="space-between" wrap="nowrap">
           <Text size="sm">Font size</Text>
           <Group gap={6} wrap="nowrap">

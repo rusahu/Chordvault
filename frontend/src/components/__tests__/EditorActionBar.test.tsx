@@ -44,3 +44,12 @@ describe('EditorActionBar', () => {
     expect(onDelete).toHaveBeenCalled();
   });
 });
+
+it('joins Save and the actions menu as one Mantine button group', () => {
+  render(<EditorActionBar {...base} onSaveAsVersion={vi.fn()} />);
+  const group = screen.getByRole('button', { name: 'Save' }).closest('.mantine-ButtonGroup-group');
+  expect(group).not.toBeNull();
+  const more = screen.getByRole('button', { name: 'songEdit.moreActions' });
+  expect(group).toContainElement(more);
+  expect(more).toHaveAttribute('data-variant', 'filled');
+});

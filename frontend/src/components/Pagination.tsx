@@ -1,4 +1,4 @@
-import { Pagination as MantinePagination } from '@mantine/core';
+import { Center, Pagination as MantinePagination } from '@mantine/core';
 
 interface PaginationProps {
   page: number;
@@ -8,5 +8,9 @@ interface PaginationProps {
 
 export function Pagination({ page, totalPages, onPageChange }: PaginationProps) {
   if (totalPages <= 1) return null;
-  return <MantinePagination className="pagination-row" value={page} total={totalPages} onChange={onPageChange} />;
+  return (
+    <Center className="pagination-row" mt={24} mb={12}>
+      <MantinePagination value={page} total={totalPages} onChange={onPageChange} />
+    </Center>
+  );
 }

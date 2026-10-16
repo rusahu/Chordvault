@@ -1,8 +1,10 @@
 import { useLibraryRead } from '../hooks/useLibraryRead';
 import { useOffline } from '../context/OfflineContext';
 import { useDisclosure } from '@mantine/hooks';
-import { Alert, Badge, Paper, Button, NativeSelect, Group, Box, Text } from '@mantine/core';
-import { IconLock } from '@tabler/icons-react';
+import { Alert, Badge, Paper, Button, NativeSelect, Group, Box, Text, Divider, ScrollArea } from '@mantine/core';
+import { SectionTitle } from '../components/SectionTitle';
+import { IconBrandYoutube, IconLock, IconPencil, IconPlus } from '@tabler/icons-react';
+import { BackButton } from '../components/BackButton';
 import { useState, useEffect, useMemo } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
@@ -126,27 +128,25 @@ export function SongView({ songId, navigate }: SongViewProps) {
     <div lang={song.language || undefined}>
       <Box mb="lg">
         <Group justify="space-between" mb="md">
-          <Button variant="default" size="xs" onClick={() => navigate(user ? 'my-songs' : 'browse')}>
-            &#8592; {t('songView.back')}
-          </Button>
+          <BackButton onClick={() => navigate(user ? 'my-songs' : 'browse')}>{t('songView.back')}</BackButton>
           <Group gap="xs">
             {isOwner && (
-              <Button disabled={readOnly} variant="default" size="xs" onClick={() => navigate('song-edit', { id: String(song.id) })}>
-                &#9998; {t('songView.edit')}
+              <Button disabled={readOnly} variant="default" size="xs" leftSection={<IconPencil size={14} aria-hidden />} onClick={() => navigate('song-edit', { id: String(song.id) })}>
+                {t('songView.edit')}
               </Button>
             )}
             {user && !isOwner && song.visibility !== VISIBILITY.PRIVATE && (
               <>
-                <Button disabled={readOnly} variant="default" size="xs" onClick={() => navigate('song-edit', { id: String(song.id) })}>
-                  &#43; {t('songEdit.createVersion')}
+                <Button disabled={readOnly} variant="default" size="xs" leftSection={<IconPlus size={14} aria-hidden />} onClick={() => navigate('song-edit', { id: String(song.id) })}>
+                  {t('songEdit.createVersion')}
                 </Button>
-                <Button variant="default" size="xs" disabled={readOnly} onClick={() => navigate('correction', { id: String(song.id) })}>
-                  &#9998; Correction
+                <Button variant="default" size="xs" disabled={readOnly} leftSection={<IconPencil size={14} aria-hidden />} onClick={() => navigate('correction', { id: String(song.id) })}>
+                  Correction
                 </Button>
               </>
             )}
-            <Button variant="default" size="xs" disabled={readOnly} onClick={addToSetlist.open}>
-              &#43; {t('songView.addToSetlist')}
+            <Button variant="default" size="xs" disabled={readOnly} leftSection={<IconPlus size={14} aria-hidden />} onClick={addToSetlist.open}>
+              {t('songView.addToSetlist')}
             </Button>
           </Group>
         </Group>
@@ -204,14 +204,18 @@ export function SongView({ songId, navigate }: SongViewProps) {
       {(song.tags || song.youtube_url) && (
         <Group gap="xs" mt="xs">
           <TagBadges tags={song.tags} />
-          {song.youtube_url && <a href={song.youtube_url} target="_blank" rel="noopener" className="yt-link">&#9654; YouTube</a>}
+          {song.youtube_url && (
+            <Button component="a" href={song.youtube_url} target="_blank" rel="noopener" variant="default" size="xs"
+              leftSection={<IconBrandYoutube size={16} color="var(--mantine-color-red-6)" aria-hidden />}>YouTube</Button>
+          )}
         </Group>
       )}
 
       {/* Corrections section */}
       {isOwner && corrections.length > 0 && (
-        <div className="corrections-section">
-          <h3 className="admin-section-title">{tReplace('admin.pendingCorrections', { count: corrections.length })}</h3>
+        <Box mt={32}>
+          <Divider mb={16} />
+          <SectionTitle>{tReplace('admin.pendingCorrections', { count: corrections.length })}</SectionTitle>
           {corrections.map((c) => (
             <Paper withBorder key={c.id} className="correction-card" bg="var(--ui-card-bg)" radius={12} p={16} mb={12} shadow="sm">
               <Group justify="space-between" gap={8} mb={12} c="dimmed" fz={13}>
@@ -221,10 +225,14 @@ export function SongView({ songId, navigate }: SongViewProps) {
                   <Button color="red" size="xs" disabled={readOnly} onClick={() => rejectCorrection(c.id)}>Reject</Button>
                 </Group>
               </Group>
-              <div className="correction-preview" dangerouslySetInnerHTML={{ __html: renderChordPro(c.content, 0, false) }} />
+              <Paper withBorder radius={8} bg="var(--bg)">
+                <ScrollArea.Autosize mah={300}>
+                  <Box p={12} dangerouslySetInnerHTML={{ __html: renderChordPro(c.content, 0, false) }} />
+                </ScrollArea.Autosize>
+              </Paper>
             </Paper>
           ))}
-        </div>
+        </Box>
       )}
 
       <AddToSetlistModal

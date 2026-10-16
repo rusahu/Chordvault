@@ -1,7 +1,7 @@
 import { liveQuery } from 'dexie';
-import { useDocumentVisibility } from '@mantine/hooks';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useNetwork, useWindowEvent } from '@mantine/hooks';
+import { useDocumentVisibility, useNetwork, useWindowEvent } from '@mantine/hooks';
+import { useActiveRef } from '../hooks/useActiveRef';
 import { useAuth } from './AuthContext';
 import { offlineLibrary } from '../lib/offlineLibrary';
 import { downloadOfflineLibrary } from '../lib/offlineDownload';
@@ -34,23 +34,23 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   const [usingDownload, setUsingDownload] = useState(false);
   const controller = useRef<AbortController | null>(null);
   const holds = useRef(0);
-  const mounted = useRef(true);
+  const mountedRef = useActiveRef();
   const readState = useCallback(async () => {
     const next = await offlineLibrary.status();
-    if (mounted.current) setState(next);
+    if (mountedRef.current) setState(next);
     return next;
-  }, []);
+  }, [mountedRef]);
   const reportSource = useCallback((downloaded: boolean) => setUsingDownload(downloaded), []);
   const enabled = !!user && state?.accountId === user.id && state.enabled;
   const { persisted, request: requestPersistence } = usePersistentStorage(enabled);
   const refresh = useCallback(async (force = false) => {
-    if (!mounted.current || !user || navigator.onLine === false || controller.current || (!force && holds.current)) return;
+    if (!mountedRef.current || !user || navigator.onLine === false || controller.current || (!force && holds.current)) return;
     if (getStoredUser()?.id !== user.id) return;
     const abort = new AbortController();
     controller.current = abort;
     try {
       const current = await offlineLibrary.state();
-      if (abort.signal.aborted || !mounted.current || getStoredUser()?.id !== user.id ||
+      if (abort.signal.aborted || !mountedRef.current || getStoredUser()?.id !== user.id ||
           !current?.enabled || current.accountId !== user.id || (!force && holds.current)) return;
       if (!force && current.checkedAt && Date.now() - current.checkedAt < 300_000) return;
       setBusy(true);
@@ -58,17 +58,17 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
       const updated = await downloadOfflineLibrary(user, offlineLibrary, AbortSignal.any([abort.signal, AbortSignal.timeout(60_000)]));
       if (updated && !abort.signal.aborted) setUsingDownload(false);
     } catch (err) {
-      if (!abort.signal.aborted && mounted.current) {
+      if (!abort.signal.aborted && mountedRef.current) {
         setError(errorMessage(err, 'Could not download library'));
         if (err instanceof ApiError && err.status === 401) logout();
       }
     } finally {
       if (controller.current === abort) {
         controller.current = null;
-        if (mounted.current) { setBusy(false); await readState().catch(() => {}); }
+        if (mountedRef.current) { setBusy(false); await readState().catch(() => {}); }
       }
     }
-  }, [user, logout, readState]);
+  }, [user, logout, readState, mountedRef]);
   const refreshRef = useRef(refresh);
   useEffect(() => { refreshRef.current = refresh; }, [refresh]);
   const holdRefresh = useCallback((hold: boolean) => {
@@ -107,8 +107,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   }, []);
   useEffect(() => { if (visibility === 'visible') void refreshRef.current(); }, [visibility]);
   useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; controller.current?.abort(); };
+    return () => controller.current?.abort();
   }, []);
   useEffect(() => {
     let active = true;

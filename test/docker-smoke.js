@@ -1,4 +1,3 @@
-/* global AbortSignal */
 const { execFileSync } = require('node:child_process');
 const { appendFileSync } = require('node:fs');
 const { setTimeout: sleep } = require('node:timers/promises');

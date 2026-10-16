@@ -103,10 +103,8 @@ function createSongsRouter() {
   router.get('/songs/:id', optionalAuth, (req, res) => {
     const song = findSong(req.params.id);
     if (song.status === STATUS.PENDING) {
-      const isSubmitter = req.user && req.user.id === song.user_id;
       const isOriginalOwner = req.user && song.parent_id && Song.findById(song.parent_id)?.user_id === req.user.id;
-      const isAdmin = req.user && isAdminRole(req.user.role);
-      if (!isSubmitter && !isOriginalOwner && !isAdmin) throw new AppError('Song not found', 404);
+      if (!canManageSong(req.user, song.user_id) && !isOriginalOwner) throw new AppError('Song not found', 404);
     }
     if (!canViewSongVisibility(req.user, song)) throw new AppError('Song not found', 404);
     // Include version_count for single song view
@@ -147,13 +145,14 @@ function createSongsRouter() {
       });
     });
 
+    let result;
     try {
-      const { imported, skipped } = Song.importSongs(req.user.id, valid);
-      res.json({ imported, skipped, errors });
+      result = Song.importSongs(req.user.id, valid);
     } catch (e) {
       console.error('Import failed:', e.message);
-      res.status(500).json({ error: 'Import failed. Please check your data and try again.' });
+      throw new AppError('Import failed. Please check your data and try again.', 500);
     }
+    res.json({ imported: result.imported, skipped: result.skipped, errors });
   });
 
   router.put('/songs/:id', requireAuth, (req, res) => {

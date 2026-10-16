@@ -185,6 +185,17 @@ describe('SongEditView two-way sync', () => {
     expect(editor.value).toContain('{tempo: 120}');
   });
 
+  it('BPM is a whole-number field that leaves the song alone on blur', async () => {
+    await renderEditor();
+    fireEvent.change(getEditor(), { target: { value: '{tempo: 72}\n[G]Lyrics' } });
+    await waitFor(() => expect(getBpmInput().value).toBe('72'));
+    fireEvent.focus(getBpmInput());
+    fireEvent.blur(getBpmInput());
+    expect(getEditor().value).toBe('{tempo: 72}\n[G]Lyrics');
+    fireEvent.change(getBpmInput(), { target: { value: '80.5' } });
+    expect(getEditor().value).not.toContain('80.5');
+  });
+
   it('clearing a field removes the directive from content', async () => {
     await renderEditor();
     const titleInput = getTitleInput();

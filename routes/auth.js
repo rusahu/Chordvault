@@ -12,12 +12,12 @@ async function assertTurnstile(token) {
   const secret = process.env.TURNSTILE_SECRET_KEY;
   if (!secret) return;
   if (token) {
-    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    const verified = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `secret=${encodeURIComponent(secret)}&response=${encodeURIComponent(token)}`,
-    });
-    if ((await res.json()).success === true) return;
+      body: new URLSearchParams({ secret, response: token }),
+      signal: AbortSignal.timeout(10_000),
+    }).then(res => res.json()).then(result => result.success === true, () => false);
+    if (verified) return;
   }
   throw new AppError('Bot verification failed. Please try again.', 400);
 }

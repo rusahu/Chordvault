@@ -81,3 +81,18 @@ describe('SetlistEntryCard edit song', () => {
     expect(queryByRole('button', { name: 'songView.edit' })).toBeNull();
   });
 });
+
+it('opens from the keyboard like a list card, but not from its own buttons', () => {
+  const onClick = vi.fn();
+  const { getByText } = render(
+    <SetlistEntryCard entry={ENTRY} idx={3} isEditable isLocal={false} onRemove={vi.fn()} onStepKey={vi.fn()} onClick={onClick} />,
+  );
+  const card = getByText('Song').closest('[role="button"]') as HTMLElement;
+  expect(card).toHaveAttribute('tabindex', '0');
+  expect(card).toHaveClass('mantine-focus-auto');
+  fireEvent.keyDown(card, { key: 'Enter' });
+  fireEvent.keyDown(card, { key: ' ' });
+  expect(onClick.mock.calls).toEqual([[3], [3]]);
+  fireEvent.keyDown(card.querySelector('[aria-label="Remove"]')!, { key: 'Enter' });
+  expect(onClick).toHaveBeenCalledTimes(2);
+});

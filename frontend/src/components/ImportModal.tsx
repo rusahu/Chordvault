@@ -7,6 +7,7 @@ import { useDemo } from '../context/DemoContext';
 import { notifyError } from '../lib/errors';
 import { useStackedModalProps } from '../hooks/useStackedModalProps';
 import { useActiveRef } from '../hooks/useActiveRef';
+import { readFile } from '../lib/files';
 import { importSongs, ApiError, type ImportResult } from '../lib/api';
 import { fileToSong, chunkSongs } from '../lib/import';
 import { IMPORT_ACCEPT, IMPORT_CONFIRM_FILE_COUNT, DEMO_MAX_IMPORT } from '../lib/constants';
@@ -20,16 +21,6 @@ interface Summary {
   imported: number;
   skipped: { filename: string }[];
   errors: { filename: string; error: string }[];
-}
-
-/** FileReader honours a byte order mark (UTF-16 files from Windows Notepad); Blob.text() always decodes UTF-8. */
-function readText(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsText(file);
-  });
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -87,7 +78,7 @@ function ImportContent({ busy, setBusy, onClose }: Omit<ImportModalProps, 'opene
 
     setBusy(true);
     try {
-      const texts = await Promise.all(files.map(readText));
+      const texts = await Promise.all(files.map(file => readFile(file, 'text')));
       if (!active.current) return;
       const songs = texts.map((t, i) => fileToSong(files[i].name, t));
       const batches = chunkSongs(songs);

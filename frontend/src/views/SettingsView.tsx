@@ -10,7 +10,7 @@ import { useStatusMessage } from '../hooks/useStatusMessage';
 import { StatusText } from '../components/StatusText';
 import { downloadBlob } from '../lib/download';
 import { errorMessage } from '../lib/errors';
-import { LANGUAGES, languageName } from '../lib/languages';
+import { languageName, languageOptions } from '../lib/languages';
 import { useDemo } from '../context/DemoContext';
 import { useAuth } from '../context/AuthContext';
 import { exportSongsBlob } from '../lib/api';
@@ -132,9 +132,9 @@ export function SettingsView() {
             <Text size="sm" c="dimmed">{t('common.demoDisabled')}</Text>
           ) : (
             <Stack gap="sm" renderRoot={(props) => <form {...props} onSubmit={passwordForm.onSubmit(changePassword)} />}>
-              <PasswordInput label={<>Current Password</>} type="password" {...passwordForm.getInputProps('currentPw')} autoComplete="current-password" />
-              <PasswordInput label={<>New Password</>} type="password" {...passwordForm.getInputProps('newPw')} autoComplete="new-password" />
-              <PasswordInput label={<>Confirm New Password</>} type="password" {...passwordForm.getInputProps('confirmPw')} autoComplete="new-password" />
+              <PasswordInput label={<>Current Password</>} {...passwordForm.getInputProps('currentPw')} autoComplete="current-password" />
+              <PasswordInput label={<>New Password</>} {...passwordForm.getInputProps('newPw')} autoComplete="new-password" />
+              <PasswordInput label={<>Confirm New Password</>} {...passwordForm.getInputProps('confirmPw')} autoComplete="new-password" />
               <Button style={{ alignSelf: 'flex-start' }} type="submit" loading={passwordAction.busy} disabled={passwordAction.busy}>Change Password</Button>
               <StatusText status={pwStatus.status} />
             </Stack>
@@ -155,7 +155,7 @@ export function SettingsView() {
               {preferredLangs.length === 0 && <Text size="sm" c="dimmed">No languages set</Text>}
             </Group>
             {preferredLangs.length < MAX_PREFERRED_LANGUAGES && (
-              <Select searchable label="Add a language" placeholder="Search languages" value={null} data={LANGUAGES.filter(language => !preferredLangs.includes(language.code)).map(language => ({ value: language.code, label: `${language.name} (${language.code})` }))} onChange={(value) => { if (value) addLang(value); }} />
+              <Select searchable label="Add a language" placeholder="Search languages" value={null} data={languageOptions(code => !preferredLangs.includes(code))} onChange={(value) => { if (value) addLang(value); }} />
             )}
             <StatusText status={langStatus.status} />
           </Stack>
@@ -204,7 +204,7 @@ export function SettingsView() {
                 placeholder={defaultPrompt}
                 rows={7}
                 maxLength={MAX_OCR_PROMPT}
-                styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 12, resize: 'vertical' } }}
+                resize="vertical" styles={{ input: { fontFamily: 'var(--font-mono)', fontSize: 12 } }}
               />
               <Text size="xs" c="dimmed" ta="right" mt={4}>
                 {ocrPrompt.length} / {MAX_OCR_PROMPT}
@@ -213,7 +213,7 @@ export function SettingsView() {
             <Group gap="xs">
               <Button size="xs" onClick={saveOcrPrompt}>Save Prompt</Button>
               {!ocrPrompt && (
-                <Button size="xs" style={{ background: 'var(--surface-alt, var(--surface))' }} onClick={() => setOcrPrompt(defaultPrompt)}>
+                <Button size="xs" variant="default" onClick={() => setOcrPrompt(defaultPrompt)}>
                   Copy Default
                 </Button>
               )}

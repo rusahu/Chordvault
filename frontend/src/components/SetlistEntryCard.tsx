@@ -1,10 +1,13 @@
-import { Badge, Box, Button, VisuallyHidden, CloseButton, Flex, Group } from '@mantine/core';
+import { Badge, Box, Button, VisuallyHidden, CloseButton, Flex, Group, Text } from '@mantine/core';
 import { IconGripVertical, IconLock, IconPencil } from '@tabler/icons-react';
 import { getSongKey } from '../lib/chords';
 import { entryContent, entrySemitones, entryStartKey } from '../lib/setlistKeys';
 import type { SetlistEntry } from '../types';
 import { VISIBILITY } from '../lib/constants';
 import { useI18n } from '../context/I18nContext';
+import { cardButtonProps } from '../lib/cardButton';
+import { CardTitle } from './CardTitle';
+import { CardMeta } from './CardMeta';
 
 interface SetlistEntryCardProps {
   entry: SetlistEntry;
@@ -41,7 +44,7 @@ export function SetlistEntryCard({
 
   return (
     <Flex
-      className={`song-card setlist-song-item ${isDragging ? 'dragging' : ''}`}
+      className={`song-card mantine-focus-auto setlist-song-item ${isDragging ? 'dragging' : ''}`}
       align="center"
       wrap="wrap"
       columnGap={{ base: 6, xs: 12 }}
@@ -49,7 +52,7 @@ export function SetlistEntryCard({
       px={{ base: 12, xs: 20 }}
       py={{ base: 10, xs: 12 }}
       mih={72}
-      onClick={() => onClick(idx)}
+      {...cardButtonProps(() => onClick(idx))}
       {...dragProps}
     >
       {isEditable && (
@@ -63,9 +66,9 @@ export function SetlistEntryCard({
           <IconGripVertical size={20} aria-hidden />
         </Box>
       )}
-      <Box className="setlist-song-pos" mr={{ base: 4, xs: 16 }} w={{ base: 20, xs: 24 }}>{idx + 1}</Box>
+      <Text component="div" fz={15} fw={700} c="dimmed" ta="center" mr={{ base: 4, xs: 16 }} w={{ base: 20, xs: 24 }} style={{ fontVariantNumeric: 'tabular-nums' }}>{idx + 1}</Text>
       <Box className="song-card-info" flex={1} miw={0}>
-        <div className="song-card-title">
+        <CardTitle>
           {entry.title}
           {entry.visibility === VISIBILITY.PRIVATE && (
             <Badge ml={8} px={8} title="Private"><IconLock size={14} aria-hidden /><VisuallyHidden>Private</VisuallyHidden></Badge>
@@ -73,11 +76,11 @@ export function SetlistEntryCard({
           {!isLocal && isEditable && entry.content_override && (
             <Badge ml={8}>{t('setlist.edited')}</Badge>
           )}
-        </div>
-        <div className="song-card-meta">
+        </CardTitle>
+        <CardMeta>
           {entry.artist ? `${entry.artist} · ` : ''}
           {keyDisplay}
-        </div>
+        </CardMeta>
       </Box>
       {(isEditable || onEdit) && (
         <Group className="setlist-entry-controls" gap={4} wrap="nowrap" justify="flex-end" w={{ base: '100%', xs: 'auto' }} onClick={(e) => e.stopPropagation()}>

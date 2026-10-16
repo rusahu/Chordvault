@@ -1,5 +1,6 @@
 import { useOffline, useOfflineActivity } from '../context/OfflineContext';
 import { Button, useComputedColorScheme, Group, Title, Text, Paper } from '@mantine/core';
+import { BackButton } from '../components/BackButton';
 import { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
 import { showStatusNotification as toast } from '../lib/notifications';
@@ -39,7 +40,7 @@ export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
   return (
     <>
       <Group mb="lg">
-        <Button variant="default" size="xs" onClick={() => navigate('song-view', { id: String(songId) })}>&#8592; Cancel</Button>
+        <BackButton onClick={() => navigate('song-view', { id: String(songId) })}>Cancel</BackButton>
         <Title order={2} size="h3" flex="1 1 160px">Submit Correction</Title>
         <Button size="xs" disabled={readOnly} onClick={submit}>Submit</Button>
       </Group>

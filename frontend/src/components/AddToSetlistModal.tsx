@@ -109,11 +109,10 @@ export function AddToSetlistModal({
 
 
         <CardGrid>
-          <ListCard className="mantine-focus-auto" title={<Group gap={6}><IconPlus size={16} aria-hidden />{t('setlist.newSetlist')}</Group>} onClick={createAndAdd} />
+          <ListCard title={<Group gap={6}><IconPlus size={16} aria-hidden />{t('setlist.newSetlist')}</Group>} onClick={createAndAdd} />
           {userSetlists.map((sl) => (
             <ListCard
               key={sl.id}
-              className="mantine-focus-auto"
               title={sl.name}
               meta={formatSongCount(sl.song_count, t)}
               onClick={() => { void addToExisting(sl.id); }}

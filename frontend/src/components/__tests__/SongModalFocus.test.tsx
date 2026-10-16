@@ -116,3 +116,12 @@ it('labels the expanded version selector and picks the chosen arrangement', asyn
   await userEvent.selectOptions(await screen.findByLabelText('Version'), '8');
   expect(pick).toHaveBeenCalledExactlyOnceWith({ ...song, id: 8, username: 'arranger' });
 });
+
+it('the picker search clears with the shared clear button', async () => {
+  render(<SongPicker opened onPick={vi.fn()} onClose={vi.fn()} />);
+  const box = await screen.findByRole('searchbox');
+  await waitFor(() => expect(box).toHaveFocus());
+  await userEvent.type(box, 'grace');
+  await userEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+  expect(box).toHaveValue('');
+});
