@@ -102,7 +102,7 @@ describe('SetlistPlayView edit song', () => {
 describe('SetlistPlayView inline editor save as version', () => {
   const updateEntry = vi.fn();
 
-  function renderEditor(text: string) {
+  function renderEditor(text: string, button = 'setlist.saveAsVersion') {
     (useSetlistPlayer as Mock).mockReturnValue({
       setlist: { id: 4, entries: [] },
       entry: { entry_id: 7, song_id: 42, title: 'Song', content: '{title: Song}\n[C]a' },
@@ -112,12 +112,12 @@ describe('SetlistPlayView inline editor save as version', () => {
     });
     render(<SetlistPlayView setlistId={4} navigate={vi.fn()} />);
     const shortcuts = (useKeyboardShortcuts as Mock).mock.lastCall![0];
-    act(() => shortcuts.e());
+    act(() => shortcuts.e(new KeyboardEvent('keydown', { key: 'e' })));
     fireEvent.change(screen.getByLabelText('Setlist chord sheet'), { target: { value: text } });
-    fireEvent.click(screen.getByRole('button', { name: 'setlist.saveAsVersion' }));
+    fireEvent.click(screen.getByRole('button', { name: button }));
   }
 
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => { vi.clearAllMocks(); apiCall.mockResolvedValue({ id: 99 }); });
 
   it('saves chords over lyrics as ChordPro with a key', async () => {
     renderEditor('{title: Song}\nG       C\nAmazing grace');
@@ -129,9 +129,25 @@ describe('SetlistPlayView inline editor save as version', () => {
     expect(apiCall).toHaveBeenCalledWith('PUT', '/api/setlists/4/entries/7', { content_override: saved });
   });
 
-  it('rejects an invalid tempo without saving', () => {
+  it.each(['e', 'E'])('opening the editor with %s keeps the key out of the sheet', (key) => {
+    renderEditor('{title: Song}\n[C]a');
+    const shortcuts = (useKeyboardShortcuts as Mock).mock.lastCall![0];
+    const event = new KeyboardEvent('keydown', { key, cancelable: true });
+    act(() => shortcuts[key](event));
+    expect(event.defaultPrevented).toBe(true);
+  });
+
+  it('saves the edit to this setlist only and closes the editor', async () => {
+    renderEditor('{title: Song}\n[D]edited', 'setlist.saveToSetlist');
+    await waitFor(() => expect(updateEntry).toHaveBeenCalledWith({ content_override: '{title: Song}\n[D]edited' }));
+    expect(apiCall).toHaveBeenCalledWith('PUT', '/api/setlists/4/entries/7', { content_override: '{title: Song}\n[D]edited' });
+    expect(apiCall).not.toHaveBeenCalledWith('POST', expect.anything(), expect.anything());
+    await waitFor(() => expect(screen.queryByLabelText('Setlist chord sheet')).not.toBeInTheDocument());
+  });
+
+  it('rejects an invalid tempo without saving', async () => {
     renderEditor('{title: Song}\n{tempo: 120bpm}\n[C]a');
-    expect(showStatusNotification).toHaveBeenCalledWith(SONG_ERRORS.bpmRange, 'error');
+    await waitFor(() => expect(showStatusNotification).toHaveBeenCalledWith(SONG_ERRORS.bpmRange, 'error'));
     expect(apiCall).not.toHaveBeenCalled();
   });
 });
