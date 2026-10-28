@@ -200,5 +200,7 @@
   "moveChords.hint": "Tap a chord, then tap where it goes. Tap a letter to add a chord.",
   "moveChords.chordName": "Chord name",
   "moveChords.add": "Add chord",
-  "moveChords.done": "Done"
+  "moveChords.done": "Done",
+  "chordBar.change": "Change chord",
+  "moveChords.use": "Use chord {name}"
 }

@@ -78,3 +78,18 @@ it('shows directives as plain lines that cannot be tapped', () => {
   expect(screen.getByText('{title: Song}')).toBeInTheDocument();
   expect(letter(container, 0)).toBeNull();
 });
+
+it('adds a suggested chord with one tap, no typing', () => {
+  const { container } = renderDoc('{key: G}\n[D]grace');
+  fireEvent.click(letter(container, 14));
+  fireEvent.click(screen.getByRole('button', { name: 'Use chord Em' }));
+  expect(text()).toBe('{key: G}\n[D]gr[Em]ace');
+});
+
+it('renames the picked chord from the suggestions', () => {
+  renderDoc('{key: G}\n[D]grace [G]x');
+  fireEvent.click(screen.getByRole('button', { name: 'Chord D' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Use chord Am' }));
+  expect(text()).toBe('{key: G}\n[Am]grace [G]x');
+  expect(screen.getByRole('button', { name: 'Chord Am' })).toHaveAttribute('aria-pressed', 'true');
+});

@@ -1,10 +1,11 @@
 import { Prec, type Extension } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
+import { autocompletion, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { bracketMatching } from '@codemirror/language';
 import { chordProLanguage, chordProHighlightStyle } from './chordpro-lang';
 import { moveChord } from './chordCommands';
+import { chordCompletionSource } from './chordCompletion';
 
 const cvTheme = EditorView.theme({
   '.cm-content': { padding: '12px 0', minHeight: '300px' },
@@ -57,6 +58,7 @@ export function chordEditorExtensions(): Extension[] {
     history(),
     closeBrackets(),
     chordBracketInput,
+    autocompletion({ override: [chordCompletionSource], icons: false }),
     keymap.of([
       { key: 'Alt-ArrowLeft', run: moveChord(-1) },
       { key: 'Alt-ArrowRight', run: moveChord(1) },

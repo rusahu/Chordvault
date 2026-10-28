@@ -6,6 +6,7 @@ import { chordAt, chordTokens, cleanChordName, type ChordToken } from './chordTo
 const MOVE = 'chord.move';
 const DELETE = 'chord.delete';
 const INSERT = 'chord.insert';
+const RENAME = 'chord.rename';
 
 /** The letter, or the whole neighbouring chord, next to `token` on its line; null at the line's edge. */
 function neighbour(state: EditorState, token: ChordToken, direction: 1 | -1): { from: number; to: number } | null {
@@ -49,6 +50,11 @@ export function moveChordTo(state: EditorState, token: ChordToken, pos: number):
 export function insertChordAt(pos: number, name: string): TransactionSpec {
   const chordText = `[${cleanChordName(name)}]`;
   return { changes: { from: pos, insert: chordText }, selection: { anchor: pos + chordText.length }, userEvent: INSERT };
+}
+
+export function renameChord(token: ChordToken, name: string): TransactionSpec {
+  const chordText = `[${cleanChordName(name)}]`;
+  return { changes: { from: token.from, to: token.to, insert: chordText }, selection: { anchor: token.from + 1 }, userEvent: RENAME };
 }
 
 export function deleteChordToken(token: ChordToken): TransactionSpec {

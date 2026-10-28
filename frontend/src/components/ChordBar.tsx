@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react';
 import { Group, ScrollArea } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconChevronLeft, IconChevronRight, IconX } from '@tabler/icons-react';
+import { IconArrowsExchange, IconChevronLeft, IconChevronRight, IconX } from '@tabler/icons-react';
 import type { Command, EditorView } from '@codemirror/view';
 import { cursorCharLeft, cursorCharRight } from '@codemirror/commands';
 import { deleteChord, insertText, moveChord } from '../lib/chordCommands';
+import { startChordChange } from '../lib/chordCompletion';
 import type { ChordToken } from '../lib/chordTokens';
 import { useI18n } from '../context/I18nContext';
 import { ChordKey } from './ChordKey';
@@ -30,6 +31,7 @@ export function ChordBar({ view, chord }: ChordBarProps) {
         {chord && <>
           {key(t('chordBar.moveLeft'), moveChord(-1), <>‹ {chord.name}</>, true)}
           {key(t('chordBar.moveRight'), moveChord(1), <>{chord.name} ›</>, true)}
+          {key(t('chordBar.change'), startChordChange, <IconArrowsExchange size={20} aria-hidden />, true)}
           {key(t('chordBar.delete'), deleteChord, <IconX size={20} aria-hidden />, true)}
         </>}
         {key(t('chordBar.brackets'), insertText('[]', 1), '[ ]')}

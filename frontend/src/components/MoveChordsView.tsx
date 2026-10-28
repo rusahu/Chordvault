@@ -5,7 +5,8 @@ import type { TransactionSpec } from '@codemirror/state';
 import type { EditorView } from '@codemirror/view';
 import { chordLayout, lineWords, type LayoutLine } from '../lib/chordLayout';
 import { chordAt, type ChordToken } from '../lib/chordTokens';
-import { deleteChordToken, insertChordAt, moveChordBy, moveChordTo } from '../lib/chordCommands';
+import { deleteChordToken, insertChordAt, moveChordBy, moveChordTo, renameChord } from '../lib/chordCommands';
+import { suggestChords } from '../lib/chordSuggestions';
 import { useI18n } from '../context/I18nContext';
 import { ChordKey } from './ChordKey';
 
@@ -39,6 +40,7 @@ export function MoveChordsView({ view, content }: MoveChordsViewProps) {
   const [target, setTarget] = useState<number | null>(null);
   const [name, setName] = useState('');
 
+  const suggestions = useMemo(() => suggestChords(content), [content]);
   const chords = layout.flatMap((line) => (line.kind === 'lyrics' ? line.segments.flatMap((s) => (s.chord ? [s.chord] : [])) : []));
   const current = picked && chords.find((c) => sameChord(c, picked));
 
@@ -60,11 +62,15 @@ export function MoveChordsView({ view, content }: MoveChordsViewProps) {
     else { setTarget(pos); setName(''); }
   };
 
-  const add = () => {
-    if (target === null || !name.trim()) return;
-    apply(insertChordAt(target, name.trim()), false);
+  const add = (chordName = name) => {
+    if (target === null || !chordName.trim()) return;
+    apply(insertChordAt(target, chordName.trim()), false);
     setTarget(null);
   };
+
+  const chips = (use: (chordName: string) => void) => suggestions.map((s) => (
+    <ChordKey key={s} chord label={tReplace('moveChords.use', { name: s })} onPress={() => use(s)}>{s}</ChordKey>
+  ));
 
   const line = (l: LayoutLine) => l.kind === 'other'
     ? <div key={l.from} className="move-line move-other">{l.text}</div>
@@ -104,11 +110,14 @@ export function MoveChordsView({ view, content }: MoveChordsViewProps) {
             <ChordKey chord label={t('chordBar.moveRight')} onPress={() => apply(moveChordBy(view.state, current, 1))}>{current.name} ›</ChordKey>
             <ChordKey chord label={t('chordBar.delete')} onPress={() => apply(deleteChordToken(current), false)}><IconX size={20} aria-hidden /></ChordKey>
             <ChordKey label={t('moveChords.done')} onPress={() => setPicked(null)}><IconCheck size={20} aria-hidden /></ChordKey>
+            {chips((chordName) => apply(renameChord(current, chordName)))}
           </> : target !== null ? <>
-            <TextInput aria-label={t('moveChords.chordName')} placeholder={t('moveChords.chordName')} value={name} autoFocus w={120}
-              onChange={(e) => setName(e.currentTarget.value)} onKeyDown={(e) => { if (e.key === 'Enter') add(); }} />
-            <ChordKey chord label={t('moveChords.add')} onPress={add}><IconCheck size={20} aria-hidden /></ChordKey>
             <ChordKey label={t('songEdit.cancel')} onPress={() => setTarget(null)}><IconX size={20} aria-hidden /></ChordKey>
+            {chips(add)}
+            {/* No autofocus: a chip covers most chords without opening the on-screen keyboard. */}
+            <TextInput aria-label={t('moveChords.chordName')} placeholder={t('moveChords.chordName')} value={name} w={110} style={{ flexShrink: 0 }}
+              onChange={(e) => setName(e.currentTarget.value)} onKeyDown={(e) => { if (e.key === 'Enter') add(); }} />
+            <ChordKey chord label={t('moveChords.add')} onPress={() => add()}><IconCheck size={20} aria-hidden /></ChordKey>
           </> : (
             <Text size="sm" c="dimmed" px={4}>{t('moveChords.hint')}</Text>
           )}

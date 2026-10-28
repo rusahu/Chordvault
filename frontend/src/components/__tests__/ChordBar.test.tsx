@@ -31,7 +31,7 @@ function bar(doc: string, cursor: number) {
 
 const text = (view: EditorView) => view.state.doc.toString();
 const ALWAYS = ['Chord brackets', 'Sharp', 'Flat', 'Slash', 'Minor', 'Cursor left', 'Cursor right'];
-const IN_CHORD = ['Move chord left', 'Move chord right', 'Delete chord'];
+const IN_CHORD = ['Move chord left', 'Move chord right', 'Change chord', 'Delete chord'];
 
 it('always shows the typing keys, and the chord keys only in a chord', () => {
   bar('[C]Amazing', 6);
@@ -97,5 +97,5 @@ it('appears in the editor and follows the cursor into a chord', () => {
 
 it('puts the chord keys first, where a phone shows them without scrolling', () => {
   bar('[C]a', 1);
-  expect(screen.getAllByRole('button').slice(0, 3).map((b) => b.getAttribute('aria-label'))).toEqual(IN_CHORD);
+  expect(screen.getAllByRole('button').slice(0, IN_CHORD.length).map((b) => b.getAttribute('aria-label'))).toEqual(IN_CHORD);
 });

@@ -1,7 +1,7 @@
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { history, undo } from '@codemirror/commands';
-import { deleteChord, insertChordAt, moveChord, moveChordTo } from '../chordCommands';
+import { deleteChord, insertChordAt, moveChord, moveChordTo, renameChord } from '../chordCommands';
 import { chordAt } from '../chordTokens';
 
 const views: EditorView[] = [];
@@ -86,5 +86,14 @@ describe('insertChordAt', () => {
   it('inserts a cleaned chord', () => {
     const state = EditorState.create({ doc: 'grace' });
     expect(state.update(insertChordAt(0, 'A / Db')).state.doc.toString()).toBe('[A/C#]grace');
+  });
+});
+
+describe('renameChord', () => {
+  it('swaps the name and leaves the cursor inside the chord', () => {
+    const state = EditorState.create({ doc: 'a[D]b' });
+    const next = state.update(renameChord(chordAt(state, 2)!, 'A / Db')).state;
+    expect(next.doc.toString()).toBe('a[A/C#]b');
+    expect(chordAt(next, next.selection.main.head)?.name).toBe('A/C#');
   });
 });
