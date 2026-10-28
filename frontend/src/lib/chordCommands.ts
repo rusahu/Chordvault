@@ -73,7 +73,9 @@ export const deleteChord: Command = (view) => {
   return true;
 };
 
-export const insertText = (text: string): Command => (view) => {
-  view.dispatch(view.state.replaceSelection(text), { userEvent: 'input.type' });
+/** Types `text` over the selection, leaving the cursor `cursor` characters into it (default: after it). */
+export const insertText = (text: string, cursor = text.length): Command => (view) => {
+  const { from, to } = view.state.selection.main;
+  view.dispatch({ changes: { from, to, insert: text }, selection: { anchor: from + cursor }, userEvent: 'input.type' });
   return true;
 };

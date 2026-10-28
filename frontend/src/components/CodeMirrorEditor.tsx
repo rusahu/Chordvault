@@ -3,6 +3,8 @@ import { useComputedColorScheme } from '@mantine/core';
 import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, placeholder as cmPlaceholder } from '@codemirror/view';
 import { chordEditorExtensions, colorTheme } from '../lib/chordEditorExtensions';
+import { chordAt, type ChordToken } from '../lib/chordTokens';
+import { ChordBar } from './ChordBar';
 
 interface CodeMirrorEditorProps {
   value: string;
@@ -17,6 +19,8 @@ export function CodeMirrorEditor({ value, onChange, placeholder, ariaLabel, auto
   const dark = useComputedColorScheme('dark') === 'dark';
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const [view, setView] = useState<EditorView | null>(null);
+  const [chord, setChord] = useState<ChordToken | null>(null);
   const [theme] = useState(() => new Compartment());
   const onChangeRef = useRef(onChange);
   const onViewReadyRef = useRef(onViewReady);
@@ -33,6 +37,7 @@ export function CodeMirrorEditor({ value, onChange, placeholder, ariaLabel, auto
       if (update.docChanged) {
         onChangeRef.current(update.state.doc.toString());
       }
+      if (update.docChanged || update.selectionSet) setChord(chordAt(update.state, update.state.selection.main.head));
     });
 
     const extensions = [...chordEditorExtensions(), theme.of([]), updateListener];
@@ -41,10 +46,12 @@ export function CodeMirrorEditor({ value, onChange, placeholder, ariaLabel, auto
 
     const view = new EditorView({ state: EditorState.create({ doc, extensions }), parent: containerRef.current });
     viewRef.current = view;
+    setView(view);
+    setChord(chordAt(view.state, view.state.selection.main.head));
     if (focus) view.focus();
     onViewReadyRef.current?.(view);
 
-    return () => { view.destroy(); viewRef.current = null; onViewReadyRef.current?.(null); };
+    return () => { view.destroy(); viewRef.current = null; setView(null); onViewReadyRef.current?.(null); };
   }, [theme]);
 
   useEffect(() => {
@@ -61,5 +68,10 @@ export function CodeMirrorEditor({ value, onChange, placeholder, ariaLabel, auto
     view.dispatch({ changes: { from: 0, to: currentDoc.length, insert: value } });
   }, [value]);
 
-  return <div ref={containerRef} className="cm-editor-container" />;
+  return (
+    <>
+      {view && <ChordBar view={view} chord={chord} />}
+      <div ref={containerRef} className="cm-editor-container" />
+    </>
+  );
 }

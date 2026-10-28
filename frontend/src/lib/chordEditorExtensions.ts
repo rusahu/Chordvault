@@ -38,6 +38,13 @@ const chordBracketInput = Prec.high(EditorView.inputHandler.of((view, from, to, 
   return true;
 }));
 
+// Keep the cursor clear of the sticky editor and chord bars when CodeMirror scrolls it into view.
+const stickyBarMargins = EditorView.scrollMargins.of((view) => {
+  const editorBar = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--editor-bar-h')) || 0;
+  const chordBar = view.dom.parentElement?.parentElement?.querySelector<HTMLElement>(':scope > .chord-bar')?.offsetHeight ?? 0;
+  return { top: editorBar + chordBar };
+});
+
 export const colorTheme = (dark: boolean) => (dark ? darkTheme : lightTheme);
 
 /** Everything the ChordPro editor runs with, apart from per-instance callbacks and the swappable color theme. */
@@ -56,5 +63,6 @@ export function chordEditorExtensions(): Extension[] {
       ...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap,
     ]),
     EditorView.lineWrapping,
+    stickyBarMargins,
   ];
 }

@@ -4,8 +4,19 @@
   gap: 0;
   border: 1px solid var(--border);
   border-radius: 14px;
+  /* clip, not hidden: hidden makes this a scroll box and the chord bar inside stops sticking. hidden is the fallback. */
   overflow: hidden;
+  overflow: clip;
   min-height: 400px;
+}
+
+/* Touch chord bar: pinned under the editor action bar while the page scrolls */
+.chord-bar {
+  position: sticky;
+  top: var(--editor-bar-h, 0px);
+  z-index: 40;
+  background: var(--raise);
+  border-bottom: 1px solid var(--border);
 }
 
 /* Break out of #app max-width on desktop for more editor room */
@@ -35,6 +46,11 @@
   background: var(--bg);
 }
 
+/* From 768px the editor pane scrolls itself, so the chord bar pins to the pane's top */
+@media (min-width: 768px) {
+  .editor-split > .cm-editor-wrap .chord-bar { top: 0; }
+}
+
 /* Compact chord sheet inside editor preview */
 .editor-preview-wrap .chord-sheet-wrap {
   padding: 20px 24px;
@@ -51,6 +67,7 @@
     flex: 1 1 auto;
     border-right: none;
     max-height: none;
+    overflow: visible;
   }
   .editor-split > .editor-preview-wrap {
     flex: 1 1 auto;

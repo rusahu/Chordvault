@@ -5,6 +5,8 @@ import { EditorView, runScopeHandlers } from '@codemirror/view';
 import { undo, redo } from '@codemirror/commands';
 import { CodeMirrorEditor } from '../CodeMirrorEditor';
 
+vi.mock('../../context/I18nContext', () => import('../../test/i18nMock'));
+
 function editor(container: HTMLElement) {
   return EditorView.findFromDOM(container.querySelector('.cm-editor')!)!;
 }
