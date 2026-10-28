@@ -1,6 +1,7 @@
 import * as ChordSheetJS from 'chordsheetjs';
 import { escHtml } from './util';
 import { normalizeKey, normalizeChord } from './keys';
+import { CHORD_TOKEN, cleanChordName } from './chordTokens';
 import { extractDirective } from '../../../shared/chordpro.mjs';
 import type { SetlistEntry, SetlistPreferences } from '../types';
 
@@ -20,7 +21,7 @@ const DIRECTIVE_ORDER = ['title', 'artist', 'key', 'tempo', 'capo', 'x_youtube',
 const SECTION_NAMES = 'Verse|Chorus|Bridge|Intro|Outro|Interlude|Pre[- ]?Chorus|Ending|Tag|Coda|Break|Solo|Instrumental|Refrain';
 // Matches a section label with or without surrounding brackets and a trailing colon,
 // e.g. "Chorus", "Verse 2", "[Bridge]", "Pre-Chorus:".
-const SECTION_LABEL_RE = new RegExp(`^\\[?(?:${SECTION_NAMES})\\s*\\d*:?\\]?$`, 'i');
+export const SECTION_LABEL_RE = new RegExp(`^\\[?(?:${SECTION_NAMES})\\s*\\d*:?\\]?$`, 'i');
 
 export { extractDirective };
 
@@ -59,13 +60,7 @@ export function parseSongAutoWithFormat(rawContent: string): { song: ChordSheetJ
   // Pre-process content: force all chords to preferred enharmonic spellings (Sharps)
   // and fix spacing issues in slash chords (e.g. [A / C#] -> [A/C#]) BEFORE parsing.
   // This ensures transpose and Nashville work correctly.
-  let content = rawContent.replace(/\[([^\]]+)\]/g, (match, inner) => {
-    // 1. Fix spaces around slashes
-    let cleaned = inner.replace(/\s*\/\s*/g, '/');
-    // 2. Normalize the chord to preferred sharps
-    cleaned = normalizeChord(cleaned);
-    return `[${cleaned}]`;
-  });
+  let content = rawContent.replace(new RegExp(CHORD_TOKEN.source, 'g'), (chord) => `[${cleanChordName(chord.slice(1, -1))}]`);
 
   // Also normalize Chords-over-lyrics format (lines with only chords)
   content = content.split('\n').map(line => {
@@ -73,8 +68,7 @@ export function parseSongAutoWithFormat(rawContent: string): { song: ChordSheetJ
     if (isChordLine) {
       return line.split(/(\s+)/).map(chunk => {
         if (chunk.trim() === '') return chunk;
-        const cleaned = chunk.replace(/\s*\/\s*/g, '/');
-        return normalizeChord(cleaned);
+        return cleanChordName(chunk);
       }).join('');
     }
     return line;

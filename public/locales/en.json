@@ -180,5 +180,33 @@
   "offline.viewing": "Viewing only.",
   "offline.onlyDownloaded": "Only downloaded songs are available.",
   "offline.connectToEdit": "Connect to make changes.",
-  "offline.noDownload": "No completed download on this device. Connect and refresh your library."
+  "offline.noDownload": "No completed download on this device. Connect and refresh your library.",
+
+  "chordBar.brackets": "Chord brackets",
+  "chordBar.sharp": "Sharp",
+  "chordBar.flat": "Flat",
+  "chordBar.slash": "Slash",
+  "chordBar.minor": "Minor",
+  "chordBar.cursorLeft": "Cursor left",
+  "chordBar.cursorRight": "Cursor right",
+  "chordBar.moveLeft": "Move chord left",
+  "chordBar.moveRight": "Move chord right",
+  "chordBar.delete": "Delete chord",
+
+  "moveChords.mode": "Move chords",
+  "moveChords.preview": "Preview",
+  "moveChords.text": "Text",
+  "moveChords.chord": "Chord {name}",
+  "moveChords.hint": "Tap a chord, then tap where it goes. Tap a letter to add a chord.",
+  "moveChords.chordName": "Chord name",
+  "moveChords.add": "Add chord",
+  "moveChords.done": "Done",
+  "chordBar.change": "Change chord",
+  "moveChords.use": "Use chord {name}",
+
+  "chordProblem.unclosed": "Unclosed chord bracket",
+  "chordProblem.unknown": "Unknown chord \"{name}\"",
+  "chordProblem.unmatchedStart": "Section {name} has no end",
+  "chordProblem.unmatchedEnd": "Section end {name} has no start",
+  "chordBar.search": "Find and replace"
 }

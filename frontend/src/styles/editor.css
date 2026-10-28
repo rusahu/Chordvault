@@ -4,8 +4,19 @@
   gap: 0;
   border: 1px solid var(--border);
   border-radius: 14px;
+  /* clip, not hidden: hidden makes this a scroll box and the chord bar inside stops sticking. hidden is the fallback. */
   overflow: hidden;
+  overflow: clip;
   min-height: 400px;
+}
+
+/* Touch chord bar: pinned under the editor action bar while the page scrolls */
+.chord-bar {
+  position: sticky;
+  top: var(--editor-bar-h, 0px);
+  z-index: 40;
+  background: var(--raise);
+  border-bottom: 1px solid var(--border);
 }
 
 /* Break out of #app max-width on desktop for more editor room */
@@ -35,6 +46,24 @@
   background: var(--bg);
 }
 
+/* Find panel: below the action bar, and below the chord bar on touch screens */
+.cm-editor { --cm-panel-top: var(--editor-bar-h, 0px); }
+@media (pointer: coarse) {
+  .cm-editor { --cm-panel-top: calc(var(--editor-bar-h, 0px) + var(--chord-bar-h, 0px)); --cm-end-space: 40vh; }
+  /* 16px or iOS zooms the page when a text field gets focus */
+  .cm-editor .cm-textfield { font-size: 16px !important; }
+  .move-chords .mantine-Input-input { font-size: 16px; }
+}
+
+/* From 768px the editor pane scrolls itself, so the chord bar pins to the pane's top */
+@media (min-width: 768px) {
+  .editor-split > .mantine-Tabs-panel .chord-bar { top: 0; }
+  .editor-split > .mantine-Tabs-panel .cm-editor { --cm-panel-top: 0px; }
+}
+@media (min-width: 768px) and (pointer: coarse) {
+  .editor-split > .mantine-Tabs-panel .cm-editor { --cm-panel-top: var(--chord-bar-h, 0px); }
+}
+
 /* Compact chord sheet inside editor preview */
 .editor-preview-wrap .chord-sheet-wrap {
   padding: 20px 24px;
@@ -51,10 +80,12 @@
     flex: 1 1 auto;
     border-right: none;
     max-height: none;
+    overflow: visible;
   }
   .editor-split > .editor-preview-wrap {
     flex: 1 1 auto;
     max-height: none;
+    overflow: visible;
   }
 }
 
@@ -74,3 +105,19 @@
   color: var(--muted);
   font-style: italic;
 }
+
+/* Move chords mode: chords over lyrics, every letter a tap target */
+.move-sheet { padding: 12px 16px 24px; font-size: 1.25rem; line-height: 1.35; }
+.move-line { display: flex; flex-wrap: wrap; align-items: flex-end; margin-bottom: 0.5em; }
+.move-other { display: block; min-height: 0.5em; color: var(--muted); font-family: var(--font-mono); font-size: 0.75em; }
+.move-word { display: inline-flex; flex-wrap: nowrap; }
+.move-seg { display: inline-flex; flex-direction: column; }
+.move-chord-row { display: flex; align-items: flex-end; min-height: 1.9em; }
+.move-chord {
+  font: inherit; font-family: var(--font-mono); font-size: 0.8em; font-weight: 700; color: var(--chord);
+  background: none; border: 1px solid transparent; border-radius: 6px; padding: 2px 6px; margin-right: 2px; cursor: pointer;
+}
+.move-chord[aria-pressed="true"] { background: var(--accent-bg); border-color: var(--chord); }
+.move-lyric { white-space: pre; }
+.move-lyric [data-pos] { cursor: pointer; }
+.move-target { background: var(--accent-bg); outline: 2px solid var(--chord); border-radius: 3px; }

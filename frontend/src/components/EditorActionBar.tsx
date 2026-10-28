@@ -1,3 +1,4 @@
+import { useHeightVar } from '../hooks/useHeightVar';
 import { useOffline } from '../context/OfflineContext';
 import { ActionIcon, Button, Group, Menu, Stack, Text, Title } from '@mantine/core';
 import { IconArrowLeft, IconChevronDown, IconTrash } from '@tabler/icons-react';
@@ -17,8 +18,10 @@ export function EditorActionBar({ title, dirty, onLeave, saveLabel, onSave, onSa
   const { t } = useI18n();
   const { readOnly } = useOffline();
   const hasMenu = !!(onSaveAsVersion || onDelete);
+  // Sticky things under this bar (the chord bar) stop below it.
+  const ref = useHeightVar<HTMLElement>('--editor-bar-h');
   return (
-    <Group component="header" className="editor-action-bar" wrap="nowrap" gap="xs" pos="sticky" top={0} px="sm" py="xs" mb="lg" bg="var(--cv-band)" bdrs={14} style={{ zIndex: 50 }}>
+    <Group ref={ref} component="header" className="editor-action-bar" wrap="nowrap" gap="xs" pos="sticky" top={0} px="sm" py="xs" mb="lg" bg="var(--cv-band)" bdrs={14} style={{ zIndex: 50 }}>
       <ActionIcon size="input-md" aria-label={t('songEdit.back')} title={t('songEdit.back')} onClick={onLeave}>
         <IconArrowLeft size={22} aria-hidden />
       </ActionIcon>
