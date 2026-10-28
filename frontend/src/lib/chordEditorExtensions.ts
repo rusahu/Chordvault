@@ -1,5 +1,5 @@
 import { Prec, type Extension } from '@codemirror/state';
-import { EditorView, keymap } from '@codemirror/view';
+import { EditorView, keymap, type KeyBinding } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
 import { autocompletion, closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { bracketMatching } from '@codemirror/language';
@@ -54,6 +54,12 @@ const stickyBarMargins = EditorView.scrollMargins.of((view) => {
 
 export const colorTheme = (dark: boolean) => (dark ? darkTheme : lightTheme);
 
+// Option+Arrow is the word jump on a Mac, so chords move with Ctrl+Option+Arrow there.
+export const chordKeymap: KeyBinding[] = [
+  { key: 'Alt-ArrowLeft', mac: 'Ctrl-Alt-ArrowLeft', run: moveChord(-1) },
+  { key: 'Alt-ArrowRight', mac: 'Ctrl-Alt-ArrowRight', run: moveChord(1) },
+];
+
 const LINT_DELAY_MS = 500;
 
 const chordLinter = (describe: (problem: ChordProblem) => string) => linter(
@@ -76,8 +82,7 @@ export function chordEditorExtensions(describe: (problem: ChordProblem) => strin
     chordBracketInput,
     autocompletion({ override: [chordCompletionSource], icons: false }),
     keymap.of([
-      { key: 'Alt-ArrowLeft', run: moveChord(-1) },
-      { key: 'Alt-ArrowRight', run: moveChord(1) },
+      ...chordKeymap,
       ...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap, ...searchKeymap,
     ]),
     EditorView.lineWrapping,
