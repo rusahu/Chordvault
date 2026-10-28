@@ -8,6 +8,7 @@ import { moveChord } from './chordCommands';
 import { chordCompletionSource } from './chordCompletion';
 import { chordProblems, type ChordProblem } from './chordProblems';
 import { linter } from '@codemirror/lint';
+import { search, searchKeymap } from '@codemirror/search';
 
 const cvTheme = EditorView.theme({
   '.cm-content': { padding: '12px 0', minHeight: '300px' },
@@ -19,6 +20,8 @@ const cvTheme = EditorView.theme({
     background: 'var(--accent-bg) !important',
   },
   '.cm-activeLine': { backgroundColor: 'var(--chord-tint)' },
+  // The find panel sticks below the sticky editor and chord bars (offset set in editor.css), and under them when they overlap.
+  '.cm-panels.cm-panels-top': { top: 'var(--cm-panel-top, 0px)', zIndex: 30 },
 });
 
 const darkTheme = EditorView.theme({
@@ -74,10 +77,11 @@ export function chordEditorExtensions(describe: (problem: ChordProblem) => strin
     keymap.of([
       { key: 'Alt-ArrowLeft', run: moveChord(-1) },
       { key: 'Alt-ArrowRight', run: moveChord(1) },
-      ...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap,
+      ...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap, ...searchKeymap,
     ]),
     EditorView.lineWrapping,
     stickyBarMargins,
     chordLinter(describe),
+    search({ top: true }),
   ];
 }

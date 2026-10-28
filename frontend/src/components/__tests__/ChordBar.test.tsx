@@ -108,3 +108,9 @@ it('says what is wrong with the chord at the cursor', async () => {
   act(() => forceLinting(view));
   expect(await screen.findByText('Unknown chord "Xq7"')).toBeInTheDocument();
 });
+
+it('opens find and replace', () => {
+  const { container } = render(<CodeMirrorEditor value="[C]a" onChange={vi.fn()} />);
+  fireEvent.click(screen.getByRole('button', { name: 'Find and replace' }));
+  expect(container.querySelector('.cm-search')).not.toBeNull();
+});

@@ -207,5 +207,6 @@
   "chordProblem.unclosed": "Unclosed chord bracket",
   "chordProblem.unknown": "Unknown chord \"{name}\"",
   "chordProblem.unmatchedStart": "Section {name} has no end",
-  "chordProblem.unmatchedEnd": "Section end {name} has no start"
+  "chordProblem.unmatchedEnd": "Section end {name} has no start",
+  "chordBar.search": "Find and replace"
 }

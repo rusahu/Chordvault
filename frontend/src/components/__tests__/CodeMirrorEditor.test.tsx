@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { EditorView, runScopeHandlers } from '@codemirror/view';
 import { undo, redo } from '@codemirror/commands';
 import { diagnosticCount, forceLinting, forEachDiagnostic } from '@codemirror/lint';
+import { openSearchPanel, replaceAll, SearchQuery, setSearchQuery } from '@codemirror/search';
 import { CodeMirrorEditor } from '../CodeMirrorEditor';
 
 vi.mock('../../context/I18nContext', () => import('../../test/i18nMock'));
@@ -114,4 +115,17 @@ it('flags chord problems in the text', async () => {
   const messages: string[] = [];
   forEachDiagnostic(view.state, (d) => messages.push(d.message));
   expect(messages).toEqual(['Unclosed chord bracket', 'Unknown chord "Xq7"']);
+});
+
+it('finds and replaces every match in one undo step', () => {
+  const doc = '[A#]a [G]b [A#]c';
+  const { container } = render(<CodeMirrorEditor value={doc} onChange={vi.fn()} />);
+  const view = editor(container);
+  act(() => { openSearchPanel(view); });
+  expect(container.querySelector('.cm-search')).not.toBeNull();
+  act(() => { view.dispatch({ effects: setSearchQuery.of(new SearchQuery({ search: '[A#]', replace: '[Bb]' })) }); });
+  act(() => { replaceAll(view); });
+  expect(view.state.doc.toString()).toBe('[Bb]a [G]b [Bb]c');
+  act(() => { undo(view); });
+  expect(view.state.doc.toString()).toBe(doc);
 });
