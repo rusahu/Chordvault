@@ -1,4 +1,5 @@
-import { Button, Group, Stack, Textarea } from '@mantine/core';
+import { Button, Group, Paper, Stack } from '@mantine/core';
+import { CodeMirrorEditor } from './CodeMirrorEditor';
 import { useState } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useI18n } from '../context/I18nContext';
@@ -42,14 +43,9 @@ export function SetlistEntryEditor({ setlistId, entry, onSaved, onCancel }: Setl
 
   return (
     <Stack gap="sm">
-      <Textarea
-        aria-label="Setlist chord sheet"
-        rows={12}
-        styles={{ input: { minHeight: 300, fontFamily: 'var(--font-mono)', lineHeight: 1.7 } }}
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        autoFocus
-      />
+      <Paper withBorder radius="md" style={{ overflow: 'clip' }}>
+        <CodeMirrorEditor value={content} onChange={setContent} ariaLabel="Setlist chord sheet" autoFocus />
+      </Paper>
       <Group gap="xs">
         <Button size="xs" onClick={saveToSetlist}>{t('setlist.saveToSetlist')}</Button>
         <Button variant="default" size="xs" onClick={saveAsVersion}>{t('setlist.saveAsVersion')}</Button>

@@ -4,21 +4,7 @@ import { SONG_ERRORS } from '../../../../shared/song-errors.mjs';
 
 // ─── Mocks ──────────────────────────────────────────────────────────
 
-// Mock CodeMirrorEditor as a textarea that fires onChange
-vi.mock('../../components/CodeMirrorEditor', () => ({
-  CodeMirrorEditor: ({ value, onChange, placeholder }: {
-    value: string;
-    onChange: (v: string) => void;
-    placeholder?: string;
-  }) => (
-    <textarea
-      data-testid="editor"
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-    />
-  ),
-}));
+vi.mock('../../components/CodeMirrorEditor', () => import('../../test/codeMirrorMock'));
 
 // Mock EditorPreview — not needed for sync tests
 vi.mock('../../components/EditorPreview', () => ({

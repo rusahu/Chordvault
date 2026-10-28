@@ -5,10 +5,7 @@ const { api, toast } = vi.hoisted(() => ({ api: vi.fn(), toast: vi.fn() }));
 vi.mock('../../hooks/useApi', () => ({ useApi: () => api }));
 vi.mock('../../lib/notifications', () => ({ showStatusNotification: toast }));
 vi.mock('../../context/I18nContext', () => ({ useI18n: () => ({ t: (key: string) => key }) }));
-vi.mock('../../components/CodeMirrorEditor', () => ({
-  CodeMirrorEditor: ({ value, onChange }: { value: string; onChange: (value: string) => void }) =>
-    <textarea aria-label="editor" value={value} onChange={(e) => onChange(e.target.value)} />,
-}));
+vi.mock('../../components/CodeMirrorEditor', () => import('../../test/codeMirrorMock'));
 
 beforeEach(() => vi.clearAllMocks());
 

@@ -1,51 +1,33 @@
 import { useRef, useEffect, useState } from 'react';
+import { useComputedColorScheme } from '@mantine/core';
 import { Compartment, EditorState } from '@codemirror/state';
-import { EditorView, keymap, placeholder as cmPlaceholder } from '@codemirror/view';
-import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
-import { bracketMatching } from '@codemirror/language';
-import { chordProLanguage, chordProHighlightStyle } from '../lib/chordpro-lang';
+import { EditorView, placeholder as cmPlaceholder } from '@codemirror/view';
+import { chordEditorExtensions, colorTheme } from '../lib/chordEditorExtensions';
 
 interface CodeMirrorEditorProps {
   value: string;
   onChange: (value: string) => void;
-  darkMode: boolean;
   placeholder?: string;
+  ariaLabel?: string;
+  autoFocus?: boolean;
+  onViewReady?: (view: EditorView | null) => void;
 }
 
-const cvTheme = EditorView.theme({
-  '.cm-content': { padding: '12px 0', minHeight: '300px' },
-  '.cm-focused': { outline: 'none' },
-  '.cm-scroller': { overflow: 'auto' },
-  '.cm-gutters': { display: 'none' },
-  '&.cm-focused .cm-cursor': { borderLeftColor: 'var(--text)' },
-  '&.cm-focused .cm-selectionBackground, .cm-selectionBackground': {
-    background: 'var(--accent-bg) !important',
-  },
-  '.cm-activeLine': { backgroundColor: 'var(--chord-tint)' },
-});
-
-const darkTheme = EditorView.theme({
-  '&': { backgroundColor: 'var(--raise)', color: 'var(--text)' },
-}, { dark: true });
-
-const lightTheme = EditorView.theme({
-  '&': { backgroundColor: 'var(--raise)', color: 'var(--text)' },
-}, { dark: false });
-
-export function CodeMirrorEditor({ value, onChange, darkMode, placeholder }: CodeMirrorEditorProps) {
+export function CodeMirrorEditor({ value, onChange, placeholder, ariaLabel, autoFocus, onViewReady }: CodeMirrorEditorProps) {
+  const dark = useComputedColorScheme('dark') === 'dark';
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [theme] = useState(() => new Compartment());
   const onChangeRef = useRef(onChange);
-  const valueRef = useRef(value);
-  const placeholderRef = useRef(placeholder);
+  const onViewReadyRef = useRef(onViewReady);
+  const initial = useRef({ value, placeholder, ariaLabel, autoFocus });
 
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
-  useEffect(() => { valueRef.current = value; }, [value]);
-  useEffect(() => { placeholderRef.current = placeholder; }, [placeholder]);
+  useEffect(() => { onViewReadyRef.current = onViewReady; }, [onViewReady]);
 
   useEffect(() => {
     if (!containerRef.current) return;
+    const { value: doc, placeholder: hint, ariaLabel: label, autoFocus: focus } = initial.current;
 
     const updateListener = EditorView.updateListener.of((update) => {
       if (update.docChanged) {
@@ -53,29 +35,21 @@ export function CodeMirrorEditor({ value, onChange, darkMode, placeholder }: Cod
       }
     });
 
-    const extensions = [
-      cvTheme,
-      theme.of([]),
-      chordProLanguage,
-      chordProHighlightStyle,
-      bracketMatching(),
-      history(),
-      keymap.of([...defaultKeymap, ...historyKeymap]),
-      updateListener,
-      EditorView.lineWrapping,
-    ];
-    if (placeholderRef.current) extensions.push(cmPlaceholder(placeholderRef.current));
+    const extensions = [...chordEditorExtensions(), theme.of([]), updateListener];
+    if (hint) extensions.push(cmPlaceholder(hint));
+    if (label) extensions.push(EditorView.contentAttributes.of({ 'aria-label': label }));
 
-    const state = EditorState.create({ doc: valueRef.current, extensions });
-    const view = new EditorView({ state, parent: containerRef.current });
+    const view = new EditorView({ state: EditorState.create({ doc, extensions }), parent: containerRef.current });
     viewRef.current = view;
+    if (focus) view.focus();
+    onViewReadyRef.current?.(view);
 
-    return () => { view.destroy(); viewRef.current = null; };
+    return () => { view.destroy(); viewRef.current = null; onViewReadyRef.current?.(null); };
   }, [theme]);
 
   useEffect(() => {
-    viewRef.current?.dispatch({ effects: theme.reconfigure(darkMode ? darkTheme : lightTheme) });
-  }, [darkMode, theme]);
+    viewRef.current?.dispatch({ effects: theme.reconfigure(colorTheme(dark)) });
+  }, [dark, theme]);
 
   // Sync external value changes (OCR import, initial load) into CodeMirror
   useEffect(() => {

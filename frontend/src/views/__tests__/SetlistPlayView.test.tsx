@@ -8,6 +8,7 @@ import { SONG_ERRORS } from '../../../../shared/song-errors.mjs';
 
 // ─── Mocks ──────────────────────────────────────────────────────────
 
+vi.mock('../../components/CodeMirrorEditor', () => import('../../test/codeMirrorMock'));
 vi.mock('../../hooks/usePlaybackLayout', () => ({ usePlaybackLayout: () => 'tablet' }));
 vi.mock('../../lib/chords', async () => {
   const actual = await vi.importActual('../../lib/chords');

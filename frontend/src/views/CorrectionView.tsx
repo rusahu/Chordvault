@@ -1,5 +1,5 @@
 import { useOffline, useOfflineActivity } from '../context/OfflineContext';
-import { Button, useComputedColorScheme, Group, Title, Text, Paper } from '@mantine/core';
+import { Button, Group, Title, Text, Paper } from '@mantine/core';
 import { BackButton } from '../components/BackButton';
 import { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
@@ -19,7 +19,6 @@ export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
   const apiCall = useApi();
   const { readOnly } = useOffline();
   useOfflineActivity(true);
-  const theme = useComputedColorScheme('dark');
   const [content, setContent] = useState('');
 
   useEffect(() => {
@@ -48,11 +47,10 @@ export function CorrectionView({ songId, navigate }: CorrectionViewProps) {
       <Text size="sm" c="dimmed" mb="sm">
         Edit the chords below. Your correction will be reviewed by the song owner before being applied.
       </Text>
-      <Paper withBorder radius="md" mb="sm" style={{ overflow: 'hidden' }}>
+      <Paper withBorder radius="md" mb="sm" style={{ overflow: 'clip' }}>
           <CodeMirrorEditor
             value={content}
             onChange={setContent}
-            darkMode={theme === 'dark'}
             placeholder="Corrected chord sheet..."
           />
       </Paper>
