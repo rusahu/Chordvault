@@ -48,7 +48,7 @@
 
 /* From 768px the editor pane scrolls itself, so the chord bar pins to the pane's top */
 @media (min-width: 768px) {
-  .editor-split > .cm-editor-wrap .chord-bar { top: 0; }
+  .editor-split > .mantine-Tabs-panel .chord-bar { top: 0; }
 }
 
 /* Compact chord sheet inside editor preview */
@@ -72,6 +72,7 @@
   .editor-split > .editor-preview-wrap {
     flex: 1 1 auto;
     max-height: none;
+    overflow: visible;
   }
 }
 
@@ -91,3 +92,19 @@
   color: var(--muted);
   font-style: italic;
 }
+
+/* Move chords mode: chords over lyrics, every letter a tap target */
+.move-sheet { padding: 12px 16px 24px; font-size: 1.25rem; line-height: 1.35; }
+.move-line { display: flex; flex-wrap: wrap; align-items: flex-end; margin-bottom: 0.5em; }
+.move-other { display: block; min-height: 0.5em; color: var(--muted); font-family: var(--font-mono); font-size: 0.75em; }
+.move-word { display: inline-flex; flex-wrap: nowrap; }
+.move-seg { display: inline-flex; flex-direction: column; }
+.move-chord-row { display: flex; align-items: flex-end; min-height: 1.9em; }
+.move-chord {
+  font: inherit; font-family: var(--font-mono); font-size: 0.8em; font-weight: 700; color: var(--chord);
+  background: none; border: 1px solid transparent; border-radius: 6px; padding: 2px 6px; margin-right: 2px; cursor: pointer;
+}
+.move-chord[aria-pressed="true"] { background: var(--accent-bg); border-color: var(--chord); }
+.move-lyric { white-space: pre; }
+.move-lyric [data-pos] { cursor: pointer; }
+.move-target { background: var(--accent-bg); outline: 2px solid var(--chord); border-radius: 3px; }

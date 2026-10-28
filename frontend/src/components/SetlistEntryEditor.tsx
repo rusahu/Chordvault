@@ -1,5 +1,7 @@
-import { Button, Group, Paper, Stack } from '@mantine/core';
+import { Button, Group, Paper, SegmentedControl, Stack } from '@mantine/core';
+import type { EditorView } from '@codemirror/view';
 import { CodeMirrorEditor } from './CodeMirrorEditor';
+import { MoveChordsView } from './MoveChordsView';
 import { useState } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useI18n } from '../context/I18nContext';
@@ -21,6 +23,8 @@ export function SetlistEntryEditor({ setlistId, entry, onSaved, onCancel }: Setl
   const apiCall = useApi();
   const { t } = useI18n();
   const [content, setContent] = useState(() => entryContent(entry));
+  const [editorView, setEditorView] = useState<EditorView | null>(null);
+  const [mode, setMode] = useState<'text' | 'move'>('text');
 
   const saveOverride = (override: string) => apiCall('PUT', `/api/setlists/${setlistId}/entries/${entry.entry_id}`, { content_override: override });
 
@@ -43,8 +47,14 @@ export function SetlistEntryEditor({ setlistId, entry, onSaved, onCancel }: Setl
 
   return (
     <Stack gap="sm">
+      <SegmentedControl size="xs" value={mode} onChange={(v) => setMode(v as 'text' | 'move')}
+        data={[{ value: 'text', label: t('moveChords.text') }, { value: 'move', label: t('moveChords.mode') }]} />
       <Paper withBorder radius="md" style={{ overflow: 'clip' }}>
-        <CodeMirrorEditor value={content} onChange={setContent} ariaLabel="Setlist chord sheet" autoFocus />
+        {/* Stays mounted in Move chords mode: the move view edits through it, and its undo history survives. */}
+        <div hidden={mode === 'move'}>
+          <CodeMirrorEditor value={content} onChange={setContent} ariaLabel="Setlist chord sheet" autoFocus onViewReady={setEditorView} />
+        </div>
+        {mode === 'move' && editorView && <MoveChordsView view={editorView} content={content} />}
       </Paper>
       <Group gap="xs">
         <Button size="xs" onClick={saveToSetlist}>{t('setlist.saveToSetlist')}</Button>

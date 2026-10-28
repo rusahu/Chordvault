@@ -1,5 +1,5 @@
-import type { ReactNode, SyntheticEvent } from 'react';
-import { Button, Group, ScrollArea } from '@mantine/core';
+import type { ReactNode } from 'react';
+import { Group, ScrollArea } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconChevronLeft, IconChevronRight, IconX } from '@tabler/icons-react';
 import type { Command, EditorView } from '@codemirror/view';
@@ -7,14 +7,12 @@ import { cursorCharLeft, cursorCharRight } from '@codemirror/commands';
 import { deleteChord, insertText, moveChord } from '../lib/chordCommands';
 import type { ChordToken } from '../lib/chordTokens';
 import { useI18n } from '../context/I18nContext';
+import { ChordKey } from './ChordKey';
 
 interface ChordBarProps {
   view: EditorView;
   chord: ChordToken | null;
 }
-
-// Tapping a key must not take focus from the editor, or the on-screen keyboard closes.
-const keepFocus = (event: SyntheticEvent) => event.preventDefault();
 
 /** Touch-screen keys for chords: what phone keyboards bury on the symbols layer, plus cursor and chord nudges. */
 export function ChordBar({ view, chord }: ChordBarProps) {
@@ -22,12 +20,8 @@ export function ChordBar({ view, chord }: ChordBarProps) {
   const touch = useMediaQuery('(pointer: coarse)', false, { getInitialValueInEffect: false });
   if (!touch) return null;
 
-  const key = (label: string, command: Command, children: ReactNode, chordKey = false) => (
-    <Button key={label} h={44} miw={44} px={10} style={{ flexShrink: 0 }} variant={chordKey ? 'light' : 'default'} color={chordKey ? 'var(--chord)' : undefined} ff="var(--font-mono)"
-      aria-label={label} title={label} onPointerDown={keepFocus} onMouseDown={keepFocus} onClick={() => command(view)}>
-      {children}
-    </Button>
-  );
+  const key = (label: string, command: Command, children: ReactNode, chordKey = false) =>
+    <ChordKey key={label} label={label} chord={chordKey} onPress={() => command(view)}>{children}</ChordKey>;
 
   return (
     <ScrollArea type="never" className="chord-bar">

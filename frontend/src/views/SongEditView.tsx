@@ -1,6 +1,6 @@
 import { useOffline, useOfflineActivity } from '../context/OfflineContext';
 import { useDisclosure } from '@mantine/hooks';
-import { Badge, Tabs, Switch, Button, TextInput, SimpleGrid, Stack, Group, Text, Box, Input, NumberInput } from '@mantine/core';
+import { Badge, Tabs, Switch, Button, TextInput, SegmentedControl, SimpleGrid, Stack, Group, Text, Box, Input, NumberInput } from '@mantine/core';
 import { IconCamera, IconLock } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 import { useApi } from '../hooks/useApi';
@@ -14,6 +14,8 @@ import { LanguagePicker } from '../components/LanguagePicker';
 import { OcrModal } from '../components/OcrModal';
 import { CodeMirrorEditor } from '../components/CodeMirrorEditor';
 import { EditorPreview } from '../components/EditorPreview';
+import { MoveChordsView } from '../components/MoveChordsView';
+import type { EditorView } from '@codemirror/view';
 import { extractDirective, updateDirective } from '../lib/chords';
 import { createSongVersion, requirePreparedSong } from '../lib/songSubmit';
 import type { Song } from '../types';
@@ -42,6 +44,8 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
   const [hasGeminiKey, setHasGeminiKey] = useState(false);
   const [editorTab, setEditorTab] = useState<'edit' | 'preview'>('edit');
   const [forceRender, setForceRender] = useState(0);
+  const [editorView, setEditorView] = useState<EditorView | null>(null);
+  const [previewMode, setPreviewMode] = useState<'preview' | 'move'>('preview');
 
   const editor = useSongEditor();
   const { state, handleContentChange, handleFieldChange, handleTagsChange, handleLanguageChange, setInitialContent } = editor;
@@ -173,11 +177,16 @@ export function SongEditView({ songId, returnTo, navigate }: SongEditViewProps) 
                 <CodeMirrorEditor
                   value={state.content}
                   onChange={handleContentChange}
+                  onViewReady={setEditorView}
                   placeholder={'Paste any format:\n\nChordPro:  [G]Let it [D]be\n\nOr chords over lyrics:\n  G        D\n  Let it be'}
                 />
               </Tabs.Panel>
               <Tabs.Panel value="preview" className="editor-preview-wrap">
-                <EditorPreview content={state.content} forceRender={forceRender} />
+                <SegmentedControl size="xs" mx={12} mt={12} value={previewMode} onChange={(v) => setPreviewMode(v as 'preview' | 'move')}
+                  data={[{ value: 'preview', label: t('moveChords.preview') }, { value: 'move', label: t('moveChords.mode') }]} />
+                {previewMode === 'move' && editorView
+                  ? <MoveChordsView view={editorView} content={state.content} />
+                  : <EditorPreview content={state.content} forceRender={forceRender} />}
               </Tabs.Panel>
             </div>
           </Tabs>

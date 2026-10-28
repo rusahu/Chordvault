@@ -191,5 +191,14 @@
   "chordBar.cursorRight": "Cursor right",
   "chordBar.moveLeft": "Move chord left",
   "chordBar.moveRight": "Move chord right",
-  "chordBar.delete": "Delete chord"
+  "chordBar.delete": "Delete chord",
+
+  "moveChords.mode": "Move chords",
+  "moveChords.preview": "Preview",
+  "moveChords.text": "Text",
+  "moveChords.chord": "Chord {name}",
+  "moveChords.hint": "Tap a chord, then tap where it goes. Tap a letter to add a chord.",
+  "moveChords.chordName": "Chord name",
+  "moveChords.add": "Add chord",
+  "moveChords.done": "Done"
 }
