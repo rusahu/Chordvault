@@ -1,14 +1,15 @@
 import { StreamLanguage, syntaxHighlighting } from '@codemirror/language';
 import { HighlightStyle } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
+import { CHORD_TOKEN, SECTION_DIRECTIVE } from './chordTokens';
 
 const chordProParser = StreamLanguage.define({
   languageData: { closeBrackets: { brackets: ['[', '{'] } },
   token(stream) {
     // Chord in brackets: [Am7], [G/B]
-    if (stream.match(/\[[^\]]*\]/)) return 'keyword';
+    if (stream.match(CHORD_TOKEN)) return 'keyword';
     // Section directives: {verse}, {chorus}, {bridge}, {start_of_chorus}, etc.
-    if (stream.match(/\{(start_of_|end_of_)?(verse|chorus|bridge|tab|grid|intro|outro)[^}]*\}/i)) return 'heading';
+    if (stream.match(SECTION_DIRECTIVE)) return 'heading';
     // Metadata directives: {title:}, {artist:}, {key:}, {tempo:}, {capo:}, etc.
     if (stream.match(/\{[^}]*\}/)) return 'meta';
     // Comment lines starting with #
