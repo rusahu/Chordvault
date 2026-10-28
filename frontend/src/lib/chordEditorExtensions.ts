@@ -6,6 +6,8 @@ import { bracketMatching } from '@codemirror/language';
 import { chordProLanguage, chordProHighlightStyle } from './chordpro-lang';
 import { moveChord } from './chordCommands';
 import { chordCompletionSource } from './chordCompletion';
+import { chordProblems, type ChordProblem } from './chordProblems';
+import { linter } from '@codemirror/lint';
 
 const cvTheme = EditorView.theme({
   '.cm-content': { padding: '12px 0', minHeight: '300px' },
@@ -48,8 +50,18 @@ const stickyBarMargins = EditorView.scrollMargins.of((view) => {
 
 export const colorTheme = (dark: boolean) => (dark ? darkTheme : lightTheme);
 
-/** Everything the ChordPro editor runs with, apart from per-instance callbacks and the swappable color theme. */
-export function chordEditorExtensions(): Extension[] {
+const LINT_DELAY_MS = 500;
+
+const chordLinter = (describe: (problem: ChordProblem) => string) => linter(
+  (view) => chordProblems(view.state.doc.toString()).map((p) => ({ from: p.from, to: p.to, severity: 'warning' as const, message: describe(p) })),
+  { delay: LINT_DELAY_MS },
+);
+
+/**
+ * Everything the ChordPro editor runs with, apart from per-instance callbacks and the swappable color theme.
+ * `describe` turns a chord problem into the message shown for it.
+ */
+export function chordEditorExtensions(describe: (problem: ChordProblem) => string): Extension[] {
   return [
     cvTheme,
     chordProLanguage,
@@ -66,5 +78,6 @@ export function chordEditorExtensions(): Extension[] {
     ]),
     EditorView.lineWrapping,
     stickyBarMargins,
+    chordLinter(describe),
   ];
 }

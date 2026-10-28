@@ -2,8 +2,11 @@ import { useRef, useEffect, useState } from 'react';
 import { useComputedColorScheme } from '@mantine/core';
 import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, placeholder as cmPlaceholder } from '@codemirror/view';
+import { forEachDiagnostic } from '@codemirror/lint';
 import { chordEditorExtensions, colorTheme } from '../lib/chordEditorExtensions';
 import { chordAt, type ChordToken } from '../lib/chordTokens';
+import { describeProblem } from '../lib/chordProblems';
+import { useI18n } from '../context/I18nContext';
 import { ChordBar } from './ChordBar';
 
 interface CodeMirrorEditorProps {
@@ -15,12 +18,21 @@ interface CodeMirrorEditorProps {
   onViewReady?: (view: EditorView | null) => void;
 }
 
+function problemAt(state: EditorState, pos: number): string | null {
+  let message: string | null = null;
+  forEachDiagnostic(state, (d, from, to) => { if (pos >= from && pos <= to) message = d.message; });
+  return message;
+}
+
 export function CodeMirrorEditor({ value, onChange, placeholder, ariaLabel, autoFocus, onViewReady }: CodeMirrorEditorProps) {
   const dark = useComputedColorScheme('dark') === 'dark';
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [view, setView] = useState<EditorView | null>(null);
   const [chord, setChord] = useState<ChordToken | null>(null);
+  const [problem, setProblem] = useState<string | null>(null);
+  const { tReplace } = useI18n();
+  const tReplaceRef = useRef(tReplace);
   const [theme] = useState(() => new Compartment());
   const onChangeRef = useRef(onChange);
   const onViewReadyRef = useRef(onViewReady);
@@ -28,6 +40,7 @@ export function CodeMirrorEditor({ value, onChange, placeholder, ariaLabel, auto
 
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
   useEffect(() => { onViewReadyRef.current = onViewReady; }, [onViewReady]);
+  useEffect(() => { tReplaceRef.current = tReplace; }, [tReplace]);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -37,10 +50,13 @@ export function CodeMirrorEditor({ value, onChange, placeholder, ariaLabel, auto
       if (update.docChanged) {
         onChangeRef.current(update.state.doc.toString());
       }
-      if (update.docChanged || update.selectionSet) setChord(chordAt(update.state, update.state.selection.main.head));
+      const head = update.state.selection.main.head;
+      if (update.docChanged || update.selectionSet) setChord(chordAt(update.state, head));
+      setProblem(problemAt(update.state, head));
     });
 
-    const extensions = [...chordEditorExtensions(), theme.of([]), updateListener];
+    // The ref keeps lint messages in the current language without rebuilding the editor.
+    const extensions = [...chordEditorExtensions((p) => describeProblem(p, tReplaceRef.current)), theme.of([]), updateListener];
     if (hint) extensions.push(cmPlaceholder(hint));
     if (label) extensions.push(EditorView.contentAttributes.of({ 'aria-label': label }));
 
@@ -70,7 +86,7 @@ export function CodeMirrorEditor({ value, onChange, placeholder, ariaLabel, auto
 
   return (
     <>
-      {view && <ChordBar view={view} chord={chord} />}
+      {view && <ChordBar view={view} chord={chord} problem={problem} />}
       <div ref={containerRef} className="cm-editor-container" />
     </>
   );

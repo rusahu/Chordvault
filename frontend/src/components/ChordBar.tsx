@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Group, ScrollArea } from '@mantine/core';
+import { Group, ScrollArea, Text } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { IconArrowsExchange, IconChevronLeft, IconChevronRight, IconX } from '@tabler/icons-react';
 import type { Command, EditorView } from '@codemirror/view';
@@ -13,10 +13,12 @@ import { ChordKey } from './ChordKey';
 interface ChordBarProps {
   view: EditorView;
   chord: ChordToken | null;
+  /** What is wrong at the cursor, if anything. */
+  problem?: string | null;
 }
 
 /** Touch-screen keys for chords: what phone keyboards bury on the symbols layer, plus cursor and chord nudges. */
-export function ChordBar({ view, chord }: ChordBarProps) {
+export function ChordBar({ view, chord, problem }: ChordBarProps) {
   const { t } = useI18n();
   const touch = useMediaQuery('(pointer: coarse)', false, { getInitialValueInEffect: false });
   if (!touch) return null;
@@ -42,6 +44,7 @@ export function ChordBar({ view, chord }: ChordBarProps) {
         {key(t('chordBar.cursorLeft'), cursorCharLeft, <IconChevronLeft size={20} aria-hidden />)}
         {key(t('chordBar.cursorRight'), cursorCharRight, <IconChevronRight size={20} aria-hidden />)}
       </Group>
+      {problem && <Text size="sm" c="var(--chord)" px={10} pb={6}>{problem}</Text>}
     </ScrollArea>
   );
 }

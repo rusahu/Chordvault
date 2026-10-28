@@ -3,6 +3,7 @@ import { MantineProvider } from '@mantine/core';
 import type { ReactNode } from 'react';
 import { EditorView, runScopeHandlers } from '@codemirror/view';
 import { undo, redo } from '@codemirror/commands';
+import { diagnosticCount, forceLinting, forEachDiagnostic } from '@codemirror/lint';
 import { CodeMirrorEditor } from '../CodeMirrorEditor';
 
 vi.mock('../../context/I18nContext', () => import('../../test/i18nMock'));
@@ -103,4 +104,14 @@ it('leaves ( and quotes alone', () => {
   typeAt(view, 0, '(');
   typeAt(view, 1, '"');
   expect(view.state.doc.toString()).toBe('("');
+});
+
+it('flags chord problems in the text', async () => {
+  const { container } = render(<CodeMirrorEditor value={'{title: x}\n[Am b\n[Xq7]c'} onChange={vi.fn()} />);
+  const view = editor(container);
+  act(() => forceLinting(view));
+  await vi.waitFor(() => expect(diagnosticCount(view.state)).toBe(2));
+  const messages: string[] = [];
+  forEachDiagnostic(view.state, (d) => messages.push(d.message));
+  expect(messages).toEqual(['Unclosed chord bracket', 'Unknown chord "Xq7"']);
 });

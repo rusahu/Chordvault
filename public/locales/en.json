@@ -202,5 +202,10 @@
   "moveChords.add": "Add chord",
   "moveChords.done": "Done",
   "chordBar.change": "Change chord",
-  "moveChords.use": "Use chord {name}"
+  "moveChords.use": "Use chord {name}",
+
+  "chordProblem.unclosed": "Unclosed chord bracket",
+  "chordProblem.unknown": "Unknown chord \"{name}\"",
+  "chordProblem.unmatchedStart": "Section {name} has no end",
+  "chordProblem.unmatchedEnd": "Section end {name} has no start"
 }

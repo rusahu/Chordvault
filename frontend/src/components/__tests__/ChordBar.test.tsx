@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { EditorState } from '@codemirror/state';
 import { EditorView } from '@codemirror/view';
 import { history } from '@codemirror/commands';
+import { forceLinting } from '@codemirror/lint';
 import { ChordBar } from '../ChordBar';
 import { CodeMirrorEditor } from '../CodeMirrorEditor';
 import { chordAt } from '../../lib/chordTokens';
@@ -98,4 +99,12 @@ it('appears in the editor and follows the cursor into a chord', () => {
 it('puts the chord keys first, where a phone shows them without scrolling', () => {
   bar('[C]a', 1);
   expect(screen.getAllByRole('button').slice(0, IN_CHORD.length).map((b) => b.getAttribute('aria-label'))).toEqual(IN_CHORD);
+});
+
+it('says what is wrong with the chord at the cursor', async () => {
+  const { container } = render(<CodeMirrorEditor value={'{title: x}\n[Xq7]c'} onChange={vi.fn()} />);
+  const view = EditorView.findFromDOM(container.querySelector('.cm-editor')!)!;
+  act(() => view.dispatch({ selection: { anchor: 13 } }));
+  act(() => forceLinting(view));
+  expect(await screen.findByText('Unknown chord "Xq7"')).toBeInTheDocument();
 });
