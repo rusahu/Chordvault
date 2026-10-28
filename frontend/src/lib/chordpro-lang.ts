@@ -3,6 +3,7 @@ import { HighlightStyle } from '@codemirror/language';
 import { tags } from '@lezer/highlight';
 
 const chordProParser = StreamLanguage.define({
+  languageData: { closeBrackets: { brackets: ['[', '{'] } },
   token(stream) {
     // Chord in brackets: [Am7], [G/B]
     if (stream.match(/\[[^\]]*\]/)) return 'keyword';

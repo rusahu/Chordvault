@@ -1,6 +1,7 @@
-import type { Extension } from '@codemirror/state';
+import { Prec, type Extension } from '@codemirror/state';
 import { EditorView, keymap } from '@codemirror/view';
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { closeBrackets, closeBracketsKeymap } from '@codemirror/autocomplete';
 import { bracketMatching } from '@codemirror/language';
 import { chordProLanguage, chordProHighlightStyle } from './chordpro-lang';
 
@@ -24,6 +25,18 @@ const lightTheme = EditorView.theme({
   '&': { backgroundColor: 'var(--raise)', color: 'var(--text)' },
 }, { dark: false });
 
+// closeBrackets only closes before whitespace or punctuation, but chords go in front of lyrics: `[` always pairs here.
+const chordBracketInput = Prec.high(EditorView.inputHandler.of((view, from, to, text) => {
+  if (from !== to || (text !== '[' && text !== ']')) return false;
+  if (text === ']') {
+    if (view.state.sliceDoc(from, from + 1) !== ']') return false;
+    view.dispatch({ selection: { anchor: from + 1 }, userEvent: 'input.type' });
+    return true;
+  }
+  view.dispatch({ changes: { from, insert: '[]' }, selection: { anchor: from + 1 }, userEvent: 'input.type' });
+  return true;
+}));
+
 export const colorTheme = (dark: boolean) => (dark ? darkTheme : lightTheme);
 
 /** Everything the ChordPro editor runs with, apart from per-instance callbacks and the swappable color theme. */
@@ -34,7 +47,9 @@ export function chordEditorExtensions(): Extension[] {
     chordProHighlightStyle,
     bracketMatching(),
     history(),
-    keymap.of([...defaultKeymap, ...historyKeymap]),
+    closeBrackets(),
+    chordBracketInput,
+    keymap.of([...closeBracketsKeymap, ...defaultKeymap, ...historyKeymap]),
     EditorView.lineWrapping,
   ];
 }

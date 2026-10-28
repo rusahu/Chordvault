@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react';
 import { MantineProvider } from '@mantine/core';
 import type { ReactNode } from 'react';
-import { EditorView } from '@codemirror/view';
+import { EditorView, runScopeHandlers } from '@codemirror/view';
 import { undo, redo } from '@codemirror/commands';
 import { CodeMirrorEditor } from '../CodeMirrorEditor';
 
@@ -59,4 +59,46 @@ it('hands its view out after mount and takes it back on unmount', () => {
   expect(onViewReady).toHaveBeenLastCalledWith(editor(container));
   unmount();
   expect(onViewReady).toHaveBeenLastCalledWith(null);
+});
+
+function typeAt(view: EditorView, pos: number, text: string) {
+  act(() => {
+    view.dispatch({ selection: { anchor: pos } });
+    const insert = () => view.state.update({ changes: { from: pos, insert: text }, selection: { anchor: pos + text.length }, userEvent: 'input.type' });
+    if (!view.state.facet(EditorView.inputHandler).some((handler) => handler(view, pos, pos, text, insert))) view.dispatch(insert());
+  });
+}
+
+const cursorOf = (view: EditorView) => view.state.selection.main.head;
+
+it.each([['before a word', 'Amazing'], ['before Chinese', '奇異恩典'], ['at the end', '']])('typing [ %s adds ] with the cursor between', (_, text) => {
+  const { container } = render(<CodeMirrorEditor value={text} onChange={vi.fn()} />);
+  const view = editor(container);
+  typeAt(view, 0, '[');
+  expect(view.state.doc.toString()).toBe(`[]${text}`);
+  expect(cursorOf(view)).toBe(1);
+});
+
+it('typing ] in front of ] steps over it', () => {
+  const { container } = render(<CodeMirrorEditor value="[Am]x" onChange={vi.fn()} />);
+  const view = editor(container);
+  typeAt(view, 3, ']');
+  expect(view.state.doc.toString()).toBe('[Am]x');
+  expect(cursorOf(view)).toBe(4);
+});
+
+it('Backspace between [ and ] removes both', () => {
+  const { container } = render(<CodeMirrorEditor value="a[]b" onChange={vi.fn()} />);
+  const view = editor(container);
+  act(() => { view.dispatch({ selection: { anchor: 2 } }); });
+  act(() => { runScopeHandlers(view, new KeyboardEvent('keydown', { key: 'Backspace' }), 'editor'); });
+  expect(view.state.doc.toString()).toBe('ab');
+});
+
+it('leaves ( and quotes alone', () => {
+  const { container } = render(<CodeMirrorEditor value="" onChange={vi.fn()} />);
+  const view = editor(container);
+  typeAt(view, 0, '(');
+  typeAt(view, 1, '"');
+  expect(view.state.doc.toString()).toBe('("');
 });
