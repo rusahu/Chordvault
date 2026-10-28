@@ -29,3 +29,16 @@ export function chordAt(state: EditorState, pos: number): ChordToken | null {
 
 /** Spaces around a slash removed and the preferred spelling applied: `A / Db` becomes `A/C#`. */
 export const cleanChordName = (inner: string) => normalizeChord(inner.replace(/\s*\/\s*/g, '/'));
+
+/** Each line of `text` with the document offset it starts at. */
+export function lineRanges(text: string): { text: string; from: number }[] {
+  let from = 0;
+  return text.split('\n').map((line) => {
+    const range = { text: line, from };
+    from += line.length + 1;
+    return range;
+  });
+}
+
+/** A chord name as it is written in the sheet: cleaned and in brackets. */
+export const bracketed = (name: string) => `[${cleanChordName(name)}]`;

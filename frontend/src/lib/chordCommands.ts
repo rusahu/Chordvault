@@ -1,6 +1,6 @@
 import { findClusterBreak, type EditorState, type TransactionSpec } from '@codemirror/state';
 import type { Command } from '@codemirror/view';
-import { chordAt, chordTokens, cleanChordName, type ChordToken } from './chordTokens';
+import { bracketed, chordAt, chordTokens, type ChordToken } from './chordTokens';
 
 // Not input.type or delete: CodeMirror history joins those, and each chord action must undo on its own.
 const MOVE = 'chord.move';
@@ -48,12 +48,12 @@ export function moveChordTo(state: EditorState, token: ChordToken, pos: number):
 }
 
 export function insertChordAt(pos: number, name: string): TransactionSpec {
-  const chordText = `[${cleanChordName(name)}]`;
+  const chordText = bracketed(name);
   return { changes: { from: pos, insert: chordText }, selection: { anchor: pos + chordText.length }, userEvent: INSERT };
 }
 
 export function renameChord(token: ChordToken, name: string): TransactionSpec {
-  const chordText = `[${cleanChordName(name)}]`;
+  const chordText = bracketed(name);
   return { changes: { from: token.from, to: token.to, insert: chordText }, selection: { anchor: token.from + 1 }, userEvent: RENAME };
 }
 

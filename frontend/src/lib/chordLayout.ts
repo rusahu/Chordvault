@@ -1,4 +1,4 @@
-import { chordTokens, type ChordToken } from './chordTokens';
+import { chordTokens, lineRanges, type ChordToken } from './chordTokens';
 
 export interface LyricSegment {
   chord: ChordToken | null;
@@ -26,14 +26,9 @@ function segments(text: string, from: number): LyricSegment[] {
 
 /** The song as chords over lyrics, keeping every document offset so a tap maps back to the source. */
 export function chordLayout(text: string): LayoutLine[] {
-  let from = 0;
-  return text.split('\n').map((line) => {
-    const start = from;
-    from += line.length + 1;
-    return isOther(line)
-      ? { kind: 'other', from: start, text: line }
-      : { kind: 'lyrics', from: start, to: start + line.length, segments: segments(line, start) };
-  });
+  return lineRanges(text).map(({ text: line, from }) => (isOther(line)
+    ? { kind: 'other', from, text: line }
+    : { kind: 'lyrics', from, to: from + line.length, segments: segments(line, from) }));
 }
 
 // Where a line may wrap: around spaces, and around each Chinese, Japanese or Korean character.

@@ -1,5 +1,5 @@
 import * as ChordSheetJS from 'chordsheetjs';
-import { chordTokens, cleanChordName } from './chordTokens';
+import { chordTokens, cleanChordName, lineRanges } from './chordTokens';
 import { detectFormat, SECTION_LABEL_RE } from './chords';
 
 export type ChordProblemCode = 'unclosed' | 'unknown' | 'unmatchedStart' | 'unmatchedEnd';
@@ -35,9 +35,15 @@ function bracketProblems(line: string, from: number): ChordProblem[] {
 // Several chords or a note in one bracket (`[G (Em F# G)]`, `[INTRO: C G/B]`) is deliberate, not a misspelt chord.
 const isNotation = (name: string) => NOT_A_CHORD.test(name) || SECTION_LABEL_RE.test(name) || /\s/.test(cleanChordName(name));
 
+const parses = (name: string) => !!ChordSheetJS.Chord.parse(cleanChordName(name));
+const isWritten = (name: string) => !!name.trim() && !isNotation(name.trim());
+
+/** A real chord name: not empty, not notation, and readable. Shared with suggestions so both agree on what a chord is. */
+export const isChordName = (name: string) => isWritten(name) && parses(name);
+
 function chordNameProblems(line: string, from: number): ChordProblem[] {
   return chordTokens(line, from)
-    .filter(({ name }) => name.trim() && !isNotation(name.trim()) && !ChordSheetJS.Chord.parse(cleanChordName(name)))
+    .filter(({ name }) => isWritten(name) && !parses(name))
     .map((t) => ({ from: t.from, to: t.to, code: 'unknown', name: t.name }));
 }
 
@@ -61,12 +67,7 @@ function sectionProblems(lines: { text: string; from: number }[]): ChordProblem[
 /** Mistakes worth flagging in a ChordPro sheet: unclosed brackets, chords nobody can read, unmatched sections. */
 export function chordProblems(text: string): ChordProblem[] {
   if (SKIPPED_FORMATS.includes(detectFormat(text) ?? '')) return [];
-  let from = 0;
-  const lines = text.split('\n').map((line) => {
-    const at = { text: line, from };
-    from += line.length + 1;
-    return at;
-  });
+  const lines = lineRanges(text);
   return [
     ...lines.flatMap(({ text: line, from: start }) => [...bracketProblems(line, start), ...chordNameProblems(line, start)]),
     ...sectionProblems(lines),

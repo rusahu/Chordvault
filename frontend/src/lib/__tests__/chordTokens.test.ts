@@ -1,5 +1,5 @@
 import { EditorState } from '@codemirror/state';
-import { chordAt, chordTokens, cleanChordName } from '../chordTokens';
+import { chordAt, chordTokens, cleanChordName, lineRanges } from '../chordTokens';
 
 const at = (doc: string, pos: number) => chordAt(EditorState.create({ doc }), pos);
 
@@ -37,5 +37,11 @@ describe('cleanChordName', () => {
   it('closes slash spaces and uses the preferred spelling', () => {
     expect(cleanChordName('A / Db')).toBe('A/C#');
     expect(cleanChordName('A#m7')).toBe('Bbm7');
+  });
+});
+
+describe('lineRanges', () => {
+  it('gives each line with its document offset', () => {
+    expect(lineRanges('ab\n\n奇c')).toEqual([{ text: 'ab', from: 0 }, { text: '', from: 3 }, { text: '奇c', from: 4 }]);
   });
 });

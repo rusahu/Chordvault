@@ -29,6 +29,12 @@ describe('songChords', () => {
   });
 });
 
+describe('songChords notation', () => {
+  it('skips notation and spells chords the way sheets render', () => {
+    expect(songChords('[Db]a [N.C.] [x] [...] [*Riff] [G (Em F# G)] [A / Db] [C#]b')).toEqual(['C#', 'A/C#']);
+  });
+});
+
 describe('suggestChords', () => {
   it('puts song chords first, then the rest of the key, without repeats', () => {
     expect(suggestChords('{key: G}\n[D]a [D]b [G/B]c [G]d')).toEqual(['D', 'G/B', 'G', 'Am', 'Bm', 'C', 'Em', 'F#dim']);
