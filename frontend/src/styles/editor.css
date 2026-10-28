@@ -50,8 +50,9 @@
 .cm-editor { --cm-panel-top: var(--editor-bar-h, 0px); }
 @media (pointer: coarse) {
   .cm-editor { --cm-panel-top: calc(var(--editor-bar-h, 0px) + var(--chord-bar-h, 0px)); --cm-end-space: 40vh; }
-  /* 16px or iOS zooms the page when a find field gets focus */
+  /* 16px or iOS zooms the page when a text field gets focus */
   .cm-editor .cm-textfield { font-size: 16px !important; }
+  .move-chords .mantine-Input-input { font-size: 16px; }
 }
 
 /* From 768px the editor pane scrolls itself, so the chord bar pins to the pane's top */
