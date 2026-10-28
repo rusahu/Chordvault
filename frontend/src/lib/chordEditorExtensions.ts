@@ -11,7 +11,8 @@ import { linter } from '@codemirror/lint';
 import { search, searchKeymap } from '@codemirror/search';
 
 const cvTheme = EditorView.theme({
-  '.cm-content': { padding: '12px 0', minHeight: '300px' },
+  // --cm-end-space (editor.css) leaves room on touch screens to scroll the last line above the on-screen keyboard.
+  '.cm-content': { padding: '12px 0 var(--cm-end-space, 12px)', minHeight: '300px' },
   '.cm-focused': { outline: 'none' },
   '.cm-scroller': { overflow: 'auto' },
   '.cm-gutters': { display: 'none' },
