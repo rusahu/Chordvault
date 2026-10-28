@@ -12,8 +12,8 @@ export interface ChordProblem {
   name?: string;
 }
 
-// Written inside brackets on real sheets but not chords: no chord, repeat, bar line, annotation.
-const NOT_A_CHORD = /^(N\.?C\.?|x|%|\||\*.*)$/i;
+// Written inside brackets on real sheets but not chords: no chord, repeat, bar line, annotation, rest marks.
+const NOT_A_CHORD = /^(N\.?C\.?|x|%|\||\*.*|[.\-\s]+)$/i;
 const SHORT_SECTIONS: Record<string, string> = { c: 'chorus', v: 'verse', b: 'bridge', t: 'tab' };
 const SECTION = /^\{(?:(start_of_|end_of_)(\w+)|(so|eo)([cvbt]))\b[^}]*\}/;
 const SKIPPED_FORMATS = ['Ultimate Guitar', 'Chords over lyrics'];
@@ -32,9 +32,12 @@ function bracketProblems(line: string, from: number): ChordProblem[] {
   return problems;
 }
 
+// Several chords or a note in one bracket (`[G (Em F# G)]`, `[INTRO: C G/B]`) is deliberate, not a misspelt chord.
+const isNotation = (name: string) => NOT_A_CHORD.test(name) || SECTION_LABEL_RE.test(name) || /\s/.test(cleanChordName(name));
+
 function chordNameProblems(line: string, from: number): ChordProblem[] {
   return chordTokens(line, from)
-    .filter(({ name }) => name.trim() && !NOT_A_CHORD.test(name.trim()) && !SECTION_LABEL_RE.test(name) && !ChordSheetJS.Chord.parse(cleanChordName(name)))
+    .filter(({ name }) => name.trim() && !isNotation(name.trim()) && !ChordSheetJS.Chord.parse(cleanChordName(name)))
     .map((t) => ({ from: t.from, to: t.to, code: 'unknown', name: t.name }));
 }
 

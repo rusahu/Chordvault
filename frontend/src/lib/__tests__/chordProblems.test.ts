@@ -18,6 +18,15 @@ it.each(['[N.C.]', '[NC]', '[x]', '[%]', '[*Riff]', '[|]', '[Bbmaj]', '[Hm]', '[
   expect(found(`{title: x}\n${chord}la`)).toEqual([]);
 });
 
+// From the production calibration (2026-10-28): rest marks and several chords or a note in one bracket are deliberate.
+it.each(['[...]', '[ . . . ]', '[.]', '[- - -]', '[G (Em F# G)]', '[A - - -  to Chorus]', '[INTRO: C  G/B  Am  G]'])('accepts the notation %s', (chord) => {
+  expect(found(`{title: x}\n${chord}la`)).toEqual([]);
+});
+
+it('still flags a misspelt slash chord', () => {
+  expect(found('{title: x}\n[D/#F]la')).toEqual([['unknown', '[D/#F]', 'D/#F']]);
+});
+
 it('flags a section start whose end does not match, and the stray end', () => {
   expect(found('{start_of_chrous}\n[G]a\n{end_of_chorus}')).toEqual([
     ['unmatchedStart', '{start_of_chrous}', 'chrous'],
