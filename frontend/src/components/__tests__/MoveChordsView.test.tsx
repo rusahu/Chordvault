@@ -93,3 +93,12 @@ it('renames the picked chord from the suggestions', () => {
   expect(text()).toBe('{key: G}\n[Am]grace [G]x');
   expect(screen.getByRole('button', { name: 'Chord Am' })).toHaveAttribute('aria-pressed', 'true');
 });
+
+it('forgets a tapped spot once the text changes elsewhere', () => {
+  const { container } = renderDoc('[G]grace');
+  fireEvent.click(letter(container, 5));
+  expect(screen.getByRole('button', { name: 'Use chord G' })).toBeInTheDocument();
+  act(() => { view.dispatch({ changes: { from: 0, insert: 'x\n' } }); });
+  expect(screen.queryByRole('button', { name: 'Use chord G' })).not.toBeInTheDocument();
+  expect(text()).toBe('x\n[G]grace');
+});

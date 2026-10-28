@@ -37,7 +37,10 @@ export function MoveChordsView({ view, content }: MoveChordsViewProps) {
   const { t, tReplace } = useI18n();
   const layout = useMemo(() => chordLayout(content), [content]);
   const [picked, setPicked] = useState<ChordToken | null>(null);
-  const [target, setTarget] = useState<number | null>(null);
+  // The tapped spot remembers the text it was tapped in; once that text changes, the offset means nothing.
+  const [tapped, setTapped] = useState<{ pos: number; doc: string } | null>(null);
+  const target = tapped && tapped.doc === content ? tapped.pos : null;
+  const setTarget = (pos: number | null) => setTapped(pos === null ? null : { pos, doc: content });
   const [name, setName] = useState('');
 
   const suggestions = useMemo(() => suggestChords(content), [content]);
