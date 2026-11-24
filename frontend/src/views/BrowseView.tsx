@@ -27,7 +27,7 @@ interface BrowseViewProps {
 
 export function BrowseView({ navigate }: BrowseViewProps) {
   const { querySongs } = useLibraryRead();
-  const { readOnly } = useOffline();
+  const { readOnly, state: offlineState } = useOffline();
   const { user } = useAuth();
   const { t } = useI18n();
   const [query, setQuery, saveQuery] = useSessionField(searchKey('browse', 'query'));
@@ -38,6 +38,7 @@ export function BrowseView({ navigate }: BrowseViewProps) {
   const hasFilters = Boolean(langFilter || tagFilter.length);
   const [showFilters, toggleFilters] = useSessionToggle(searchKey('browse', 'show_filters'));
   const { items: songs, page, totalPages, loaded, loadError, search, refine, clear, goToPage } = usePaginatedSearch({
+    reloadKey: offlineState?.revision,
     pageKey: searchKey('browse', 'page'), listKey: 'songs', fetchPage: querySongs,
     filters, setQuery,
     persist: ({ q = '', language = '', tags = [] }) => { saveQuery(q); saveLangFilter(language); saveTagFilter(tags.join(',')); },

@@ -12,10 +12,12 @@ export interface PaginatedSearchOptions<T, K extends string> {
   persist: (filters: LibraryQuery) => void;
   setQuery?: (query: string) => void;
   enabled?: boolean;
+  /** A new value reloads the last loaded search and page (e.g. the downloaded library changed). */
+  reloadKey?: unknown;
 }
 
 /** List state shared by the search views. A new `fetchPage` reloads with the latest filters; typing never does. */
-export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filters, fetchPage, persist, setQuery, enabled = true }: PaginatedSearchOptions<T, K>) {
+export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filters, fetchPage, persist, setQuery, enabled = true, reloadKey }: PaginatedSearchOptions<T, K>) {
   const [savedPage, savePage] = useSearchSessionValue(pageKey, '1');
   const [items, setItems] = useState<T[]>([]);
   const [page, setPage] = useState(() => searchPage(savedPage));
@@ -25,6 +27,7 @@ export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filt
   const active = useActiveRef();
   const latestRequest = useRef(0);
   const latestPersist = useRef(persist);
+  const lastLoaded = useRef<LibraryQuery | null>(null);
 
   useEffect(() => { latestPersist.current = persist; });
 
@@ -40,6 +43,7 @@ export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filt
       setPage(data.page);
       setTotalPages(data.totalPages);
       setLoaded(true);
+      lastLoaded.current = next;
       latestPersist.current(next);
       savePage(String(data.page));
     } catch (e) {
@@ -52,6 +56,16 @@ export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filt
     else setLoaded(true);
   });
   useEffect(() => { loadCurrent(load, enabled); }, [load, enabled]);
+
+  const reloadLast = useEffectEvent((run: typeof load) => {
+    if (enabled && lastLoaded.current) void run(lastLoaded.current, page);
+  });
+  const shownKey = useRef(reloadKey);
+  useEffect(() => {
+    if (Object.is(shownKey.current, reloadKey)) return;
+    shownKey.current = reloadKey;
+    reloadLast(load);
+  }, [reloadKey, load]);
 
   // A disabled search (e.g. the local setlists tab) only remembers the filters.
   const apply = (next: LibraryQuery) => {

@@ -5,7 +5,7 @@ import { Alert, Badge, Paper, Button, NativeSelect, Group, Box, Text, Divider, S
 import { SectionTitle } from '../components/SectionTitle';
 import { IconBrandYoutube, IconLock, IconPencil, IconPlus } from '@tabler/icons-react';
 import { BackButton } from '../components/BackButton';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useApi } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { useI18n } from '../context/I18nContext';
@@ -26,6 +26,7 @@ import { PageTitle } from '../components/PageTitle';
 import { VISIBILITY } from '../lib/constants';
 import { formatDbDate, versionLabel } from '../lib/format';
 import { errorMessage, confirmAction } from '../lib/errors';
+import { isServerUnreachable } from '../lib/api';
 import { usePdfExport } from '../hooks/usePdfExport';
 import type { Navigate } from '../lib/routes';
 
@@ -37,7 +38,9 @@ interface SongViewProps {
 export function SongView({ songId, navigate }: SongViewProps) {
   const apiCall = useApi();
   const { getSong, getVersions } = useLibraryRead();
-  const { readOnly } = useOffline();
+  const { readOnly, state: offlineState } = useOffline();
+  const revision = offlineState?.revision;
+  const shownId = useRef<number | null>(null);
   const { user } = useAuth();
   const { t, tReplace } = useI18n();
   const [loadError, setLoadError] = useState('');
@@ -46,24 +49,34 @@ export function SongView({ songId, navigate }: SongViewProps) {
   const [corrections, setCorrections] = useState<Correction[]>([]);
   const [addToSetlistOpen, addToSetlist] = useDisclosure(false);
 
+  // A new download re-reads the same song in place; only a different song shows the loader.
   useEffect(() => {
-    setSong(null);
-    setLoadError('');
+    let active = true;
+    const sameSong = shownId.current === songId;
+    shownId.current = songId;
+    if (!sameSong) { setSong(null); setLoadError(''); }
     getSong(songId)
-      .then(setSong)
-      .catch((e) => setLoadError(errorMessage(e)));
-  }, [songId, getSong, user]);
+      .then((next) => { if (active) { setLoadError(''); setSong(next); } })
+      .catch((e) => {
+        if (!active || (sameSong && isServerUnreachable(e))) return;
+        setSong(null);
+        setLoadError(errorMessage(e));
+      });
+    return () => { active = false; };
+  }, [songId, getSong, user, revision]);
 
   useEffect(() => {
     if (!song) return;
+    let active = true;
     getVersions(songId)
-      .then((v) => { if (v.length > 1) setVersions(v); })
+      .then((v) => { if (active) setVersions((prev) => (v.length > 1 ? v : prev.length ? [] : prev)); })
       .catch(() => {});
     if (user && user.username === song.username) {
       apiCall<Correction[]>('GET', `/api/songs/${songId}/corrections`)
-        .then(setCorrections)
+        .then((list) => { if (active) setCorrections(list); })
         .catch(() => {});
     }
+    return () => { active = false; };
   }, [song, songId, getVersions, apiCall, user]);
 
   const content = song?.content || '';
