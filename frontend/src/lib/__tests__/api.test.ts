@@ -1,4 +1,4 @@
-import { ApiError, authHeaders, responseError } from '../api';
+import { ApiError, authHeaders, isServerUnreachable, responseError } from '../api';
 
 const json = (body: unknown, status: number) => new Response(JSON.stringify(body), { status });
 
@@ -17,4 +17,13 @@ it('uses the server error message when the body carries one', async () => {
 it('falls back when the body is not JSON or has no message', async () => {
   expect((await responseError(new Response('<html>', { status: 502 }), 'Server error (502)')).message).toBe('Server error (502)');
   expect((await responseError(json({}, 500), 'Server error (500)')).message).toBe('Server error (500)');
+});
+
+it('treats only connection failures and server errors as unreachable', () => {
+  expect(isServerUnreachable(new TypeError('Failed to fetch'))).toBe(true);
+  expect(isServerUnreachable(new DOMException('t', 'TimeoutError'))).toBe(true);
+  expect(isServerUnreachable(new ApiError('down', 503))).toBe(true);
+  expect(isServerUnreachable(new DOMException('a', 'AbortError'))).toBe(false);
+  expect(isServerUnreachable(new ApiError('gone', 404))).toBe(false);
+  expect(isServerUnreachable('text')).toBe(false);
 });

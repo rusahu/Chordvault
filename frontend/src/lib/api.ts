@@ -24,6 +24,12 @@ export async function responseError(res: Response, fallback: string): Promise<Ap
   return new ApiError(fallback, res.status);
 }
 
+/** True when the server could not answer: no connection, a timeout, or a server error. */
+export function isServerUnreachable(error: unknown): boolean {
+  return error instanceof TypeError || (error instanceof DOMException && error.name === 'TimeoutError') ||
+    (error instanceof ApiError && error.status >= 500);
+}
+
 export async function api<T = unknown>(
   method: string,
   path: string,

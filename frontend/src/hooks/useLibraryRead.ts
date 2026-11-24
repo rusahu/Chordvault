@@ -17,7 +17,7 @@ export function useLibraryRead() {
   const { reportSource } = useOffline();
   return useMemo(() => {
     async function read<T>(path: string, cached: (account: number) => Promise<T>, exists?: (account: number) => Promise<unknown>) {
-      return readLibraryResource(navigator.onLine !== false,
+      return readLibraryResource({ online: navigator.onLine !== false },
         async () => { const result = await call<T>('GET', path); reportSource(false); return result; },
         async () => {
           if (!accountId || getStoredUser()?.id !== accountId) throw new Error('Sign in and download your library before going offline.');
