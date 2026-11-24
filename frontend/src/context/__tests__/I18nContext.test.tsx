@@ -20,3 +20,12 @@ it('shows the app only once the strings have loaded, so keys never flash', async
   respond({ ok: true, json: async () => ({ 'nav.browse': 'Songs' }) });
   expect(await screen.findByText('Songs')).toBeInTheDocument();
 });
+
+it('loads English without asking for an unshipped regional file', async () => {
+  vi.spyOn(navigator, 'language', 'get').mockReturnValue('en-US');
+  const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ 'nav.browse': 'Songs' }) }));
+  vi.stubGlobal('fetch', fetchMock);
+  const { result } = renderHook(() => useI18n(), { wrapper: ({ children }: { children: ReactNode }) => <I18nProvider>{children}</I18nProvider> });
+  await waitFor(() => expect(result.current.loaded).toBe(true));
+  expect(fetchMock).toHaveBeenCalledExactlyOnceWith('/locales/en.json');
+});
