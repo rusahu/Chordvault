@@ -9,6 +9,7 @@ import { usePersistentStorage } from '../hooks/usePersistentStorage';
 import { getStoredUser, USER_STORAGE_KEY } from '../lib/storage';
 import { errorMessage } from '../lib/errors';
 import { ApiError } from '../lib/api';
+import { anySignal, timeoutSignal } from '../lib/util';
 import type { OfflineState } from '../types/offline';
 
 const noop = () => {};
@@ -55,7 +56,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
       if (!force && current.checkedAt && Date.now() - current.checkedAt < 300_000) return;
       setBusy(true);
       setError('');
-      const updated = await downloadOfflineLibrary(user, offlineLibrary, AbortSignal.any([abort.signal, AbortSignal.timeout(60_000)]));
+      const updated = await downloadOfflineLibrary(user, offlineLibrary, anySignal([abort.signal, timeoutSignal(60_000)]));
       if (updated && !abort.signal.aborted) setUsingDownload(false);
     } catch (err) {
       if (!abort.signal.aborted && mountedRef.current) {

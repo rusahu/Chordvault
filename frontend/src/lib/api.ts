@@ -1,3 +1,5 @@
+import { timeoutSignal } from './util';
+
 export class ApiError extends Error {
   status: number;
   constructor(message: string, status: number) {
@@ -31,7 +33,7 @@ export async function api<T = unknown>(
 ): Promise<T> {
   const res = await fetch(path, {
     method,
-    signal: signal ?? (method === 'GET' ? AbortSignal.timeout(8000) : undefined),
+    signal: signal ?? (method === 'GET' ? timeoutSignal(8000) : undefined),
     headers: { 'Content-Type': 'application/json', ...authHeaders(token) },
     body: body ? JSON.stringify(body) : undefined,
   });
