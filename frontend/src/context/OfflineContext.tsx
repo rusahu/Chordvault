@@ -8,7 +8,7 @@ import { downloadOfflineLibrary } from '../lib/offlineDownload';
 import { usePersistentStorage } from '../hooks/usePersistentStorage';
 import { getStoredUser, USER_STORAGE_KEY } from '../lib/storage';
 import { errorMessage } from '../lib/errors';
-import { ApiError } from '../lib/api';
+import { ApiError, isServerUnreachable } from '../lib/api';
 import { anySignal, timeoutSignal } from '../lib/util';
 import type { OfflineState } from '../types/offline';
 
@@ -20,6 +20,7 @@ const OfflineContext = createContext({
   refresh: async (_force = false) => {}, enable: async () => {}, disable: async () => {},
   reportSource: (_downloaded: boolean) => {}, setShellReady: (_ready: boolean) => {},
   setShellError: (_message: string) => {}, holdRefresh: (_hold: boolean) => noop,
+  markLibraryChanged: noop, saveWaiting: (): boolean => false,
 });
 
 export function OfflineProvider({ children }: { children: ReactNode }) {
@@ -35,6 +36,12 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   const [usingDownload, setUsingDownload] = useState(false);
   const controller = useRef<AbortController | null>(null);
   const holds = useRef(0);
+  // Stale: the next sync skips the 5-minute check (true at start, after a save, after a failed sync).
+  const stale = useRef(true);
+  // Saves since start, and how many of them a finished sync has picked up.
+  const writeSerial = useRef(0);
+  const syncedSerial = useRef(0);
+  const account = useRef<number | undefined>(undefined);
   const mountedRef = useActiveRef();
   const readState = useCallback(async () => {
     const next = await offlineLibrary.status();
@@ -49,24 +56,38 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     if (getStoredUser()?.id !== user.id) return;
     const abort = new AbortController();
     controller.current = abort;
+    const serial = writeSerial.current;
+    let ran = false;
+    let hasDownload = false;
     try {
       const current = await offlineLibrary.state();
       if (abort.signal.aborted || !mountedRef.current || getStoredUser()?.id !== user.id ||
           !current?.enabled || current.accountId !== user.id || (!force && holds.current)) return;
-      if (!force && current.checkedAt && Date.now() - current.checkedAt < 300_000) return;
+      if (!force && !stale.current && current.checkedAt && Date.now() - current.checkedAt < 300_000) return;
+      ran = true;
+      // status() drops the revision when rows are missing, so only a usable download locks editing.
+      hasDownload = !!(await offlineLibrary.status())?.revision;
       setBusy(true);
       setError('');
       const updated = await downloadOfflineLibrary(user, offlineLibrary, anySignal([abort.signal, timeoutSignal(60_000)]));
-      if (updated && !abort.signal.aborted) setUsingDownload(false);
+      if (updated && !abort.signal.aborted) {
+        setUsingDownload(false);
+        syncedSerial.current = serial;
+        if (serial === writeSerial.current) stale.current = false;
+      }
     } catch (err) {
       if (!abort.signal.aborted && mountedRef.current) {
         setError(errorMessage(err, 'Could not download library'));
+        stale.current = true;
+        if (hasDownload && isServerUnreachable(err)) setUsingDownload(true);
         if (err instanceof ApiError && err.status === 401) logout();
       }
     } finally {
       if (controller.current === abort) {
         controller.current = null;
         if (mountedRef.current) { setBusy(false); await readState().catch(() => {}); }
+        // A save landed while this sync ran: its snapshot predates the save.
+        if (ran && !abort.signal.aborted && writeSerial.current !== serial) void refreshRef.current();
       }
     }
   }, [user, logout, readState, mountedRef]);
@@ -78,6 +99,13 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     setActivity(true);
     return () => { holds.current--; setActivity(holds.current > 0); if (!holds.current) void refreshRef.current(); };
   }, []);
+  /** Called synchronously after a save, before the caller reads again, so reads skip the stale download. */
+  const markLibraryChanged = useCallback(() => {
+    writeSerial.current++;
+    stale.current = true;
+    void refreshRef.current();
+  }, []);
+  const saveWaiting = useCallback(() => writeSerial.current !== syncedSerial.current, []);
   const enable = useCallback(async () => {
     if (!user || getStoredUser()?.id !== user.id) return;
     setError('');
@@ -114,6 +142,14 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     let active = true;
     controller.current?.abort();
     controller.current = null;
+    stale.current = true;
+    setBusy(false);
+    // A new token for the same account keeps a waiting save and viewing-only mode.
+    if (account.current !== user?.id) {
+      account.current = user?.id;
+      syncedSerial.current = writeSerial.current;
+      setUsingDownload(false);
+    }
     void readState().then(async current => {
       if (!active || getStoredUser()?.id !== user?.id) return;
       if (current && current.accountId !== user?.id) {
@@ -131,8 +167,8 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   const value = useMemo(() => ({ state: state?.accountId === user?.id ? state : undefined,
     activity, busy, error, shellError, shellReady, enabled, persisted, requestPersistence, usingDownload, online: network.online,
     readOnly: !network.online || usingDownload, refresh, enable, disable, reportSource,
-    setShellReady, setShellError, holdRefresh,
-  }), [activity, state, user?.id, busy, error, shellError, shellReady, enabled, persisted, requestPersistence, usingDownload, network.online, refresh, enable, disable, reportSource, holdRefresh]);
+    setShellReady, setShellError, holdRefresh, markLibraryChanged, saveWaiting,
+  }), [activity, state, user?.id, busy, error, shellError, shellReady, enabled, persisted, requestPersistence, usingDownload, network.online, refresh, enable, disable, reportSource, holdRefresh, markLibraryChanged, saveWaiting]);
   return <OfflineContext.Provider value={value}>{children}</OfflineContext.Provider>;
 }
 

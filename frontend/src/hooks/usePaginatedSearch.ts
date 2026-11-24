@@ -12,10 +12,12 @@ export interface PaginatedSearchOptions<T, K extends string> {
   persist: (filters: LibraryQuery) => void;
   setQuery?: (query: string) => void;
   enabled?: boolean;
+  /** A new value reloads the last loaded search and page (e.g. the downloaded library changed). */
+  reloadKey?: unknown;
 }
 
 /** List state shared by the search views. A new `fetchPage` reloads with the latest filters; typing never does. */
-export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filters, fetchPage, persist, setQuery, enabled = true }: PaginatedSearchOptions<T, K>) {
+export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filters, fetchPage, persist, setQuery, enabled = true, reloadKey }: PaginatedSearchOptions<T, K>) {
   const [savedPage, savePage] = useSearchSessionValue(pageKey, '1');
   const [items, setItems] = useState<T[]>([]);
   const [page, setPage] = useState(() => searchPage(savedPage));
@@ -25,21 +27,27 @@ export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filt
   const active = useActiveRef();
   const latestRequest = useRef(0);
   const latestPersist = useRef(persist);
+  // The newest search asked for, so a reload repeats it even while in flight or after it failed.
+  const lastRequest = useRef<{ query: LibraryQuery; page: number } | null>(null);
 
   useEffect(() => { latestPersist.current = persist; });
 
   const load = useCallback(async (next: LibraryQuery, targetPage = 1) => {
     const request = ++latestRequest.current;
     const isCurrent = () => active.current && request === latestRequest.current;
+    lastRequest.current = { query: next, page: targetPage };
     setLoadError('');
     try {
-      const data = await fetchPage({ ...next, page: targetPage });
+      let data = await fetchPage({ ...next, page: targetPage });
+      // The list shrank under this page (paging does not clamp): show the last real page instead.
+      if (isCurrent() && data.page > Math.max(1, data.totalPages)) data = await fetchPage({ ...next, page: Math.max(1, data.totalPages) });
       if (!isCurrent()) return;
       const lists: Record<K, T[]> = data;
       setItems(lists[listKey]);
       setPage(data.page);
       setTotalPages(data.totalPages);
       setLoaded(true);
+      lastRequest.current = { query: next, page: data.page };
       latestPersist.current(next);
       savePage(String(data.page));
     } catch (e) {
@@ -52,6 +60,16 @@ export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filt
     else setLoaded(true);
   });
   useEffect(() => { loadCurrent(load, enabled); }, [load, enabled]);
+
+  const reloadLast = useEffectEvent((run: typeof load) => {
+    if (enabled && lastRequest.current) void run(lastRequest.current.query, lastRequest.current.page);
+  });
+  const shownKey = useRef(reloadKey);
+  useEffect(() => {
+    if (Object.is(shownKey.current, reloadKey)) return;
+    shownKey.current = reloadKey;
+    reloadLast(load);
+  }, [reloadKey, load]);
 
   // A disabled search (e.g. the local setlists tab) only remembers the filters.
   const apply = (next: LibraryQuery) => {

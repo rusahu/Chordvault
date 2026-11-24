@@ -19,6 +19,8 @@ const demo = vi.hoisted(() => ({ enabled: false }));
 vi.mock('../../context/DemoContext', () => ({ useDemo: () => ({ demoMode: demo.enabled }) }));
 afterEach(() => { demo.enabled = false; });
 vi.mock('../../lib/notifications', () => ({ showStatusNotification: vi.fn() }));
+const offline = vi.hoisted(() => ({ markLibraryChanged: vi.fn() }));
+vi.mock('../../context/OfflineContext', () => ({ useOffline: () => offline }));
 
 function file(name: string, content: string) {
   return new File([content], name, { type: 'text/plain' });
@@ -56,6 +58,7 @@ describe('ImportModal', () => {
       expect(screen.getByTestId('import-summary')).toHaveTextContent('1 imported');
       expect(screen.getByTestId('import-summary')).toHaveTextContent('1 already in your library');
     });
+    expect(offline.markLibraryChanged).toHaveBeenCalledOnce();
   });
 
   it('reads a UTF-16 file saved with a byte order mark', async () => {

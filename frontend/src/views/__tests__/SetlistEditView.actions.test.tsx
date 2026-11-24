@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { offlineLibrary } from '../../lib/offlineLibrary';
 import { SetlistEditView } from '../SetlistEditView';
 
 // Stable mock references: load() is a useCallback over them.
@@ -123,4 +124,13 @@ describe('local setlist', () => {
       await waitFor(() => expect(navigate).toHaveBeenLastCalledWith(view, {}, { leave: true }));
       expect(stored()).toEqual([]);
     });
+});
+
+it('edits the server copy of a cloud setlist, not an older download', async () => {
+  auth.user = { id: 1 };
+  localStorage.setItem('cv_user', JSON.stringify({ id: 1, token: 't' }));
+  vi.spyOn(offlineLibrary, 'getSetlist').mockResolvedValue({ ...cloudSetlist(), name: 'Old name' } as never);
+  await open(1, 'Sunday');
+  expect(api).toHaveBeenCalledWith('GET', '/api/setlists/1');
+  vi.restoreAllMocks();
 });

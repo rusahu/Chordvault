@@ -56,7 +56,7 @@ export function SetlistEditView({ setlistId, navigate }: SetlistEditViewProps) {
     }
 
     try {
-      const sl = await getSetlistForViewer(Number(setlistId));
+      const sl = await getSetlistForViewer(Number(setlistId), { fresh: true });
       setMetadata({ name: sl.name, visibility: sl.visibility === VISIBILITY.PUBLIC, event_date: sl.event_date || '' });
       setSetlist(sl);
     } catch (e) {

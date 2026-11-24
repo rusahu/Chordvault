@@ -24,11 +24,12 @@ interface MySongsViewProps {
 
 export function MySongsView({ navigate }: MySongsViewProps) {
   const { t } = useI18n();
-  const { readOnly } = useOffline();
+  const { readOnly, state: offlineState } = useOffline();
   const { querySongs } = useLibraryRead();
   const [query, setQuery, saveQuery] = useSessionField(searchKey('mysongs', 'query'));
   const fetchOwnSongs = useCallback((filters: LibraryQuery) => querySongs({ ...filters, q: filters.q?.trim(), own: true }), [querySongs]);
   const { items: songs, page, totalPages, loaded, loadError, search, clear, goToPage } = usePaginatedSearch({
+    reloadKey: offlineState?.revision,
     pageKey: searchKey('mysongs', 'page'), listKey: 'songs', fetchPage: fetchOwnSongs,
     filters: { q: query }, setQuery,
     persist: ({ q = '' }) => saveQuery(q),

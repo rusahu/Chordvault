@@ -31,13 +31,14 @@ interface SetlistsViewProps {
 export function SetlistsView({ navigate }: SetlistsViewProps) {
   const { user } = useAuth();
   const { t } = useI18n();
-  const { readOnly } = useOffline();
+  const { readOnly, state: offlineState } = useOffline();
   const { querySetlists } = useLibraryRead();
   const activeTab = user ? 'cloud' : 'local';
   const store = useSetlistStore(activeTab === 'local');
 
   const { query, setQuery, dateFrom, dateTo, setDates, showDates, toggleDates, search: searchOptions } = useSetlistSearchFilters('setlists');
   const { items: setlists, page, totalPages, loaded, loadError, search, refine, clear, goToPage } = usePaginatedSearch({
+    reloadKey: offlineState?.revision,
     ...searchOptions, listKey: 'setlists', fetchPage: querySetlists, enabled: activeTab === 'cloud',
   });
 

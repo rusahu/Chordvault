@@ -9,6 +9,7 @@ interface I18nContextValue {
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null);
+const SHIPPED_LOCALES = ['en'];
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>({});
@@ -17,7 +18,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const lang = navigator.language || 'en';
     const short = lang.split('-')[0];
-    const candidates = [lang, short, 'en'];
+    // Only shipped files are precached; asking for any other blocks start until the network fails.
+    const candidates = [...new Set([lang, short, 'en'])].filter(code => SHIPPED_LOCALES.includes(code));
 
     (async () => {
       for (const candidate of candidates) {

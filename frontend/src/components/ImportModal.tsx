@@ -4,6 +4,7 @@ import { useFocusReturn } from '@mantine/hooks';
 import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useDemo } from '../context/DemoContext';
+import { useOffline } from '../context/OfflineContext';
 import { notifyError } from '../lib/errors';
 import { useStackedModalProps } from '../hooks/useStackedModalProps';
 import { useActiveRef } from '../hooks/useActiveRef';
@@ -42,6 +43,7 @@ function ImportContent({ busy, setBusy, onClose }: Omit<ImportModalProps, 'opene
   const active = useActiveRef();
   const { user } = useAuth();
   const { demoMode } = useDemo();
+  const { markLibraryChanged } = useOffline();
   const [files, setFiles] = useState<File[]>([]);
   const [progress, setProgress] = useState(0);
   const [total, setTotal] = useState(0);
@@ -90,6 +92,7 @@ function ImportContent({ busy, setBusy, onClose }: Omit<ImportModalProps, 'opene
 
       for (const batch of batches) {
         const res = await postBatchWithRetry(batch);
+        if (res.imported > 0) markLibraryChanged();
         if (!active.current) return;
         agg.imported += res.imported;
         for (const s of res.skipped) agg.skipped.push({ filename: files[offset + s.index].name });
