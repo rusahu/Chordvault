@@ -39,7 +39,7 @@ it('updates the open song when the download changes without blanking it', async 
 });
 
 it('keeps the shown song when a refresh cannot reach the server', async () => {
-  reads.getSong.mockResolvedValueOnce(song('First Title')).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+  reads.getSong.mockResolvedValueOnce(song('First Title')).mockRejectedValueOnce(new Error('This item is not available in your downloaded library. Connect and refresh your download.'));
   const view = show();
   await screen.findAllByText('First Title');
   await act(async () => newDownload(view, '"r2"'));

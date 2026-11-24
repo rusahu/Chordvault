@@ -26,7 +26,7 @@ import { PageTitle } from '../components/PageTitle';
 import { VISIBILITY } from '../lib/constants';
 import { formatDbDate, versionLabel } from '../lib/format';
 import { errorMessage, confirmAction } from '../lib/errors';
-import { isServerUnreachable } from '../lib/api';
+import { ApiError } from '../lib/api';
 import { usePdfExport } from '../hooks/usePdfExport';
 import type { Navigate } from '../lib/routes';
 
@@ -58,7 +58,8 @@ export function SongView({ songId, navigate }: SongViewProps) {
     getSong(songId)
       .then((next) => { if (active) { setLoadError(''); setSong(next); } })
       .catch((e) => {
-        if (!active || (sameSong && isServerUnreachable(e))) return;
+        // Re-reading the shown song: only the server saying it is gone or private replaces it.
+        if (!active || (sameSong && !(e instanceof ApiError && (e.status === 403 || e.status === 404)))) return;
         setSong(null);
         setLoadError(errorMessage(e));
       });

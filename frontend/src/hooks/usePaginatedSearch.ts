@@ -27,23 +27,27 @@ export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filt
   const active = useActiveRef();
   const latestRequest = useRef(0);
   const latestPersist = useRef(persist);
-  const lastLoaded = useRef<LibraryQuery | null>(null);
+  // The newest search asked for, so a reload repeats it even while in flight or after it failed.
+  const lastRequest = useRef<{ query: LibraryQuery; page: number } | null>(null);
 
   useEffect(() => { latestPersist.current = persist; });
 
   const load = useCallback(async (next: LibraryQuery, targetPage = 1) => {
     const request = ++latestRequest.current;
     const isCurrent = () => active.current && request === latestRequest.current;
+    lastRequest.current = { query: next, page: targetPage };
     setLoadError('');
     try {
-      const data = await fetchPage({ ...next, page: targetPage });
+      let data = await fetchPage({ ...next, page: targetPage });
+      // The list shrank under this page (paging does not clamp): show the last real page instead.
+      if (isCurrent() && data.page > Math.max(1, data.totalPages)) data = await fetchPage({ ...next, page: Math.max(1, data.totalPages) });
       if (!isCurrent()) return;
       const lists: Record<K, T[]> = data;
       setItems(lists[listKey]);
       setPage(data.page);
       setTotalPages(data.totalPages);
       setLoaded(true);
-      lastLoaded.current = next;
+      lastRequest.current = { query: next, page: data.page };
       latestPersist.current(next);
       savePage(String(data.page));
     } catch (e) {
@@ -58,7 +62,7 @@ export function usePaginatedSearch<T, K extends string>({ pageKey, listKey, filt
   useEffect(() => { loadCurrent(load, enabled); }, [load, enabled]);
 
   const reloadLast = useEffectEvent((run: typeof load) => {
-    if (enabled && lastLoaded.current) void run(lastLoaded.current, page);
+    if (enabled && lastRequest.current) void run(lastRequest.current.query, lastRequest.current.page);
   });
   const shownKey = useRef(reloadKey);
   useEffect(() => {

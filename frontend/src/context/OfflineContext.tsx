@@ -41,6 +41,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
   // Saves since start, and how many of them a finished sync has picked up.
   const writeSerial = useRef(0);
   const syncedSerial = useRef(0);
+  const account = useRef<number | undefined>(undefined);
   const mountedRef = useActiveRef();
   const readState = useCallback(async () => {
     const next = await offlineLibrary.status();
@@ -64,7 +65,8 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
           !current?.enabled || current.accountId !== user.id || (!force && holds.current)) return;
       if (!force && !stale.current && current.checkedAt && Date.now() - current.checkedAt < 300_000) return;
       ran = true;
-      hasDownload = !!current.revision;
+      // status() drops the revision when rows are missing, so only a usable download locks editing.
+      hasDownload = !!(await offlineLibrary.status())?.revision;
       setBusy(true);
       setError('');
       const updated = await downloadOfflineLibrary(user, offlineLibrary, anySignal([abort.signal, timeoutSignal(60_000)]));
@@ -76,6 +78,7 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     } catch (err) {
       if (!abort.signal.aborted && mountedRef.current) {
         setError(errorMessage(err, 'Could not download library'));
+        stale.current = true;
         if (hasDownload && isServerUnreachable(err)) setUsingDownload(true);
         if (err instanceof ApiError && err.status === 401) logout();
       }
@@ -140,9 +143,13 @@ export function OfflineProvider({ children }: { children: ReactNode }) {
     controller.current?.abort();
     controller.current = null;
     stale.current = true;
-    syncedSerial.current = writeSerial.current;
-    setUsingDownload(false);
     setBusy(false);
+    // A new token for the same account keeps a waiting save and viewing-only mode.
+    if (account.current !== user?.id) {
+      account.current = user?.id;
+      syncedSerial.current = writeSerial.current;
+      setUsingDownload(false);
+    }
     void readState().then(async current => {
       if (!active || getStoredUser()?.id !== user?.id) return;
       if (current && current.accountId !== user?.id) {

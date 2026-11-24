@@ -59,25 +59,33 @@ it('checks the download on start even when it was checked moments ago', async ()
   await waitFor(() => expect(downloadOfflineLibrary).toHaveBeenCalledOnce());
 });
 it('syncs after a change once the editor lets go', async () => {
-  const view = render(<OfflineProvider><View playing /></OfflineProvider>);
+  const view = render(<OfflineProvider><View playing={false} /></OfflineProvider>);
+  await waitFor(() => expect(downloadOfflineLibrary).toHaveBeenCalledOnce());
+  view.rerender(<OfflineProvider><View playing /></OfflineProvider>);
   await act(async () => { screen.getByText('Changed').click(); });
   view.rerender(<OfflineProvider><View playing /></OfflineProvider>);
-  expect(downloadOfflineLibrary).not.toHaveBeenCalled();
+  expect(downloadOfflineLibrary).toHaveBeenCalledOnce();
   expect(screen.getByText('save waiting')).toBeInTheDocument();
   view.rerender(<OfflineProvider><View playing={false} /></OfflineProvider>);
-  await waitFor(() => expect(downloadOfflineLibrary).toHaveBeenCalledOnce());
+  await waitFor(() => expect(downloadOfflineLibrary).toHaveBeenCalledTimes(2));
   view.rerender(<OfflineProvider><View playing={false} /></OfflineProvider>);
   expect(screen.getByText('saved')).toBeInTheDocument();
 });
 it('syncs again when a change lands during a sync', async () => {
-  let finish!: (value: boolean) => void;
-  vi.mocked(downloadOfflineLibrary).mockImplementationOnce(async () => { await freshCheck(); return new Promise(resolve => { finish = resolve; }); });
-  render(<OfflineProvider><View playing={false} /></OfflineProvider>);
+  let finishFirst!: (value: boolean) => void;
+  let finishSecond!: (value: boolean) => void;
+  vi.mocked(downloadOfflineLibrary)
+    .mockImplementationOnce(async () => { await freshCheck(); return new Promise(resolve => { finishFirst = resolve; }); })
+    .mockImplementationOnce(() => new Promise(resolve => { finishSecond = resolve; }));
+  const view = render(<OfflineProvider><View playing={false} /></OfflineProvider>);
   await waitFor(() => expect(downloadOfflineLibrary).toHaveBeenCalledOnce());
   await act(async () => { screen.getByText('Changed').click(); });
-  await act(async () => finish(true));
+  await act(async () => finishFirst(true));
   await waitFor(() => expect(downloadOfflineLibrary).toHaveBeenCalledTimes(2));
-  await act(async () => { screen.getByText('Refresh').click(); });
+  view.rerender(<OfflineProvider><View playing={false} /></OfflineProvider>);
+  expect(screen.getByText('save waiting')).toBeInTheDocument();
+  await act(async () => finishSecond(true));
+  view.rerender(<OfflineProvider><View playing={false} /></OfflineProvider>);
   expect(screen.getByText('saved')).toBeInTheDocument();
 });
 it('shows viewing only when a sync cannot reach the server', async () => {
@@ -103,4 +111,30 @@ it('forgets a waiting save and viewing only when the account changes', async () 
   view.rerender(<OfflineProvider><View playing={false} /></OfflineProvider>);
   expect(await screen.findByText('online')).toBeInTheDocument();
   expect(screen.getByText('saved')).toBeInTheDocument();
+});
+it('keeps a waiting save when the same account gets a new token', async () => {
+  const view = render(<OfflineProvider><View playing /></OfflineProvider>);
+  await act(async () => { screen.getByText('Changed').click(); });
+  auth.user = { ...user, token: 'renewed' };
+  view.rerender(<OfflineProvider><View playing /></OfflineProvider>);
+  await act(async () => {});
+  expect(screen.getByText('save waiting')).toBeInTheDocument();
+});
+it('retries on the next focus after a failed manual refresh', async () => {
+  vi.mocked(downloadOfflineLibrary).mockImplementationOnce(freshCheck).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+  render(<OfflineProvider><View playing={false} /></OfflineProvider>);
+  await waitFor(() => expect(downloadOfflineLibrary).toHaveBeenCalledOnce());
+  await act(async () => { screen.getByText('Refresh').click(); });
+  await waitFor(() => expect(downloadOfflineLibrary).toHaveBeenCalledTimes(2));
+  await act(async () => { window.dispatchEvent(new Event('focus')); });
+  await waitFor(() => expect(downloadOfflineLibrary).toHaveBeenCalledTimes(3));
+});
+it('stays editable when the download is missing rows', async () => {
+  await installDownload();
+  await offlineLibrary.db.state.update('current', { songCount: 5 });
+  vi.mocked(downloadOfflineLibrary).mockRejectedValue(new TypeError('Failed to fetch'));
+  render(<OfflineProvider><View playing={false} /></OfflineProvider>);
+  await waitFor(() => expect(downloadOfflineLibrary).toHaveBeenCalled());
+  await act(async () => {});
+  expect(screen.getByText('online')).toBeInTheDocument();
 });

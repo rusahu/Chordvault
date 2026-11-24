@@ -135,7 +135,33 @@ it('steps back when the page no longer exists after a reload', async () => {
   const props = options({ fetchPage, reloadKey: 'r1' });
   const hook = renderHook((p: Options) => usePaginatedSearch(p), { initialProps: props });
   await waitFor(() => expect(hook.result.current.page).toBe(2));
-  fetchPage.mockResolvedValueOnce(result(['z'], 1, 1));
+  fetchPage.mockResolvedValueOnce(result([], 2, 1)).mockResolvedValueOnce(result(['z'], 1, 1));
   hook.rerender({ ...props, reloadKey: 'r2' });
   await waitFor(() => expect(hook.result.current).toMatchObject({ items: ['z'], page: 1, totalPages: 1 }));
+  expect(fetchPage).toHaveBeenLastCalledWith({ q: 'grace', page: 1 });
+  expect(sessionStorage.getItem(pageKey)).toBe('1');
+});
+
+it('reloads the search still in flight, not the last finished one', async () => {
+  let finishB!: (value: ReturnType<typeof result>) => void;
+  const fetchPage = vi.fn(async () => result(['a']));
+  const props = options({ fetchPage, filters: { q: 'a' }, reloadKey: 'r1' });
+  const hook = renderHook((p: Options) => usePaginatedSearch(p), { initialProps: props });
+  await waitFor(() => expect(hook.result.current.items).toEqual(['a']));
+  fetchPage.mockImplementationOnce(() => new Promise(resolve => { finishB = resolve; }));
+  act(() => hook.result.current.refine({ q: 'b' }));
+  fetchPage.mockResolvedValueOnce(result(['b2']));
+  hook.rerender({ ...props, reloadKey: 'r2' });
+  await waitFor(() => expect(hook.result.current.items).toEqual(['b2']));
+  expect(fetchPage).toHaveBeenLastCalledWith({ q: 'b', page: 1 });
+  await act(async () => finishB(result(['b'])));
+});
+
+it('retries a failed first load when the download changes', async () => {
+  const fetchPage = vi.fn<Options['fetchPage']>().mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(result(['a']));
+  const props = options({ fetchPage, reloadKey: 'r1' });
+  const hook = renderHook((p: Options) => usePaginatedSearch(p), { initialProps: props });
+  await waitFor(() => expect(hook.result.current.loadError).toBe('offline'));
+  hook.rerender({ ...props, reloadKey: 'r2' });
+  await waitFor(() => expect(hook.result.current.items).toEqual(['a']));
 });

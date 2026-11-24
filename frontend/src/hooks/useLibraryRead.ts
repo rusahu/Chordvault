@@ -25,11 +25,17 @@ export function useLibraryRead() {
       return result;
     }
     async function read<T>(path: string, cached: (account: number) => Promise<T>, exists?: (account: number) => Promise<unknown>, fresh = false) {
-      // The download answers first unless a save has not synced into it yet.
-      const local = accountId && !fresh && !saveWaiting() ? () => deviceCopy(cached) : undefined;
+      // The download answers first unless a save has not synced into it yet; then it predates the save.
+      const waiting = saveWaiting();
+      const local = accountId && !fresh && !waiting ? () => deviceCopy(cached) : undefined;
       return readLibraryResource({ online: navigator.onLine !== false, local },
         async () => { const result = await call<T>('GET', path); reportSource(false); return result; },
-        async () => { const result = await deviceCopy(cached); reportSource(true); return result; },
+        async () => {
+          if (waiting) throw new Error('Could not load your latest changes. Check your connection and try again.');
+          const result = await deviceCopy(cached);
+          reportSource(true);
+          return result;
+        },
         async () => {
           if (accountId && exists && await exists(accountId).catch(() => null)) await offlineLibrary.invalidate(accountId);
         });

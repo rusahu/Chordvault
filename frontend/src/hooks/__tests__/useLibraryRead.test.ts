@@ -8,12 +8,13 @@ const { call, auth } = vi.hoisted(() => ({ call: vi.fn(), auth: { user: null as 
 vi.mock('../useApi', () => ({ useApi: () => call }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => auth }));
 const offline = vi.hoisted(() => ({ saveWaiting: vi.fn(() => false), reportSource: vi.fn() }));
-vi.mock('../../context/OfflineContext', () => ({ useOffline: () => offline }));
+const context = vi.hoisted(() => ({ value: null as unknown }));
+vi.mock('../../context/OfflineContext', () => ({ useOffline: () => context.value ?? offline }));
 
 const sunday = { id: 5, name: 'Sunday', entries: [] };
 beforeEach(() => {
   call.mockReset(); auth.user = { id: 1, token: 't' };
-  offline.saveWaiting.mockReturnValue(false); offline.reportSource.mockClear();
+  offline.saveWaiting.mockReturnValue(false); offline.reportSource.mockClear(); context.value = null;
   localStorage.setItem('cv_user', JSON.stringify(auth.user));
 });
 afterEach(() => { vi.restoreAllMocks(); localStorage.clear(); });
@@ -53,11 +54,21 @@ it('opens a downloaded song before offline state loads', async () => {
 
 it('reads from the server right after a save in the same tick', async () => {
   downloaded();
-  offline.saveWaiting.mockReturnValue(true);
   call.mockResolvedValue({ ...amazing, title: 'Saved' });
   const { result } = renderHook(() => useLibraryRead());
-  await expect(result.current.getSong(3)).resolves.toMatchObject({ title: 'Saved' });
+  const { getSong } = result.current;
+  offline.saveWaiting.mockReturnValue(true);
+  await expect(getSong(3)).resolves.toMatchObject({ title: 'Saved' });
   expect(call).toHaveBeenCalledExactlyOnceWith('GET', '/api/songs/3');
+});
+
+it('does not fall back to the old copy while a save is waiting', async () => {
+  downloaded();
+  offline.saveWaiting.mockReturnValue(true);
+  call.mockRejectedValue(new TypeError('Failed to fetch'));
+  const { result } = renderHook(() => useLibraryRead());
+  await expect(result.current.getSong(3)).rejects.toThrow();
+  expect(offline.reportSource).not.toHaveBeenCalledWith(true);
 });
 
 it('asks the server for songs that are not downloaded', async () => {
@@ -89,6 +100,7 @@ it('keeps readers stable when offline state changes', () => {
   const { result, rerender } = renderHook(() => useLibraryRead());
   const first = result.current;
   offline.saveWaiting.mockReturnValue(true);
+  context.value = { ...offline, usingDownload: true, readOnly: true, state: { revision: '"r2"' } };
   rerender();
   for (const key of Object.keys(first) as (keyof typeof first)[]) expect(result.current[key]).toBe(first[key]);
 });
