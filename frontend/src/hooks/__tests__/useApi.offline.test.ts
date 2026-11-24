@@ -1,7 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { useApi } from '../useApi';
 import { api, ApiError } from '../../lib/api';
-const { offline, user, logout } = vi.hoisted(() => ({ offline: { readOnly: false }, user: { id: 1, token: 'fixture' }, logout: vi.fn() }));
+const { offline, user, logout } = vi.hoisted(() => ({ offline: { readOnly: false, markLibraryChanged: vi.fn() }, user: { id: 1, token: 'fixture' }, logout: vi.fn() }));
 vi.mock('../../context/OfflineContext', () => ({ useOffline: () => offline }));
 vi.mock('../../context/AuthContext', () => ({ useAuth: () => ({ user, logout }) }));
 vi.mock('../../lib/api', async original => ({ ...await original<typeof import('../../lib/api')>(), api: vi.fn(async () => ({})) }));
@@ -28,4 +28,16 @@ it('retains the existing logout behavior for expired online credentials', async 
   const hook = renderHook(() => useApi());
   await expect(hook.result.current('GET', '/api/songs/1')).rejects.toThrow('Expired');
   expect(logout).toHaveBeenCalledOnce();
+});
+it('reports a successful save before the caller continues', async () => {
+  const hook = renderHook(() => useApi());
+  await hook.result.current('PUT', '/api/songs/1', {});
+  expect(offline.markLibraryChanged).toHaveBeenCalledOnce();
+});
+it('does not report reads or failed saves', async () => {
+  const hook = renderHook(() => useApi());
+  await hook.result.current('GET', '/api/songs/1');
+  vi.mocked(api).mockRejectedValueOnce(new ApiError('down', 500));
+  await expect(hook.result.current('POST', '/api/songs', {})).rejects.toThrow('down');
+  expect(offline.markLibraryChanged).not.toHaveBeenCalled();
 });
